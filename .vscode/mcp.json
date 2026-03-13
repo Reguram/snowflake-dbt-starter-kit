@@ -1,0 +1,24 @@
+{
+  "servers": {
+    // =====================================================
+    // Option 1: Snowflake Managed MCP Server (recommended)
+    // Replace <YOUR_ACCOUNT> with your Snowflake account identifier
+    // e.g., "xy12345.us-east-1" or "myorg-myaccount"
+    // =====================================================
+    "snowflake-dbt-mcp": {
+      "type": "streamableHttp",
+      "url": "https://<YOUR_ACCOUNT>.snowflakecomputing.com/api/v2/databases/DBT_DEV/schemas/MCP_TOOLS/mcp-servers/DBT_AGENT_MCP/sse"
+    }
+
+    // =====================================================
+    // Option 2: Local MCP Server (for development/offline)
+    // Uncomment below and comment out Option 1 to use local
+    // =====================================================
+    // "snowflake-dbt-mcp-local": {
+    //   "type": "stdio",
+    //   "command": "python",
+    //   "args": ["snowflake-dbt-mcp/server.py"],
+    //   "env": {}
+    // }
+  }
+}

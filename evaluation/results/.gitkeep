@@ -1,0 +1,3 @@
+# Evaluation results directory
+Results from running evaluation tasks against each tool are stored here.
+Each task gets a subdirectory with outputs and scores.

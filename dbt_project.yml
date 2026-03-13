@@ -1,0 +1,48 @@
+name: 'snowflake_dbt_starter_kit'
+version: '1.0.0'
+config-version: 2
+
+profile: 'snowflake_dbt_starter_kit'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  source_database: "US_OPEN_CENSUS_DATA__NEIGHBORHOOD_INSIGHTS__FREE_DATASET"
+  source_schema: "PUBLIC"
+
+models:
+  snowflake_dbt_starter_kit:
+    staging:
+      +materialized: view
+      +schema: DBT_STAGING
+      +tags: ["staging"]
+    intermediate:
+      +materialized: ephemeral
+      +schema: DBT_INTERMEDIATE
+      +tags: ["intermediate"]
+    marts:
+      +materialized: table
+      +schema: DBT_MARTS
+      +tags: ["marts"]
+    semantic:
+      +materialized: view
+      +schema: SEMANTIC
+      +tags: ["semantic"]
+
+seeds:
+  snowflake_dbt_starter_kit:
+    +schema: seeds
+
+snapshots:
+  snowflake_dbt_starter_kit:
+    +target_schema: snapshots
+    +strategy: timestamp

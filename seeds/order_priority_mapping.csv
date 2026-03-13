@@ -1,0 +1,6 @@
+order_priority_code,order_priority_name,sla_days
+1-URGENT,Urgent,1
+2-HIGH,High Priority,3
+3-MEDIUM,Medium Priority,7
+4-NOT SPECIFIED,Not Specified,14
+5-LOW,Low Priority,30

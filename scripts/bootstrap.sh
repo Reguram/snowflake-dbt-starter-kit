@@ -1,0 +1,308 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Snowflake dbt Starter Kit — Bootstrap Script
+# =============================================================================
+# Automates Steps 1-7 from README.md:
+#   1. Python virtual environment setup
+#   2. dbt + MCP SDK installation
+#   3. Snowflake SQL generation (you run this in Snowsight)
+#   4. profiles.yml configuration
+#   5. dbt deps
+#   6. dbt debug (validation)
+#   7. dbt seed + dbt build
+#
+# Usage:
+#   chmod +x scripts/bootstrap.sh
+#   ./scripts/bootstrap.sh
+#
+# Prerequisites:
+#   - Python 3.9+ installed
+#   - A Snowflake account (free trial: https://signup.snowflake.com/)
+# =============================================================================
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+print_step()  { echo -e "\n${BLUE}▶ STEP $1:${NC} $2"; }
+print_ok()    { echo -e "  ${GREEN}✓${NC} $1"; }
+print_warn()  { echo -e "  ${YELLOW}⚠${NC} $1"; }
+print_err()   { echo -e "  ${RED}✗${NC} $1"; }
+print_info()  { echo -e "  ${BLUE}ℹ${NC} $1"; }
+
+# Ensure we're in the project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_ROOT"
+
+echo -e "${GREEN}"
+echo "╔═══════════════════════════════════════════════════════════╗"
+echo "║     Snowflake dbt Starter Kit — Bootstrap                ║"
+echo "╚═══════════════════════════════════════════════════════════╝"
+echo -e "${NC}"
+
+# ─────────────────────────────────────────────────────────────
+# Step 1: Python virtual environment
+# ─────────────────────────────────────────────────────────────
+print_step 1 "Setting up Python virtual environment"
+
+if [ -d "venv" ]; then
+    print_ok "Virtual environment already exists"
+else
+    python3 -m venv venv
+    print_ok "Created virtual environment at ./venv"
+fi
+
+# shellcheck disable=SC1091
+source venv/bin/activate
+print_ok "Activated virtual environment"
+
+# ─────────────────────────────────────────────────────────────
+# Step 2: Install dependencies
+# ─────────────────────────────────────────────────────────────
+print_step 2 "Installing dbt-snowflake and MCP SDK"
+
+pip install --quiet --upgrade pip
+pip install --quiet dbt-snowflake mcp snowflake-connector-python pyyaml
+print_ok "dbt-snowflake installed: $(dbt --version 2>/dev/null | head -1)"
+print_ok "MCP SDK + Snowflake connector installed"
+
+# ─────────────────────────────────────────────────────────────
+# Step 3: Collect Snowflake credentials
+# ─────────────────────────────────────────────────────────────
+print_step 3 "Configuring Snowflake connection"
+
+# Check if env vars are already set
+if [ -n "${SNOWFLAKE_ACCOUNT:-}" ] && [ -n "${SNOWFLAKE_USER:-}" ] && [ -n "${SNOWFLAKE_PASSWORD:-}" ]; then
+    print_ok "Snowflake credentials found in environment variables"
+    SF_ACCOUNT="$SNOWFLAKE_ACCOUNT"
+    SF_USER="$SNOWFLAKE_USER"
+    SF_PASSWORD="$SNOWFLAKE_PASSWORD"
+    SF_ROLE="${SNOWFLAKE_ROLE:-DBT_ROLE}"
+    SF_DATABASE="${SNOWFLAKE_DATABASE:-DBT_DEV}"
+    SF_WAREHOUSE="${SNOWFLAKE_WAREHOUSE:-DBT_AGENT_WH}"
+else
+    print_info "Snowflake credentials not found in environment."
+    print_info "Please enter your Snowflake connection details:"
+    echo ""
+    read -rp "  Snowflake Account (e.g., xy12345.us-east-1): " SF_ACCOUNT
+    read -rp "  Snowflake Username: " SF_USER
+    read -rsp "  Snowflake Password: " SF_PASSWORD
+    echo ""
+    read -rp "  Role [DBT_ROLE]: " SF_ROLE
+    SF_ROLE="${SF_ROLE:-DBT_ROLE}"
+    read -rp "  Database [DBT_DEV]: " SF_DATABASE
+    SF_DATABASE="${SF_DATABASE:-DBT_DEV}"
+    read -rp "  Warehouse [DBT_AGENT_WH]: " SF_WAREHOUSE
+    SF_WAREHOUSE="${SF_WAREHOUSE:-DBT_AGENT_WH}"
+    echo ""
+fi
+
+# ─────────────────────────────────────────────────────────────
+# Step 3a: Source data configuration
+# ─────────────────────────────────────────────────────────────
+print_info "Enter the Snowflake database and schema containing your source data."
+print_info "Examples: SNOWFLAKE_SAMPLE_DATA / TPCH_SF1, MY_DATABASE / RAW_DATA"
+echo ""
+read -rp "  Source Database: " SRC_DATABASE
+SRC_DATABASE="$(echo "$SRC_DATABASE" | xargs)"  # trim whitespace
+read -rp "  Source Schema: " SRC_SCHEMA
+SRC_SCHEMA="$(echo "$SRC_SCHEMA" | xargs)"  # trim whitespace
+SRC_SCHEMA_LOWER="$(echo "$SRC_SCHEMA" | tr '[:upper:]' '[:lower:]')"
+read -rp "  dbt source name [${SRC_SCHEMA_LOWER}]: " SRC_NAME
+SRC_NAME="${SRC_NAME:-${SRC_SCHEMA_LOWER}}"
+echo ""
+print_info "Source: ${SRC_DATABASE}.${SRC_SCHEMA} (name: ${SRC_NAME})"
+
+# ─────────────────────────────────────────────────────────────
+# Step 3b: Generate Snowflake setup SQL
+# ─────────────────────────────────────────────────────────────
+SETUP_SQL="scripts/snowflake_setup.sql"
+cat > "$SETUP_SQL" <<EOSQL
+-- =============================================================================
+-- Snowflake Setup — Run this in Snowsight as ACCOUNTADMIN
+-- Generated by bootstrap.sh on $(date +%Y-%m-%d)
+-- =============================================================================
+
+USE ROLE ACCOUNTADMIN;
+
+-- Database and schemas
+CREATE DATABASE IF NOT EXISTS ${SF_DATABASE};
+CREATE SCHEMA IF NOT EXISTS ${SF_DATABASE}.DBT_STAGING;
+CREATE SCHEMA IF NOT EXISTS ${SF_DATABASE}.DBT_INTERMEDIATE;
+CREATE SCHEMA IF NOT EXISTS ${SF_DATABASE}.DBT_MARTS;
+CREATE SCHEMA IF NOT EXISTS ${SF_DATABASE}.SEMANTIC;
+CREATE SCHEMA IF NOT EXISTS ${SF_DATABASE}.SNAPSHOTS;
+
+-- Warehouse
+CREATE WAREHOUSE IF NOT EXISTS ${SF_WAREHOUSE}
+  WAREHOUSE_SIZE = 'X-SMALL'
+  AUTO_SUSPEND = 60
+  AUTO_RESUME = TRUE;
+
+-- Role with full permissions
+CREATE ROLE IF NOT EXISTS ${SF_ROLE};
+GRANT ALL PRIVILEGES ON DATABASE ${SF_DATABASE} TO ROLE ${SF_ROLE};
+GRANT ALL PRIVILEGES ON ALL SCHEMAS IN DATABASE ${SF_DATABASE} TO ROLE ${SF_ROLE};
+GRANT ALL PRIVILEGES ON FUTURE SCHEMAS IN DATABASE ${SF_DATABASE} TO ROLE ${SF_ROLE};
+GRANT USAGE ON WAREHOUSE ${SF_WAREHOUSE} TO ROLE ${SF_ROLE};
+
+-- Source data (read-only)
+GRANT USAGE ON DATABASE ${SRC_DATABASE} TO ROLE ${SF_ROLE};
+GRANT USAGE ON SCHEMA ${SRC_DATABASE}.${SRC_SCHEMA} TO ROLE ${SF_ROLE};
+GRANT SELECT ON ALL TABLES IN SCHEMA ${SRC_DATABASE}.${SRC_SCHEMA} TO ROLE ${SF_ROLE};
+
+-- Assign role to user
+GRANT ROLE ${SF_ROLE} TO USER ${SF_USER};
+
+-- Verify
+SELECT 'Setup complete!' AS status;
+EOSQL
+
+print_ok "Generated Snowflake setup SQL at: $SETUP_SQL"
+echo ""
+read -rp "  Already have ${SF_DATABASE} set up from a previous run? (y/N): " SKIP_SQL
+if [[ "$SKIP_SQL" =~ ^[Yy] ]]; then
+    print_ok "Skipping SQL setup — reusing existing ${SF_DATABASE} database."
+    print_info "Note: you may need to run the source GRANT lines manually if this is a new source."
+else
+    print_warn "You must run $SETUP_SQL in Snowsight as ACCOUNTADMIN before proceeding."
+    echo ""
+    read -rp "  Have you run the SQL in Snowsight? (y/N): " SQL_DONE
+    if [[ ! "$SQL_DONE" =~ ^[Yy] ]]; then
+        echo ""
+        print_info "Open Snowsight → Worksheets → paste contents of $SETUP_SQL → Run All"
+        print_info "Then re-run this script."
+        exit 0
+    fi
+fi
+
+# ─────────────────────────────────────────────────────────────
+# Step 4: Write profiles.yml
+# ─────────────────────────────────────────────────────────────
+print_step 4 "Writing dbt profiles.yml"
+
+mkdir -p ~/.dbt
+
+cat > ~/.dbt/profiles.yml <<EOPROFILE
+# Auto-generated by bootstrap.sh — $(date +%Y-%m-%d)
+snowflake_dbt_starter_kit:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "${SF_ACCOUNT}"
+      user: "${SF_USER}"
+      password: "${SF_PASSWORD}"
+      role: "${SF_ROLE}"
+      database: "${SF_DATABASE}"
+      warehouse: "${SF_WAREHOUSE}"
+      schema: PUBLIC
+      threads: 4
+      client_session_keep_alive: true
+      query_tag: "dbt_starter_kit"
+EOPROFILE
+
+print_ok "Wrote ~/.dbt/profiles.yml"
+
+# Also export env vars for this session
+export SNOWFLAKE_ACCOUNT="$SF_ACCOUNT"
+export SNOWFLAKE_USER="$SF_USER"
+export SNOWFLAKE_PASSWORD="$SF_PASSWORD"
+export SNOWFLAKE_ROLE="$SF_ROLE"
+export SNOWFLAKE_DATABASE="$SF_DATABASE"
+export SNOWFLAKE_WAREHOUSE="$SF_WAREHOUSE"
+export SNOWFLAKE_SCHEMA="PUBLIC"
+
+# ─────────────────────────────────────────────────────────────
+# Step 5: Install dbt packages
+# ─────────────────────────────────────────────────────────────
+print_step 5 "Installing dbt packages"
+
+dbt deps
+print_ok "dbt packages installed"
+
+# ─────────────────────────────────────────────────────────────
+# Step 5a: Auto-discover and generate dbt models
+# ─────────────────────────────────────────────────────────────
+print_step "5a" "Discovering source tables and generating dbt models"
+print_info "Connecting to ${SRC_DATABASE}.${SRC_SCHEMA} to discover tables..."
+
+python scripts/discover_and_generate.py \
+    --source-database "$SRC_DATABASE" \
+    --source-schema "$SRC_SCHEMA" \
+    --source-name "$SRC_NAME" \
+    --account "$SF_ACCOUNT" \
+    --user "$SF_USER" \
+    --password "$SF_PASSWORD" \
+    --role "$SF_ROLE" \
+    --warehouse "$SF_WAREHOUSE" \
+    --overwrite
+
+print_ok "Models generated for ${SRC_DATABASE}.${SRC_SCHEMA}"
+print_info "Review generated files in models/staging/ before building."
+echo ""
+read -rp "  Continue with build? (Y/n): " BUILD_CONTINUE
+if [[ "$BUILD_CONTINUE" =~ ^[Nn] ]]; then
+    print_info "Paused. Review models, then run: dbt build"
+    exit 0
+fi
+
+# ─────────────────────────────────────────────────────────────
+# Step 6: Validate connection
+# ─────────────────────────────────────────────────────────────
+print_step 6 "Validating Snowflake connection"
+
+if dbt debug 2>&1 | grep -q "All checks passed"; then
+    print_ok "All checks passed — connection is working!"
+else
+    print_err "dbt debug failed. Check your credentials and Snowflake setup."
+    print_info "Run 'dbt debug' manually to see the full error."
+    exit 1
+fi
+
+# ─────────────────────────────────────────────────────────────
+# Step 7: Build everything
+# ─────────────────────────────────────────────────────────────
+print_step 7 "Building dbt project (seed + build)"
+
+echo ""
+print_info "Loading seed data..."
+dbt seed
+print_ok "Seeds loaded"
+
+print_info "Building all models + running tests..."
+dbt build
+print_ok "Build complete!"
+
+# ─────────────────────────────────────────────────────────────
+# Summary
+# ─────────────────────────────────────────────────────────────
+echo ""
+echo -e "${GREEN}"
+echo "╔═══════════════════════════════════════════════════════════╗"
+echo "║                  Setup Complete!                         ║"
+echo "╚═══════════════════════════════════════════════════════════╝"
+echo -e "${NC}"
+echo "  Your dbt project is ready. Verify in Snowsight:"
+echo ""
+echo "    USE DATABASE ${SF_DATABASE};"
+echo "    SELECT TABLE_NAME, ROW_COUNT FROM INFORMATION_SCHEMA.TABLES"
+echo "      WHERE TABLE_SCHEMA IN ('DBT_STAGING','DBT_INTERMEDIATE','DBT_MARTS','SEMANTIC')"
+echo "      ORDER BY TABLE_SCHEMA, TABLE_NAME;"
+echo ""
+echo "  Source: ${SRC_DATABASE}.${SRC_SCHEMA}"
+echo ""
+echo "  Next steps:"
+echo "    • Step 8:  Set up MCP Server (see README.md)"
+echo "    • Step 9:  Deploy Streamlit App (optional)"
+echo "    • Step 10: Run Evaluation Framework (optional)"
+echo ""
+echo "  Activate your environment in new terminals with:"
+echo "    source venv/bin/activate"
+echo ""

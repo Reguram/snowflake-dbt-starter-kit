@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: stg_free_company_data__freecompanydataset
+    description: "Staged freecompanydataset from free_company_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country
+        description: "Country of the company's HQ location"
+      - name: founded
+        description: "Year company was founded"
+      - name: id
+        description: "Unique PDL company ID"
+        tests:
+          - unique
+          - not_null
+      - name: industry
+        description: "Company industry"
+      - name: linkedin_url
+        description: "Company's public LinkedIn profile URL"
+      - name: locality
+        description: "City of the company's HQ location"
+      - name: name
+        description: "Company name"
+      - name: region
+        description: "State/region of the company's HQ location"
+      - name: size
+        description: "Company size"
+      - name: website
+        description: "Company's primary website"
