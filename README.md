@@ -20,12 +20,13 @@ Production-ready dbt project for Snowflake with a **Snowflake Managed MCP Server
    - [Step 8: Set Up the MCP Server](#step-8-set-up-the-mcp-server)
    - [Step 9: Deploy Streamlit App (Optional)](#step-9-deploy-streamlit-app-optional)
    - [Step 10: Run the Evaluation](#step-10-run-the-evaluation-optional)
-4. [Project Structure](#project-structure)
-5. [Models Overview](#models-overview)
-6. [MCP Server (Tools for AI Agents)](#mcp-server-tools-for-ai-agents)
-7. [Claude Skills](#claude-skills)
-8. [Evaluation Framework](#evaluation-framework)
-9. [Troubleshooting](#troubleshooting)
+5. [How Model Generation Works](#how-model-generation-works)
+6. [Project Structure](#project-structure)
+7. [Models Overview](#models-overview)
+8. [MCP Server (Tools for AI Agents)](#mcp-server-tools-for-ai-agents)
+9. [Claude Skills](#claude-skills)
+10. [Evaluation Framework](#evaluation-framework)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -33,6 +34,7 @@ Production-ready dbt project for Snowflake with a **Snowflake Managed MCP Server
 
 This is a **dbt (data build tool)** project that transforms raw Snowflake data into clean, analytics-ready tables. On top of that, it includes:
 
+- **Auto-Discovery & Generation**: A Python script that connects to any Snowflake database, discovers tables, profiles column data, and generates all dbt models (staging + marts) automatically — no AI agent involved.
 - **MCP Server**: AI agent tools that Claude/Copilot can use to generate dbt models, review SQL, check data quality, and more — running natively inside Snowflake as a Managed MCP Server.
 - **Streamlit App**: A chat-based dashboard running inside Snowflake with Cortex AI.
 - **Evaluation Framework**: 8 structured tasks to compare Cortex Code vs Claude Code vs Copilot CLI.
@@ -41,7 +43,7 @@ This is a **dbt (data build tool)** project that transforms raw Snowflake data i
 - **Sources** = your raw data tables (any Snowflake database/schema you point it to)
 - **Staging models** = clean/rename those raw tables (1:1 mapping)
 - **Intermediate models** = join and transform staging models
-- **Mart models** = final tables your analysts/dashboards query (facts + dimensions)
+- **Mart models** = final tables your analysts/dashboards query (facts + dimensions + summaries)
 - **Semantic models** = metadata layer enabling natural-language queries via Cortex Analyst
 
 ---
@@ -74,13 +76,15 @@ This interactively walks you through Steps 1–7: creates a Python venv, install
 
 ### Automatic Source Discovery
 
-The bootstrap script works with **any Snowflake database/schema** as a source. When prompted, enter your source database and schema names. The script automatically:
-- Discovers all tables and columns via `INFORMATION_SCHEMA`
-- Verifies primary key uniqueness against actual data
-- Generates `_sources.yml`, staging models, and `schema.yml` with tests
-- Creates a starter fact table from the most analytical table
-- Updates `dbt_project.yml` vars to point to your source
-- Cleans up old models from any previous source
+The bootstrap script works with **any Snowflake database/schema** as a source — including Snowflake Marketplace shared datasets. When prompted, enter your source database and schema names. The script automatically:
+- Discovers all tables and columns via `DESCRIBE TABLE` (more reliable than `INFORMATION_SCHEMA` for shared datasets)
+- Verifies primary key uniqueness against actual data using `COUNT(DISTINCT ...)`
+- Profiles every column for cardinality (distinct count, null count) to classify dimensions vs. measures
+- Generates source-named subdirectories: `models/staging/<source_name>/` and `models/marts/<source_name>/`
+- Generates `_sources.yml`, staging models, `schema.yml` with tests, fact tables, and summary mart aggregations
+- Handles mixed-case columns, numeric-prefixed table names, and special characters in column names
+- Cleans up stale mart files from any previous generation
+- Builds only the new source: `dbt build --select "source:<source_name>+"`
 
 You can also run the discovery script standalone:
 
@@ -94,11 +98,30 @@ python scripts/discover_and_generate.py \
   --source-schema MY_SCHEMA \
   --source-name my_source
 
+# Regenerate an existing source (overwrites)
+python scripts/discover_and_generate.py \
+  --source-database MY_DB \
+  --source-schema MY_SCHEMA \
+  --source-name my_source \
+  --overwrite
+
 # Preview without writing files
 python scripts/discover_and_generate.py \
   --source-database MY_DB \
   --source-schema MY_SCHEMA \
   --dry-run
+```
+
+### Selective Builds
+
+Each source is self-contained with its own `_sources.yml` (hardcoded database/schema). You can build a single source without affecting others:
+
+```bash
+# Build only one source and all its downstream models
+dbt build --select "source:free_company_data+"
+
+# Build everything
+dbt build
 ```
 
 > **Using Copilot/Claude?** Just say: *"Set up this dbt project for me"* — the agent skill in `.github/skills/project-setup.md` will guide the process automatically.
@@ -169,10 +192,13 @@ GRANT ALL PRIVILEGES ON ALL SCHEMAS IN DATABASE DBT_DEV TO ROLE DBT_ROLE;
 GRANT ALL PRIVILEGES ON FUTURE SCHEMAS IN DATABASE DBT_DEV TO ROLE DBT_ROLE;
 GRANT USAGE ON WAREHOUSE DBT_AGENT_WH TO ROLE DBT_ROLE;
 
--- Source data (read-only access) — replace with your actual source database/schema
-GRANT USAGE ON DATABASE <YOUR_SOURCE_DATABASE> TO ROLE DBT_ROLE;
-GRANT USAGE ON SCHEMA <YOUR_SOURCE_DATABASE>.<YOUR_SOURCE_SCHEMA> TO ROLE DBT_ROLE;
-GRANT SELECT ON ALL TABLES IN SCHEMA <YOUR_SOURCE_DATABASE>.<YOUR_SOURCE_SCHEMA> TO ROLE DBT_ROLE;
+-- Source data (read-only access) — replace with your actual source database
+-- For Marketplace shared databases, use IMPORTED PRIVILEGES:
+GRANT IMPORTED PRIVILEGES ON DATABASE <YOUR_SOURCE_DATABASE> TO ROLE DBT_ROLE;
+-- For regular databases, use USAGE + SELECT:
+-- GRANT USAGE ON DATABASE <YOUR_SOURCE_DATABASE> TO ROLE DBT_ROLE;
+-- GRANT USAGE ON SCHEMA <YOUR_SOURCE_DATABASE>.<YOUR_SOURCE_SCHEMA> TO ROLE DBT_ROLE;
+-- GRANT SELECT ON ALL TABLES IN SCHEMA <YOUR_SOURCE_DATABASE>.<YOUR_SOURCE_SCHEMA> TO ROLE DBT_ROLE;
 
 -- 3d. Assign the role to your user (replace YOUR_USERNAME)
 GRANT ROLE DBT_ROLE TO USER YOUR_USERNAME;
@@ -261,9 +287,9 @@ dbt build
 **What just happened?**
 1. `dbt seed` loaded `seeds/order_priority_mapping.csv` into a Snowflake table
 2. `dbt build` executed in dependency order:
-   - Created **staging views** (one per source table, with renamed columns)
-   - Created **mart tables** (fact tables with surrogate keys and date parts)
-   - Ran all **tests** (unique, not_null on verified primary keys)
+   - Created **staging views** in `DBT_STAGING` (one per source table, with renamed columns)
+   - Created **mart tables** in `DBT_MARTS` (fact tables with surrogate keys, summary mart aggregations)
+   - Ran all **tests** (unique, not_null on verified primary keys, foreign key relationships)
 
 **Verify in Snowsight:**
 ```sql
@@ -276,11 +302,12 @@ SELECT TABLE_NAME, ROW_COUNT FROM INFORMATION_SCHEMA.TABLES
 
 **Useful dbt commands to know:**
 ```bash
-dbt run                          # Build models only (no tests)
-dbt test                         # Run tests only
-dbt run --select staging         # Build only staging models
-dbt run --select fct_orders+     # Build fct_orders and everything downstream
-dbt docs generate && dbt docs serve  # Generate and view documentation
+dbt run                                       # Build models only (no tests)
+dbt test                                      # Run tests only
+dbt build --select "source:my_source+"        # Build only one source + downstream
+dbt run --select staging                      # Build only staging models
+dbt run --select fct_orders+                  # Build fct_orders and everything downstream
+dbt docs generate && dbt docs serve           # Generate and view documentation
 ```
 
 ### Step 8: Set Up the MCP Server
@@ -380,57 +407,176 @@ Compare AI coding tools (Cortex Code vs Claude Code vs Copilot CLI) using the 8 
 
 ---
 
+## How Model Generation Works
+
+All staging and mart SQL files are generated by a **deterministic Python script** — `scripts/discover_and_generate.py` — not by an AI agent. The script connects to Snowflake, queries metadata, profiles actual data, and generates SQL using rule-based heuristics. Here's the full pipeline:
+
+### Pipeline Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  scripts/discover_and_generate.py                                   │
+│                                                                     │
+│  1. DISCOVER   ──→  DESCRIBE TABLE on each table in source schema   │
+│                     (column names, data types, nullability)          │
+│                                                                     │
+│  2. VERIFY PKs ──→  COUNT(DISTINCT col) vs COUNT(*)                 │
+│                     Only add unique/not_null tests when PK verified  │
+│                                                                     │
+│  3. PROFILE    ──→  COUNT(DISTINCT col), SUM(CASE NULL) per column  │
+│                     Classifies: dimensions, measures, dates          │
+│                                                                     │
+│  4. GENERATE   ──→  Staging SQL + _sources.yml + schema.yml         │
+│                     Fact table + Summary marts + mart schema.yml     │
+│                                                                     │
+│  5. WRITE      ──→  models/staging/<source_name>/                   │
+│                     models/marts/<source_name>/                      │
+│                     Cleans stale files from previous runs            │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Step 1: Schema Discovery
+
+The script runs `DESCRIBE TABLE` against each table in the source database/schema (more reliable than `INFORMATION_SCHEMA` for Marketplace shared datasets). Data types are normalized — e.g., `VARCHAR(16777216)` becomes `VARCHAR`, `NUMBER(38,0)` becomes `NUMBER`.
+
+### Step 2: Primary Key Verification
+
+For each table, the script detects a candidate primary key (first column ending in `KEY`, `ID`, or `_PK`), then **verifies it against actual data**:
+```sql
+SELECT COUNT(*) AS total, COUNT(DISTINCT col) AS distinct_count, COUNT(col) AS non_null_count
+FROM source_table
+```
+Only when `total == distinct == non_null` does the script add `unique` + `not_null` tests. This prevents false test failures.
+
+### Step 3: Column Profiling & Classification
+
+The script queries Snowflake for cardinality of every column:
+```sql
+SELECT COUNT(*), COUNT(DISTINCT col1), SUM(CASE WHEN col1 IS NULL THEN 1 ELSE 0 END), ...
+FROM source_table
+```
+
+Using this profile data, columns are classified:
+
+| Classification | Rule | Example |
+|---------------|------|---------|
+| **Dimension** | String with <500 distinct values or <5% cardinality ratio | `COUNTRY` (250 distinct in 24M rows) |
+| **Measure** | Numeric type, not a key column | `PRICE`, `FOUNDED` |
+| **Date** | Actual `DATE`/`TIMESTAMP_*` data type | `SALES_DATE` (DATE) |
+| **High-cardinality** | Too many distinct values, excluded from dimensions | `NAME`, `URL` |
+
+### Step 4: SQL Generation
+
+**Staging models** (`stg_<source>__<table>.sql`):
+- CTE-based: `source` → `renamed` → `select *`
+- Columns listed explicitly (no `SELECT *` in the output)
+- Single-letter prefixes stripped (e.g., `O_ORDERKEY` → `orderkey`)
+- Mixed-case columns quoted with double-quotes (e.g., `"B25001e1"`)
+- `_sources.yml` has `quoting: identifier: true` for tables with special names
+
+**Fact table** (`fct_<table>.sql`):
+- Picks the "richest" table (most numeric + date columns), or the largest table as fallback
+- Adds a surrogate key via `dbt_utils.generate_surrogate_key()`
+- Includes `DATE_TRUNC('month', ...)` and `YEAR(...)` columns — only when the column has an actual date/timestamp data type (not just a name containing "date")
+
+**Summary marts** (`summary_<table>.sql`):
+- GROUP BY all dimension columns
+- `COUNT(*)` as record count
+- `SUM()`, `AVG()`, `MIN()`, `MAX()` on each numeric measure
+- Date truncations (month/year) only for real date-typed columns
+
+### Step 5: File Output & Cleanup
+
+Files are written to source-named subdirectories:
+```
+models/staging/<source_name>/
+  ├── _sources.yml           # Source definition with hardcoded database/schema
+  ├── stg_<source>__<table>.sql   # One per table
+  └── schema.yml             # Column descriptions + tests
+
+models/marts/<source_name>/
+  ├── fct_<table>.sql        # Fact table from the richest source table
+  ├── summary_<table>.sql    # Aggregated summary per table (if dimensions found)
+  └── schema.yml             # Mart model descriptions
+```
+
+On re-generation (`--overwrite`), stale mart files from previous runs are automatically removed.
+
+### What This Script Does NOT Do
+
+- **No AI/LLM calls** — All generation is deterministic, based on metadata and profile queries
+- **No intermediate models** — These are for custom business logic; add them manually in `models/intermediate/`
+- **No semantic models** — These require manual dimension/metric definitions; use the MCP server or add manually
+- **No cross-source joins** — Each source is self-contained; cross-source marts can be added manually
+
+---
+
 ## Project Structure
 
 ```
+├── scripts/
+│   ├── bootstrap.sh              # One-command setup (Steps 1-7 automated)
+│   ├── discover_and_generate.py  # Source discovery + model generation (the core script)
+│   └── snowflake_setup.sql       # Generated Snowflake setup SQL (run in Snowsight)
 ├── models/
-│   ├── staging/          # Source-conformed views (stg_<source>__*)
-│   ├── intermediate/     # Business logic joins (int_*)
-│   ├── marts/            # Consumption tables (fct_*, dim_*)
-│   └── semantic/         # Semantic View definitions (sem_*)
-├── macros/               # Reusable Jinja (surrogate keys, dev limits, semantic DDL)
-├── tests/                # Custom singular tests
-├── seeds/                # Reference CSVs
-├── snapshots/            # SCD Type 2 tracking
+│   ├── staging/<source_name>/    # Source-conformed views (stg_<source>__*)
+│   │   ├── _sources.yml          # dbt source definition (hardcoded db/schema)
+│   │   ├── stg_<source>__*.sql   # One staging model per table
+│   │   └── schema.yml            # Column tests (unique, not_null, relationships)
+│   ├── intermediate/             # Business logic joins (int_*) — add manually
+│   ├── marts/<source_name>/      # Consumption tables (fct_*, summary_*)
+│   │   ├── fct_<table>.sql       # Detail fact table from richest source table
+│   │   ├── summary_<table>.sql   # Aggregated summaries per dimension
+│   │   └── schema.yml            # Mart model descriptions
+│   └── semantic/                 # Semantic View definitions (sem_*) — add manually
+├── macros/                       # Reusable Jinja (surrogate keys, dev limits, semantic DDL)
+├── tests/                        # Custom singular tests
+├── seeds/                        # Reference CSVs
+├── snapshots/                    # SCD Type 2 tracking
 ├── snowflake-dbt-mcp/
-│   ├── server.py         # Local fallback MCP server (6 tools)
+│   ├── server.py                 # Local fallback MCP server (6 tools)
 │   ├── pyproject.toml
-│   └── setup/            # Snowflake Managed MCP Server setup scripts
+│   └── setup/                    # Snowflake Managed MCP Server setup scripts
 │       ├── 01_database_objects.sql
 │       ├── 02_udf_tools.sql
 │       ├── 03_mcp_server.sql
 │       ├── 04_oauth_security.sql
 │       └── 05_grants.sql
-├── streamlit/            # Streamlit-in-Snowflake agent app
-│   ├── dbt_agent_app.py  # Chat + Model Gen + Quality + Review + Dashboard
+├── streamlit/                    # Streamlit-in-Snowflake agent app
+│   ├── dbt_agent_app.py          # Chat + Model Gen + Quality + Review + Dashboard
 │   └── deploy.sql
-├── evaluation/           # Cortex Code vs Claude Code comparison
-│   ├── README.md         # Rubric and methodology
-│   ├── REPORT.md         # Results template
-│   ├── tasks/            # 8 standardized evaluation prompts
-│   └── results/          # Captured outputs + scores
+├── evaluation/                   # Cortex Code vs Claude Code comparison
+│   ├── README.md                 # Rubric and methodology
+│   ├── REPORT.md                 # Results template
+│   ├── tasks/                    # 8 standardized evaluation prompts
+│   └── results/                  # Captured outputs + scores
 ├── .github/
-│   ├── copilot-instructions.md  # Project conventions for Copilot
-│   ├── skills/           # Domain-specific skill files
-│   └── workflows/        # CI: dbt build on PRs
+│   ├── copilot-instructions.md   # Project conventions for Copilot
+│   ├── skills/                   # Domain-specific skill files
+│   └── workflows/                # CI: dbt build on PRs
 └── .vscode/
-    └── mcp.json          # MCP server config (Snowflake managed or local)
+    └── mcp.json                  # MCP server config (Snowflake managed or local)
 ```
 
 ## Source Data
 
-This project works with **any Snowflake database/schema**. The bootstrap script auto-discovers your source tables and generates all models. Point it at any accessible database/schema during setup.
+This project works with **any Snowflake database/schema**, including Snowflake Marketplace shared datasets. The discovery script auto-discovers your source tables and generates all models. You can have **multiple sources** side-by-side — each lives in its own subdirectory under `models/staging/<source_name>/` and `models/marts/<source_name>/` with a hardcoded `database:` and `schema:` in its `_sources.yml`, so sources never conflict.
+
+**Tested with:**
+- Snowflake Marketplace: `FREE_COMPANY_DATASET`, `JAPANESE_ECOMMERCE__C2C_SALES_DATA`, `US_OPEN_CENSUS_DATA` (73 tables, 1700+ columns each)
+- Any regular Snowflake database with user-created tables
 
 ## Models Overview
 
 Models are auto-generated based on your source data:
 
-| Layer | Pattern | Materialization | Description |
-|-------|---------|-----------------|-------------|
-| Staging | `stg_<source>__<table>` | view | Source-conformed with renamed columns |
-| Intermediate | `int_<description>` | ephemeral | Business logic transforms (add manually) |
-| Mart | `fct_<entity>` | table | Fact tables with surrogate keys + date parts |
-| Semantic | `sem_<analysis>` | view | Semantic View definitions (add manually) |
+| Layer | Pattern | Materialization | Generated By | Description |
+|-------|---------|-----------------|-------------|-------------|
+| Staging | `stg_<source>__<table>` | view | `discover_and_generate.py` | Source-conformed with renamed columns, explicit column listing |
+| Mart (fact) | `fct_<table>` | table | `discover_and_generate.py` | Surrogate key + all columns from richest source table, date parts for real date columns |
+| Mart (summary) | `summary_<table>` | table | `discover_and_generate.py` | GROUP BY dimensions + COUNT/SUM/AVG/MIN/MAX on measures |
+| Intermediate | `int_<description>` | ephemeral | Manual | Business logic transforms (add manually) |
+| Semantic | `sem_<analysis>` | view | Manual | Semantic View definitions (add manually) |
 
 ## MCP Server (Tools for AI Agents)
 
@@ -518,6 +664,27 @@ See [evaluation/README.md](evaluation/README.md) for full rubric.
 ### "Table not found" errors in staging models
 - Make sure your source database/schema exists and your role has SELECT access.
 - Verify: `SELECT COUNT(*) FROM <YOUR_DB>.<YOUR_SCHEMA>.<TABLE_NAME>;`
+
+### `GRANT USAGE ON DATABASE` fails for Marketplace shared databases
+- Marketplace shared databases require `GRANT IMPORTED PRIVILEGES ON DATABASE` instead of `GRANT USAGE`.
+- The bootstrap script generates the correct SQL automatically.
+
+### Mixed-case or special-character column names
+- The discovery script handles these automatically:
+  - Mixed-case columns (e.g., `B25001e1`) are double-quoted in SQL
+  - Columns with special characters are quoted in YAML
+  - Tables with numeric-prefixed names use `quoting: identifier: true`
+
+### Adding a new source to an existing project
+```bash
+python scripts/discover_and_generate.py \
+  --source-database NEW_DB \
+  --source-schema NEW_SCHEMA \
+  --source-name new_source
+
+# Build only the new source
+dbt build --select "source:new_source+"
+```
 
 ---
 
