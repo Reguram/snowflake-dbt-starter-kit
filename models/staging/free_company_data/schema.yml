@@ -5,25 +5,25 @@ models:
     description: "Staged freecompanydataset from free_company_data — renamed columns, 1:1 with source"
     columns:
       - name: country
-        description: "Country of the company's HQ location"
+        description: ""
       - name: founded
-        description: "Year company was founded"
+        description: ""
       - name: id
-        description: "Unique PDL company ID"
+        description: ""
         tests:
           - unique
           - not_null
       - name: industry
-        description: "Company industry"
+        description: ""
       - name: linkedin_url
-        description: "Company's public LinkedIn profile URL"
+        description: ""
       - name: locality
-        description: "City of the company's HQ location"
+        description: ""
       - name: name
-        description: "Company name"
+        description: ""
       - name: region
-        description: "State/region of the company's HQ location"
+        description: ""
       - name: size
-        description: "Company size"
+        description: ""
       - name: website
-        description: "Company's primary website"
+        description: ""

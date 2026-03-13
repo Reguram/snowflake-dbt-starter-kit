@@ -16,8 +16,8 @@ clean-targets:
   - "dbt_packages"
 
 vars:
-  source_database: "US_OPEN_CENSUS_DATA__NEIGHBORHOOD_INSIGHTS__FREE_DATASET"
-  source_schema: "PUBLIC"
+  source_database: "JAPANESE_ECOMMERCE__C2C_SALES_DATA_FOR_PRICE__TREND_INSIGHTS"
+  source_schema: "SAMPLE_DATE"
 
 models:
   snowflake_dbt_starter_kit:

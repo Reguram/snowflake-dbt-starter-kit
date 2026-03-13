@@ -5,30 +5,32 @@ sources:
     description: "Auto-discovered source from FREE_COMPANY_DATASET.PUBLIC"
     database: "FREE_COMPANY_DATASET"
     schema: "PUBLIC"
+    quoting:
+      identifier: true
     tables:
       - name: FREECOMPANYDATASET
         description: "Raw freecompanydataset table (~24,068,235 rows)"
         columns:
           - name: COUNTRY
-            description: "Country of the company's HQ location"
+            description: ""
           - name: FOUNDED
-            description: "Year company was founded"
+            description: ""
           - name: ID
-            description: "Unique PDL company ID"
+            description: ""
             tests:
               - unique
               - not_null
           - name: INDUSTRY
-            description: "Company industry"
+            description: ""
           - name: LINKEDIN_URL
-            description: "Company's public LinkedIn profile URL"
+            description: ""
           - name: LOCALITY
-            description: "City of the company's HQ location"
+            description: ""
           - name: NAME
-            description: "Company name"
+            description: ""
           - name: REGION
-            description: "State/region of the company's HQ location"
+            description: ""
           - name: SIZE
-            description: "Company size"
+            description: ""
           - name: WEBSITE
-            description: "Company's primary website"
+            description: ""

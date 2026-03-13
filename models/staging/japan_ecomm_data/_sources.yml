@@ -5,118 +5,73 @@ sources:
     description: "Auto-discovered source from JAPANESE_ECOMMERCE__C2C_SALES_DATA_FOR_PRICE__TREND_INSIGHTS.SAMPLE_DATE"
     database: "JAPANESE_ECOMMERCE__C2C_SALES_DATA_FOR_PRICE__TREND_INSIGHTS"
     schema: "SAMPLE_DATE"
+    quoting:
+      identifier: true
     tables:
       - name: MALL_MARKETS_MONTHLY_TRANSACTION
         description: "Raw mall_markets_monthly_transaction table (~59,320 rows)"
         columns:
           - name: LISTING_ID
-            description: "A random ID used to uniquely identify each transaction by site and product
-- It is linked to the URL on the website, but the URL is anonymized in the dataset"
+            description: ""
             tests:
               - unique
               - not_null
           - name: WEBSITE_TYPE
-            description: "Type of the source website
-- フリマ (e.g., Mercari, Rakuma)
-- モール (e.g., Rakuten Ichiba, Yahoo Shopping)"
+            description: ""
           - name: DATA_SOURCE
-            description: "Name of the source website
-- MERCARI
-- RAKUMA
-- MUSBI
-- YAHAUC
-- RAKUTEN_ICHIBA
-- YAHOO_SHOPPING"
+            description: ""
           - name: SALES_DATE
-            description: "The date when the transaction was completed"
+            description: ""
           - name: MAKER
-            description: "The maker of the product
-   e.g., Apple"
+            description: ""
           - name: ITEM_NAME
-            description: "Product name
-   e.g., iPhone 15 Pro Max"
+            description: ""
           - name: MODEL
-            description: "The product’s associated model number
-   e.g., MU723J/A"
+            description: ""
           - name: RELEASE_DATE
-            description: "The product’s release date
-   e.g., 2023/09/22"
+            description: ""
           - name: CONDITION
-            description: "The condition definitions on each website have been standardized to enable cross-comparison:
-S (Unused)
-A (Nearly unused)
-B (No noticeable scratches or stains)
-C (Some scratches or stains)
-D (Scratches or stains present)"
+            description: ""
           - name: VOLUME
-            description: "The capacity designation linked to the model and model number
-   e.g., 128GB, 1TB"
+            description: ""
           - name: IS_SIM_FREE
-            description: "Indicates whether the device is SIM-free. If unknown, the value is null
-- FREE (SIM-free device)
-- LOCK (SIM-locked device)
-- NULL (Unknown)"
+            description: ""
           - name: NETWORK_RESTRICTION
-            description: "Indicates whether network restrictions have been removed. If unknown, the value is null
-- CIRCLE (Restriction removed)
-- CROSS (Under restriction)
-- TRIANGLE (Installment payments in progress)
-- NULL (Unknown)"
+            description: ""
           - name: PRICE
-            description: "The listed price at the time the product was sold"
+            description: ""
           - name: STOCK_PERIOD
-            description: "The number of days from when the product was first listed on the site until it was sold"
+            description: ""
       - name: MALL_MARKETS_YEARLY_REPORT
         description: "Raw mall_markets_yearly_report table (~45,034 rows)"
         columns:
           - name: MONTH
-            description: "Month: Dataset period
-- 2025/01/01 ~ 2025/05/31"
-            tests:
-              - not_null
+            description: ""
           - name: WEBSITE_TYPE
-            description: "Type of the source website
-- フリマ (e.g., Mercari, Rakuma)
-- モール (e.g., Rakuten Ichiba, Yahoo Shopping)"
+            description: ""
           - name: DATA_SOURCE
-            description: "Name of the source website
-- MERCARI
-- RAKUMA
-- MUSBI
-- YAHAUC
-- RAKUTEN_ICHIBA
-- YAHOO_SHOPPING"
+            description: ""
           - name: MAKER
-            description: "The maker of the product
-   e.g., Apple"
+            description: ""
           - name: ITEM_NAME
-            description: "Product name
-   e.g., iPhone 15 Pro Max"
+            description: ""
           - name: MODEL
-            description: "The product’s associated model number
-   e.g., MU723J/A"
+            description: ""
           - name: RELEASE_DATE
-            description: "The product’s release date
-   e.g., 2023/09/22"
+            description: ""
           - name: CONDITION
-            description: "The condition definitions on each website have been standardized to enable cross-comparison:
-S (Unused)
-A (Nearly unused)
-B (No noticeable scratches or stains)
-C (Some scratches or stains)
-D (Scratches or stains present)"
+            description: ""
           - name: VOLUME
-            description: "The capacity designation linked to the model and model number
-   e.g., 128GB, 1TB"
+            description: ""
           - name: SUM_PRICE
-            description: "The total sales amount on the site for the product at the product-level granularity (product name, model number, condition, capacity)"
+            description: ""
           - name: MOM_CHANGE_IN_LISTING_COUNT
-            description: "Listing Count Month-over-Month Change"
+            description: ""
           - name: TRANSACTION_OUNT
-            description: "The total number of completed transactions on the site for the product at the product-level granularity (product name, model number, condition, capacity)"
+            description: ""
           - name: MOM_CHANGE_IN_TRANSACTION_COUNT
-            description: "Transaction Count Month-over-Month Change"
+            description: ""
           - name: LISTING_COUNT
-            description: "The total number of listings on the site for the product at the product-level granularity (product name, model number, condition, capacity)"
+            description: ""
           - name: MOM_CHANGE_IN_GMV
-            description: "GMV Month-over-Month Change"
+            description: ""

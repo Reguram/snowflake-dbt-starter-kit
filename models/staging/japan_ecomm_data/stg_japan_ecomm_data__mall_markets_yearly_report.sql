@@ -2,7 +2,7 @@ with source as (
     select * from {{ source('japan_ecomm_data', 'MALL_MARKETS_YEARLY_REPORT') }}
 ),
 
-renamed as (
+staged as (
     select
         month,
         website_type,
@@ -22,4 +22,4 @@ renamed as (
     from source
 )
 
-select * from renamed
+select * from staged

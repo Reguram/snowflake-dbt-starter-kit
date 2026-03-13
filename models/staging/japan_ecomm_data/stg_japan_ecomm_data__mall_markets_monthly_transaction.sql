@@ -2,7 +2,7 @@ with source as (
     select * from {{ source('japan_ecomm_data', 'MALL_MARKETS_MONTHLY_TRANSACTION') }}
 ),
 
-renamed as (
+staged as (
     select
         listing_id,
         website_type,
@@ -21,4 +21,4 @@ renamed as (
     from source
 )
 
-select * from renamed
+select * from staged

@@ -2,7 +2,7 @@ with source as (
     select * from {{ source('free_company_data', 'FREECOMPANYDATASET') }}
 ),
 
-renamed as (
+staged as (
     select
         country,
         founded,
@@ -17,4 +17,4 @@ renamed as (
     from source
 )
 
-select * from renamed
+select * from staged
