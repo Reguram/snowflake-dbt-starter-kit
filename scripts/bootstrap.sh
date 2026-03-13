@@ -276,8 +276,8 @@ print_info "Loading seed data..."
 dbt seed
 print_ok "Seeds loaded"
 
-print_info "Building all models + running tests..."
-dbt build
+print_info "Building models for source: ${SRC_NAME}..."
+dbt build --select "source:${SRC_NAME}+"
 print_ok "Build complete!"
 
 # ─────────────────────────────────────────────────────────────

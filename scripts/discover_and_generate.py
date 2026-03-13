@@ -113,9 +113,12 @@ def discover_tables(conn, source_database, source_schema):
         )
         table["columns"] = []
         for idx, col_row in enumerate(cursor, start=1):
+            # Normalize data type: strip parameters e.g. VARCHAR(16777216) -> VARCHAR
+            raw_type = col_row[1]
+            base_type = raw_type.split("(")[0].strip().upper()
             table["columns"].append({
                 "name": col_row[0],          # column name
-                "data_type": col_row[1],      # data type
+                "data_type": base_type,       # normalized data type
                 "nullable": col_row[3] == "Y", # null?
                 "position": idx,
                 "comment": col_row[8] if len(col_row) > 8 and col_row[8] else "",
@@ -229,11 +232,13 @@ def detect_foreign_keys(columns, table_name, all_table_names):
 
 def detect_date_columns(columns):
     """Find columns that look like dates."""
+    date_types = {"DATE", "TIMESTAMP_NTZ", "TIMESTAMP_LTZ", "TIMESTAMP_TZ"}
+    date_keywords = re.compile(r'(date|_time|created|updated|_at$|^at_)', re.IGNORECASE)
     date_cols = []
     for col in columns:
-        if col["data_type"] in ("DATE", "TIMESTAMP_NTZ", "TIMESTAMP_LTZ", "TIMESTAMP_TZ"):
+        if col["data_type"] in date_types:
             date_cols.append(col["name"])
-        elif any(kw in col["name"].lower() for kw in ("date", "time", "created", "updated", "at")):
+        elif date_keywords.search(col["name"]):
             date_cols.append(col["name"])
     return date_cols
 
@@ -409,12 +414,207 @@ def generate_staging_schema_yml(source_name, tables, verified_pks=None):
     return "\n".join(lines) + "\n"
 
 
+def _staging_col_name(col_name, table_name):
+    """Return the column name as it appears in the staging model output."""
+    original = _sql_identifier(col_name)
+    clean = strip_prefix(col_name, table_name)
+    return _sql_identifier(clean) if clean != col_name.lower() else original
+
+
+def profile_columns(conn, source_database, source_schema, table_name, columns):
+    """Profile columns by querying Snowflake for cardinality.
+
+    Returns dict: col_name -> {"distinct": int, "nulls": int, "total": int}
+    Only profiles string and numeric columns (skips variants, arrays, etc.)
+    Limits to first 50 columns to avoid very wide queries.
+    """
+    profilable = [
+        c for c in columns
+        if c["data_type"] in (
+            "TEXT", "VARCHAR", "STRING", "CHAR",
+            "NUMBER", "FLOAT", "DECIMAL", "NUMERIC", "DOUBLE", "REAL",
+            "DATE", "TIMESTAMP_NTZ", "TIMESTAMP_LTZ", "TIMESTAMP_TZ",
+            "BOOLEAN",
+        )
+    ][:50]  # limit to avoid excessively wide queries
+
+    if not profilable:
+        return {}
+
+    parts = []
+    for c in profilable:
+        col_sql = _sql_identifier(c["name"])
+        # Alias must be safe (no special chars) — use positional index
+        parts.append(f"COUNT(DISTINCT {col_sql})")
+        parts.append(f"SUM(CASE WHEN {col_sql} IS NULL THEN 1 ELSE 0 END)")
+
+    query = f'SELECT COUNT(*), {", ".join(parts)} FROM {source_database}.{source_schema}."{table_name}"'
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query)
+        row = cursor.fetchone()
+        cursor.close()
+    except Exception:
+        return {}
+
+    total = row[0]
+    result = {}
+    for i, c in enumerate(profilable):
+        result[c["name"]] = {
+            "distinct": row[1 + i * 2],
+            "nulls": row[2 + i * 2],
+            "total": total,
+        }
+    return result
+
+
+def classify_columns(columns, table_name, profile):
+    """Classify columns into dimensions, measures, dates using profile data.
+
+    Returns dict with keys: dimensions, measures, dates, pk
+    Each value is a list of dicts with 'name' (original) and 'sql' (staging output name).
+    """
+    pk = detect_primary_key(columns, table_name)
+    dates = detect_date_columns(columns)
+    numerics = detect_numeric_columns(columns)
+
+    dimensions = []
+    measures = []
+    date_cols = []
+
+    for col in columns:
+        sql_name = _staging_col_name(col["name"], table_name)
+        entry = {"name": col["name"], "sql": sql_name, "data_type": col["data_type"]}
+
+        if col["name"] in dates:
+            date_cols.append(entry)
+            continue
+
+        if col["name"] in numerics:
+            measures.append(entry)
+            continue
+
+        if col["name"] == pk:
+            continue
+
+        # Use profile to classify strings as dimensions (low cardinality)
+        prof = profile.get(col["name"])
+        if prof and prof["total"] > 0:
+            ratio = prof["distinct"] / prof["total"]
+            # Low cardinality strings = good dimensions (< 500 distinct or < 5% of total)
+            if col["data_type"] in ("TEXT", "VARCHAR", "STRING", "CHAR"):
+                if prof["distinct"] <= 500 or ratio < 0.05:
+                    dimensions.append(entry)
+            elif col["data_type"] == "BOOLEAN":
+                dimensions.append(entry)
+        elif col["data_type"] in ("TEXT", "VARCHAR", "STRING", "CHAR"):
+            # No profile — fallback to heuristic (categorical keywords)
+            lower = col["name"].lower()
+            if any(kw in lower for kw in ("status", "type", "category", "segment",
+                                           "priority", "flag", "code", "level", "tier",
+                                           "country", "region", "state", "city",
+                                           "industry", "size", "condition", "name")):
+                dimensions.append(entry)
+
+    return {
+        "pk": {"name": pk, "sql": _staging_col_name(pk, table_name)} if pk else None,
+        "dimensions": dimensions,
+        "measures": measures,
+        "dates": date_cols,
+    }
+
+
+def generate_summary_mart(source_name, table, classified):
+    """Generate an aggregated summary mart with GROUP BY dimensions and SUM/AVG/COUNT metrics.
+
+    Returns (model_name, sql) or (None, None) if not enough columns to aggregate.
+    """
+    dims = classified["dimensions"]
+    measures = classified["measures"]
+    dates = classified["dates"]
+
+    # Need at least 1 dimension to create a meaningful summary
+    if not dims:
+        return None, None
+
+    stg_name = f"stg_{source_name}__{table['name'].lower()}"
+    model_name = f"summary_{table['name'].lower()}"
+
+    lines = [
+        f"-- Summary mart: auto-generated aggregations from {table['name']}",
+        f"-- Dimensions: {', '.join(d['name'] for d in dims)}",
+        f"-- Measures: {', '.join(m['name'] for m in measures) if measures else 'count only'}",
+        "",
+        "with source as (",
+        f"    select * from {{{{ ref('{stg_name}') }}}}",
+        ")",
+        "",
+        "select",
+    ]
+
+    select_cols = []
+
+    # Add dimensions
+    for d in dims:
+        select_cols.append(f"    {d['sql']}")
+
+    # Add date truncations (month/year) only for actual date/timestamp columns
+    date_types = {"DATE", "TIMESTAMP_NTZ", "TIMESTAMP_LTZ", "TIMESTAMP_TZ"}
+    real_dates = [d for d in dates if d.get("data_type") in date_types]
+    if real_dates:
+        first_date = real_dates[0]
+        select_cols.append(f"    date_trunc('month', {first_date['sql']}) as month_period")
+        select_cols.append(f"    year({first_date['sql']}) as year_period")
+
+    # Add record count
+    select_cols.append("    count(*) as record_count")
+
+    # Add aggregations for numeric measures
+    for m in measures[:10]:  # limit to first 10 to keep manageable
+        col_alias = m['sql'].strip('"').lower()
+        select_cols.append(f"    sum({m['sql']}) as total_{col_alias}")
+        select_cols.append(f"    avg({m['sql']}) as avg_{col_alias}")
+        select_cols.append(f"    min({m['sql']}) as min_{col_alias}")
+        select_cols.append(f"    max({m['sql']}) as max_{col_alias}")
+
+    lines.append(",\n".join(select_cols))
+    lines.append("")
+    lines.append("from source")
+
+    # GROUP BY all dimensions + date truncations
+    group_by_parts = [d["sql"] for d in dims]
+    if real_dates:
+        group_by_parts.append(f"date_trunc('month', {real_dates[0]['sql']})")
+        group_by_parts.append(f"year({real_dates[0]['sql']})")
+
+    lines.append(f"group by {', '.join(group_by_parts)}")
+    lines.append("")
+
+    return model_name, "\n".join(lines)
+
+
+def generate_mart_schema_yml(source_name, mart_models):
+    """Generate models/marts/<source>/schema.yml for mart models.
+
+    mart_models: list of dicts with 'name', 'description'
+    """
+    if not mart_models:
+        return None
+
+    lines = ["version: 2", "", "models:"]
+    for model in mart_models:
+        lines.append(f"  - name: {model['name']}")
+        lines.append(f'    description: "{model["description"]}"')
+
+    return "\n".join(lines) + "\n"
+
+
 def generate_overview_mart(source_name, tables):
     """
     Generate a basic 'overview' mart that picks the largest table
     and creates a simple fact model. Returns None if no suitable table found.
     """
-    # Find the table with the most numeric columns (likely the "transactional" table)
+    # Find the best table: prefer one with numerics+dates, fall back to largest table
     best_table = None
     best_score = 0
     for table in tables:
@@ -425,8 +625,11 @@ def generate_overview_mart(source_name, tables):
             best_score = score
             best_table = table
 
-    if not best_table or best_score == 0:
-        return None, None
+    # Fall back to the table with the most rows if no numeric/date columns found
+    if not best_table:
+        best_table = max(tables, key=lambda t: t.get("row_count") or 0)
+        if not best_table.get("row_count"):
+            return None, None
 
     stg_name = f"stg_{source_name}__{best_table['name'].lower()}"
     fct_name = f"fct_{best_table['name'].lower()}"
@@ -440,6 +643,11 @@ def generate_overview_mart(source_name, tables):
     pk_for_sk = pk_clean_sql.strip('"')
     dates = detect_date_columns(best_table["columns"])
     numerics = detect_numeric_columns(best_table["columns"])
+
+    # Only apply DATE_TRUNC on actual date/timestamp columns, not name-matched VARCHARs
+    date_type_set = {"DATE", "TIMESTAMP_NTZ", "TIMESTAMP_LTZ", "TIMESTAMP_TZ"}
+    col_type_map = {col["name"]: col["data_type"] for col in best_table["columns"]}
+    real_dates = [d for d in dates if col_type_map.get(d) in date_type_set]
 
     # Determine surrogate key alias — quote if it starts with a digit
     sk_alias = _sql_identifier(f"{best_table['name'].lower()}_id")
@@ -463,11 +671,11 @@ def generate_overview_mart(source_name, tables):
         clean_sql = _sql_identifier(clean) if clean != col["name"].lower() else original
         col_lines.append(f"    {clean_sql}")
 
-    # Add date parts if we have date columns
-    if dates:
-        first_date = strip_prefix(dates[0], best_table["name"])
-        first_date_original = _sql_identifier(dates[0])
-        first_date_sql = _sql_identifier(first_date) if first_date != dates[0].lower() else first_date_original
+    # Add date parts if we have actual date-typed columns
+    if real_dates:
+        first_date = strip_prefix(real_dates[0], best_table["name"])
+        first_date_original = _sql_identifier(real_dates[0])
+        first_date_sql = _sql_identifier(first_date) if first_date != real_dates[0].lower() else first_date_original
         col_lines.append(f"    date_trunc('month', {first_date_sql}) as {first_date_sql}_month")
         col_lines.append(f"    year({first_date_sql}) as {first_date_sql}_year")
 
@@ -546,6 +754,15 @@ def main():
             status = "unique ✓" if is_unique else "NOT unique ✗ (skipping unique test)"
             print(f"  {table['name']}.{pk}: {status}")
 
+    # Profile columns to generate smarter marts
+    print("\nProfiling columns for mart generation...")
+    table_profiles = {}
+    for table in tables:
+        print(f"  Profiling {table['name']}...")
+        table_profiles[table["name"]] = profile_columns(
+            conn, source_database, source_schema, table["name"], table["columns"]
+        )
+
     conn.close()
 
     # Generate files
@@ -570,10 +787,32 @@ def main():
     schema_yml = generate_staging_schema_yml(source_name, tables, verified_pks)
     schema_path = staging_dir / "schema.yml"
 
-    # 4. Starter mart (optional)
+    # 4. Starter mart + summary marts (optional)
     fct_name, fct_sql = None, None
+    summary_marts = {}  # model_name -> sql
+    mart_schema_models = []
     if not args.skip_mart:
         fct_name, fct_sql = generate_overview_mart(source_name, tables)
+        if fct_name:
+            mart_schema_models.append({
+                "name": fct_name,
+                "description": f"Detail fact table from {source_name} — all columns from the richest source table",
+            })
+
+        # Generate summary marts for tables with good dimension + measure combos
+        for table in tables:
+            profile = table_profiles.get(table["name"], {})
+            classified = classify_columns(table["columns"], table["name"], profile)
+            summary_name, summary_sql = generate_summary_mart(source_name, table, classified)
+            if summary_name and summary_sql:
+                summary_marts[summary_name] = summary_sql
+                dim_names = ", ".join(d["name"] for d in classified["dimensions"])
+                mart_schema_models.append({
+                    "name": summary_name,
+                    "description": f"Aggregated summary from {table['name']} grouped by {dim_names}",
+                })
+
+    mart_schema_yml = generate_mart_schema_yml(source_name, mart_schema_models)
 
     if args.dry_run:
         print("DRY RUN — files would be generated:\n")
@@ -583,12 +822,29 @@ def main():
         print(f"  {schema_path.relative_to(PROJECT_ROOT)}")
         if fct_name:
             print(f"  models/marts/{source_name}/{fct_name}.sql")
-        print(f"\nTotal: {2 + len(staging_files) + (1 if fct_name else 0)} files")
+        for name in summary_marts:
+            print(f"  models/marts/{source_name}/{name}.sql")
+        if mart_schema_yml:
+            print(f"  models/marts/{source_name}/schema.yml")
+        mart_count = (1 if fct_name else 0) + len(summary_marts) + (1 if mart_schema_yml else 0)
+        print(f"\nTotal: {2 + len(staging_files) + mart_count} files")
         return
 
     # Write files
     staging_dir.mkdir(parents=True, exist_ok=True)
     marts_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clean stale mart .sql files that won't be regenerated
+    expected_mart_files = set()
+    if fct_name:
+        expected_mart_files.add(f"{fct_name}.sql")
+    for name in summary_marts:
+        expected_mart_files.add(f"{name}.sql")
+    expected_mart_files.add("schema.yml")
+    for existing_file in marts_dir.glob("*.sql"):
+        if existing_file.name not in expected_mart_files:
+            existing_file.unlink()
+            print(f"  ✗ Removed stale mart: {existing_file.relative_to(PROJECT_ROOT)}")
 
     # Check for existing files
     existing = []
@@ -632,6 +888,18 @@ def main():
             f.write(fct_sql)
         print(f"  ✓ models/marts/{source_name}/{fct_name}.sql")
 
+    for name, sql in summary_marts.items():
+        path = marts_dir / f"{name}.sql"
+        with open(path, "w") as f:
+            f.write(sql)
+        print(f"  ✓ models/marts/{source_name}/{name}.sql")
+
+    if mart_schema_yml:
+        mart_schema_path = marts_dir / "schema.yml"
+        with open(mart_schema_path, "w") as f:
+            f.write(mart_schema_yml)
+        print(f"  ✓ models/marts/{source_name}/schema.yml")
+
     # Update dbt_project.yml vars
     dbt_project_path = PROJECT_ROOT / "dbt_project.yml"
     if dbt_project_path.exists():
@@ -651,16 +919,21 @@ def main():
         dbt_project_path.write_text(content)
         print(f"  ✓ Updated dbt_project.yml vars (source_database, source_schema)")
 
-    total = 2 + len(staging_files) + (1 if fct_name else 0)
+    mart_count = (1 if fct_name else 0) + len(summary_marts) + (1 if mart_schema_yml else 0)
+    total = 2 + len(staging_files) + mart_count
     print(f"\n{'='*60}")
     print(f"Generated {total} files from {len(tables)} tables!")
+    if summary_marts:
+        print(f"  ({len(summary_marts)} summary mart(s) + {1 if fct_name else 0} fact table)")
     print(f"{'='*60}")
     print(f"\nNext steps:")
-    print(f"  1. Review the generated models in models/staging/")
-    print(f"  2. Run: dbt deps && dbt build")
-    print(f"  3. Add intermediate/mart models as needed")
+    print(f"  1. Review the generated models in models/staging/{source_name}/")
+    print(f"  2. Build this source only: dbt build --select source:{source_name}+")
+    print(f"  3. Or build everything: dbt build")
     if fct_name:
-        print(f"  4. Review and customize models/marts/{fct_name}.sql")
+        print(f"  4. Review and customize models/marts/{source_name}/{fct_name}.sql")
+    if summary_marts:
+        print(f"  5. Review summary marts in models/marts/{source_name}/")
 
 
 if __name__ == "__main__":

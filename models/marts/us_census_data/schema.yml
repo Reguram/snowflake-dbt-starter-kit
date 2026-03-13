@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: fct_2020_cbg_b25
+    description: "Detail fact table from us_census_data — all columns from the richest source table"
+  - name: summary_2019_cbg_geometry
+    description: "Aggregated summary from 2019_CBG_GEOMETRY grouped by COUNTY_FIPS, BLOCK_GROUP, STATE, COUNTY, MTFCC"
+  - name: summary_2019_cbg_geometry_wkt
+    description: "Aggregated summary from 2019_CBG_GEOMETRY_WKT grouped by COUNTY_FIPS, BLOCK_GROUP, STATE, COUNTY, MTFCC"
+  - name: summary_2019_metadata_cbg_field_descriptions
+    description: "Aggregated summary from 2019_METADATA_CBG_FIELD_DESCRIPTIONS grouped by TABLE_NUMBER, TABLE_TITLE, TABLE_TOPICS, TABLE_UNIVERSE, FIELD_LEVEL_1, FIELD_LEVEL_2, FIELD_LEVEL_3, FIELD_LEVEL_4, FIELD_LEVEL_5, FIELD_LEVEL_6, FIELD_LEVEL_7, FIELD_LEVEL_8, FIELD_LEVELl_9, FIELD_LEVEL_10"
+  - name: summary_2019_metadata_cbg_fips_codes
+    description: "Aggregated summary from 2019_METADATA_CBG_FIPS_CODES grouped by STATE_FIPS, COUNTY_FIPS, CLASS_CODE"
+  - name: summary_2020_cbg_geometry_wkt
+    description: "Aggregated summary from 2020_CBG_GEOMETRY_WKT grouped by COUNTY_FIPS, BLOCK_GROUP, STATE, COUNTY, MTFCC"
+  - name: summary_2020_metadata_cbg_field_descriptions
+    description: "Aggregated summary from 2020_METADATA_CBG_FIELD_DESCRIPTIONS grouped by TABLE_NUMBER, TABLE_TITLE, TABLE_TOPICS, TABLE_UNIVERSE, FIELD_LEVEL_1, FIELD_LEVEL_2, FIELD_LEVEL_3, FIELD_LEVEL_4, FIELD_LEVEL_5, FIELD_LEVEL_6, FIELD_LEVEL_7, FIELD_LEVEL_8, FIELD_LEVELl_9, FIELD_LEVEL_10"
+  - name: summary_2020_metadata_cbg_fips_codes
+    description: "Aggregated summary from 2020_METADATA_CBG_FIPS_CODES grouped by STATE_FIPS, COUNTY_FIPS, CLASS_CODE"
+  - name: summary_2020_redistricting_metadata_cbg_field_descriptions
+    description: "Aggregated summary from 2020_REDISTRICTING_METADATA_CBG_FIELD_DESCRIPTIONS grouped by FIELD_NAME, COLUMN_TOPIC, COLUMN_UNIVERSE"

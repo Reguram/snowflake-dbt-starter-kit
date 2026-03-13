@@ -1,0 +1,9 @@
+version: 2
+
+models:
+  - name: fct_mall_markets_yearly_report
+    description: "Detail fact table from japan_ecomm_data — all columns from the richest source table"
+  - name: summary_mall_markets_monthly_transaction
+    description: "Aggregated summary from MALL_MARKETS_MONTHLY_TRANSACTION grouped by WEBSITE_TYPE, DATA_SOURCE, MAKER, ITEM_NAME, MODEL, CONDITION, VOLUME, IS_SIM_FREE, NETWORK_RESTRICTION"
+  - name: summary_mall_markets_yearly_report
+    description: "Aggregated summary from MALL_MARKETS_YEARLY_REPORT grouped by WEBSITE_TYPE, DATA_SOURCE, MAKER, ITEM_NAME, MODEL, CONDITION, VOLUME"
