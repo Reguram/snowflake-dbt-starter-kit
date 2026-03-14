@@ -1,0 +1,56 @@
+-- Summary mart: auto-generated aggregations from CDC_REPORTED_PATIENT_IMPACT
+-- Dimensions: STATE
+-- Measures: CRITICAL_STAFFING_SHORTAGE_TODAY_YES, CRITICAL_STAFFING_SHORTAGE_TODAY_NO, CRITICAL_STAFFING_SHORTAGE_TODAY_NOT_REPORTED, CRITICAL_STAFFING_SHORTAGE_ANTICIPATED_WITHIN_WEEK_YES, CRITICAL_STAFFING_SHORTAGE_ANTICIPATED_WITHIN_WEEK_NO, CRITICAL_STAFFING_SHORTAGE_ANTICIPATED_WITHIN_WEEK_NOT_REPORTED, HOSPITAL_ONSET_COVID_COVERAGE, INPATIENT_BEDS, INPATIENT_BEDS_COVERAGE, INPATIENT_BEDS_USED, INPATIENT_BEDS_USED_COVERAGE, INPATIENT_BEDS_USED_COVID_COVERAGE, PREVIOUS_DAY_ADMISSION_ADULT_COVID_CONFIRMED, PREVIOUS_DAY_ADMISSION_ADULT_COVID_CONFIRMED_COVERAGE, PREVIOUS_DAY_ADMISSION_ADULT_COVID_SUSPECTED, PREVIOUS_DAY_ADMISSION_ADULT_COVID_SUSPECTED_COVERAGE, PREVIOUS_DAY_ADMISSION_PEDIATRIC_COVID_CONFIRMED, PREVIOUS_DAY_ADMISSION_PEDIATRIC_COVID_CONFIRMED_COVERAGE, PREVIOUS_DAY_ADMISSION_PEDIATRIC_COVID_SUSPECTED, PREVIOUS_DAY_ADMISSION_PEDIATRIC_COVID_SUSPECTED_COVERAGE, STAFFED_ADULT_ICU_BED_OCCUPANCY, STAFFED_ADULT_ICU_BED_OCCUPANCY_COVERAGE, STAFFED_ICU_ADULT_PATIENTS_CONFIRMED_AND_SUSPECTED_COVID_COVERAGE, STAFFED_ICU_ADULT_PATIENTS_CONFIRMED_COVID_COVERAGE, TOTAL_ADULT_PATIENTS_HOSPITALIZED_CONFIRMED_AND_SUSPECTED_COVID_COVERAGE, TOTAL_ADULT_PATIENTS_HOSPITALIZED_CONFIRMED_COVID_COVERAGE, TOTAL_PEDIATRIC_PATIENTS_HOSPITALIZED_CONFIRMED_AND_SUSPECTED_COVID_COVERAGE, TOTAL_PEDIATRIC_PATIENTS_HOSPITALIZED_CONFIRMED_COVID_COVERAGE, TOTAL_STAFFED_ADULT_ICU_BEDS, TOTAL_STAFFED_ADULT_ICU_BEDS_COVERAGE, INPATIENT_BEDS_UTILIZATION, INPATIENT_BEDS_UTILIZATION_COVERAGE, INPATIENT_BEDS_UTILIZATION_NUMERATOR, INPATIENT_BEDS_UTILIZATION_DENOMINATOR, PERCENT_OF_INPATIENTS_WITH_COVID_COVERAGE, PERCENT_OF_INPATIENTS_WITH_COVID_NUMERATOR, PERCENT_OF_INPATIENTS_WITH_COVID_DENOMINATOR, INPATIENT_BED_COVID_UTILIZATION, INPATIENT_BED_COVID_UTILIZATION_COVERAGE, INPATIENT_BED_COVID_UTILIZATION_NUMERATOR, INPATIENT_BED_COVID_UTILIZATION_DENOMINATOR, ADULT_ICU_BED_COVID_UTILIZATION, ADULT_ICU_BED_COVID_UTILIZATION_COVERAGE, ADULT_ICU_BED_COVID_UTILIZATION_NUMERATOR, ADULT_ICU_BED_COVID_UTILIZATION_DENOMINATOR, ADULT_ICU_BED_UTILIZATION, ADULT_ICU_BED_UTILIZATION_COVERAGE, ADULT_ICU_BED_UTILIZATION_NUMERATOR, ADULT_ICU_BED_UTILIZATION_DENOMINATOR
+
+with source as (
+    select * from {{ ref('stg_covid19_data__cdc_reported_patient_impact') }}
+)
+
+select
+    state,
+    date_trunc('month', date) as month_period,
+    year(date) as year_period,
+    count(*) as record_count,
+    sum(critical_staffing_shortage_today_yes) as total_critical_staffing_shortage_today_yes,
+    avg(critical_staffing_shortage_today_yes) as avg_critical_staffing_shortage_today_yes,
+    min(critical_staffing_shortage_today_yes) as min_critical_staffing_shortage_today_yes,
+    max(critical_staffing_shortage_today_yes) as max_critical_staffing_shortage_today_yes,
+    sum(critical_staffing_shortage_today_no) as total_critical_staffing_shortage_today_no,
+    avg(critical_staffing_shortage_today_no) as avg_critical_staffing_shortage_today_no,
+    min(critical_staffing_shortage_today_no) as min_critical_staffing_shortage_today_no,
+    max(critical_staffing_shortage_today_no) as max_critical_staffing_shortage_today_no,
+    sum(critical_staffing_shortage_today_not_reported) as total_critical_staffing_shortage_today_not_reported,
+    avg(critical_staffing_shortage_today_not_reported) as avg_critical_staffing_shortage_today_not_reported,
+    min(critical_staffing_shortage_today_not_reported) as min_critical_staffing_shortage_today_not_reported,
+    max(critical_staffing_shortage_today_not_reported) as max_critical_staffing_shortage_today_not_reported,
+    sum(critical_staffing_shortage_anticipated_within_week_yes) as total_critical_staffing_shortage_anticipated_within_week_yes,
+    avg(critical_staffing_shortage_anticipated_within_week_yes) as avg_critical_staffing_shortage_anticipated_within_week_yes,
+    min(critical_staffing_shortage_anticipated_within_week_yes) as min_critical_staffing_shortage_anticipated_within_week_yes,
+    max(critical_staffing_shortage_anticipated_within_week_yes) as max_critical_staffing_shortage_anticipated_within_week_yes,
+    sum(critical_staffing_shortage_anticipated_within_week_no) as total_critical_staffing_shortage_anticipated_within_week_no,
+    avg(critical_staffing_shortage_anticipated_within_week_no) as avg_critical_staffing_shortage_anticipated_within_week_no,
+    min(critical_staffing_shortage_anticipated_within_week_no) as min_critical_staffing_shortage_anticipated_within_week_no,
+    max(critical_staffing_shortage_anticipated_within_week_no) as max_critical_staffing_shortage_anticipated_within_week_no,
+    sum(critical_staffing_shortage_anticipated_within_week_not_reported) as total_critical_staffing_shortage_anticipated_within_week_not_reported,
+    avg(critical_staffing_shortage_anticipated_within_week_not_reported) as avg_critical_staffing_shortage_anticipated_within_week_not_reported,
+    min(critical_staffing_shortage_anticipated_within_week_not_reported) as min_critical_staffing_shortage_anticipated_within_week_not_reported,
+    max(critical_staffing_shortage_anticipated_within_week_not_reported) as max_critical_staffing_shortage_anticipated_within_week_not_reported,
+    sum(hospital_onset_covid_coverage) as total_hospital_onset_covid_coverage,
+    avg(hospital_onset_covid_coverage) as avg_hospital_onset_covid_coverage,
+    min(hospital_onset_covid_coverage) as min_hospital_onset_covid_coverage,
+    max(hospital_onset_covid_coverage) as max_hospital_onset_covid_coverage,
+    sum(inpatient_beds) as total_inpatient_beds,
+    avg(inpatient_beds) as avg_inpatient_beds,
+    min(inpatient_beds) as min_inpatient_beds,
+    max(inpatient_beds) as max_inpatient_beds,
+    sum(inpatient_beds_coverage) as total_inpatient_beds_coverage,
+    avg(inpatient_beds_coverage) as avg_inpatient_beds_coverage,
+    min(inpatient_beds_coverage) as min_inpatient_beds_coverage,
+    max(inpatient_beds_coverage) as max_inpatient_beds_coverage,
+    sum(inpatient_beds_used) as total_inpatient_beds_used,
+    avg(inpatient_beds_used) as avg_inpatient_beds_used,
+    min(inpatient_beds_used) as min_inpatient_beds_used,
+    max(inpatient_beds_used) as max_inpatient_beds_used
+
+from source
+group by state, date_trunc('month', date), year(date)

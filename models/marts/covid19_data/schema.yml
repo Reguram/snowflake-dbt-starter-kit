@@ -1,0 +1,89 @@
+version: 2
+
+models:
+  - name: fct_cdc_reported_patient_impact
+    description: "Detail fact table from covid19_data — all columns from the richest source table"
+  - name: summary_apple_mobility
+    description: "Aggregated summary from APPLE_MOBILITY grouped by PROVINCE_STATE, TRANSPORTATION_TYPE, ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_cdc_inpatient_beds_all
+    description: "Aggregated summary from CDC_INPATIENT_BEDS_ALL grouped by ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_cdc_inpatient_beds_covid_19
+    description: "Aggregated summary from CDC_INPATIENT_BEDS_COVID_19 grouped by ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_cdc_inpatient_beds_icu_all
+    description: "Aggregated summary from CDC_INPATIENT_BEDS_ICU_ALL grouped by ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_cdc_policy_measures
+    description: "Aggregated summary from CDC_POLICY_MEASURES grouped by POLICY_LEVEL, POLICY_TYPE, START_STOP, SOURCE, ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_cdc_reported_patient_impact
+    description: "Aggregated summary from CDC_REPORTED_PATIENT_IMPACT grouped by STATE"
+  - name: summary_cdc_testing
+    description: "Aggregated summary from CDC_TESTING grouped by ISO3166_2"
+  - name: summary_ct_us_covid_tests
+    description: "Aggregated summary from CT_US_COVID_TESTS grouped by PROVINCE_STATE, ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_databank_demographics
+    description: "Aggregated summary from DATABANK_DEMOGRAPHICS grouped by ISO3166_2, FIPS, STATE, COUNTY, COUNTRY_REGION"
+  - name: summary_demographics
+    description: "Aggregated summary from DEMOGRAPHICS grouped by ISO3166_2, STATE"
+  - name: summary_ecdc_global
+    description: "Aggregated summary from ECDC_GLOBAL grouped by CONTINENTEXP, ISO3166_1, LAST_REPORTED_FLAG"
+  - name: summary_ecdc_global_weekly
+    description: "Aggregated summary from ECDC_GLOBAL_WEEKLY grouped by CONTINENTEXP, ISO3166_1, LAST_REPORTED_FLAG"
+  - name: summary_goog_global_mobility_report
+    description: "Aggregated summary from GOOG_GLOBAL_MOBILITY_REPORT grouped by PROVINCE_STATE, ISO_3166_1, ISO_3166_2, LAST_REPORTED_FLAG, SUB_REGION_2"
+  - name: summary_hdx_acaps
+    description: "Aggregated summary from HDX_ACAPS grouped by REGION, CATEGORY, MEASURE, TARGETED_POP_GROUP, NON_COMPLIANCE, SOURCE_TYPE, ISO3166_1, LOG_TYPE"
+  - name: summary_hs_bulk_data
+    description: "Aggregated summary from HS_BULK_DATA grouped by HEALTHCARE_PROVIDER_TYPE, OPERATOR"
+  - name: summary_hum_restrictions_airline
+    description: "Aggregated summary from HUM_RESTRICTIONS_AIRLINE grouped by ISO3166_1, AIRLINE"
+  - name: summary_hum_restrictions_country
+    description: "Aggregated summary from HUM_RESTRICTIONS_COUNTRY grouped by ISO3166_1, SOURCES, RESTRICTION_TEXT, QUARANTINE_TEXT"
+  - name: summary_ihme_covid_19
+    description: "Aggregated summary from IHME_COVID_19 grouped by LAST_REPORTED_FLAG, COUNTRY_REGION, ISO_3166_1, ISO_3166_2, PROVINCE_STATE"
+  - name: summary_jhu_covid_19
+    description: "Aggregated summary from JHU_COVID_19 grouped by PROVINCE_STATE, COUNTY, FIPS, CASE_TYPE, ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_jhu_covid_19_timeseries
+    description: "Aggregated summary from JHU_COVID_19_TIMESERIES grouped by PROVINCE_STATE, COUNTY, FIPS, ISO3166_1, ISO3166_2, CASE_TYPE, LAST_REPORTED_FLAG"
+  - name: summary_jhu_dashboard_covid_19_global
+    description: "Aggregated summary from JHU_DASHBOARD_COVID_19_GLOBAL grouped by ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_jhu_vaccines
+    description: "Aggregated summary from JHU_VACCINES grouped by PROVINCE_STATE, COUNTRY_REGION, LAST_REPORTED_FLAG, STABBR"
+  - name: summary_kff_hcp_capacity
+    description: "Aggregated summary from KFF_HCP_CAPACITY grouped by PROVINCE_STATE"
+  - name: summary_kff_us_icu_beds
+    description: "Aggregated summary from KFF_US_ICU_BEDS grouped by ISO3166_1, ISO3166_2, NOTE, STATE"
+  - name: summary_kff_us_policy_actions
+    description: "Aggregated summary from KFF_US_POLICY_ACTIONS grouped by PROVINCE_STATE, WAIVE_COST_SHARING_FOR_COVID_19_TREATMENT, FREE_COST_VACCINE_WHEN_AVAILABLE, STATE_REQUIRES_WAIVER_OF_PRIOR_AUTHORIZATION_REQUIREMENTS, EARLY_PRESCRIPTION_REFILLS, MARKETPLACE_SPECIAL_ENROLLMENT_PERIOD, SECTION_1135_WAIVER, PAID_SICK_LEAVE, PREMIUM_PAYMENT_GRACE_PERIOD, NOTES"
+  - name: summary_kff_us_reopening_timeline_increment
+    description: "Aggregated summary from KFF_US_REOPENING_TIMELINE_INCREMENT grouped by COUNTRY_REGION, PROVINCE_STATE, STATUS"
+  - name: summary_kff_us_state_mitigations
+    description: "Aggregated summary from KFF_US_STATE_MITIGATIONS grouped by PROVINCE_STATE, STATUS_OF_REOPENING, STAY_AT_HOME_ORDER, MANDATORY_QUARANTINE_FOR_TRAVELERS, NON_ESSENTIAL_BUSINESS_CLOSURES, LARGE_GATHERINGS_BAN, RESTAURANT_LIMITS, BAR_CLOSURES, FACE_COVERING_REQUIREMENT, PRIMARY_ELECTION_POSTPONEMENT, EMERGENCY_DECLARATION"
+  - name: summary_metadata
+    description: "Aggregated summary from METADATA grouped by TYPE"
+  - name: summary_nyc_health_tests
+    description: "Aggregated summary from NYC_HEALTH_TESTS grouped by FIPS, COUNTRY_REGION, ISO3166_1, ISO3166_2"
+  - name: summary_nyt_us_covid19
+    description: "Aggregated summary from NYT_US_COVID19 grouped by COUNTY, STATE, FIPS, ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_nyt_us_reopen_status
+    description: "Aggregated summary from NYT_US_REOPEN_STATUS grouped by STATE, STATUS_DESCRIPTION, STATUS_DETAILS, EXTERNAL_LINK, OPENED_PERSONAL_CARE, CLOSED_OUTDOOR_AND_RECREATION, CLOSED_ENTERTAINMENT, OPENED_OUTDOOR_AND_RECREATION, CLOSED_FOOD_AND_DRINK, OPENED_HOUSES_OF_WORSHIP, OPENED_ENTERTAINMENT, OPENED_FOOD_AND_DRINK, OPENED_RETAIL, OPENED_INDUSTRIES, POPULATION"
+  - name: summary_owid_vaccinations
+    description: "Aggregated summary from OWID_VACCINATIONS grouped by COUNTRY_REGION, ISO3166_1, VACCINES, SOURCE_NAME, SOURCE_WEBSITE, LAST_REPORTED_FLAG"
+  - name: summary_pcm_dps_covid19
+    description: "Aggregated summary from PCM_DPS_COVID19 grouped by PROVINCE_STATE, CASE_TYPE, ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_pcm_dps_covid19_details
+    description: "Aggregated summary from PCM_DPS_COVID19_DETAILS grouped by PROVINCE_STATE, ISO3166_1, ISO3166_2, NOTE_EN, LAST_REPORTED_FLAG"
+  - name: summary_rki_ger_covid19_dashboard
+    description: "Aggregated summary from RKI_GER_COVID19_DASHBOARD grouped by COUNTY, STATE_ID, STATE, DISTRICT_TYPE, ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_scs_be_detailed_hospitalisations
+    description: "Aggregated summary from SCS_BE_DETAILED_HOSPITALISATIONS grouped by REGION, ISO3166_1, ISO3166_2, ISO3166_3"
+  - name: summary_scs_be_detailed_mortality
+    description: "Aggregated summary from SCS_BE_DETAILED_MORTALITY grouped by SEX, AGEGROUP, ISO3166_1, ISO3166_2"
+  - name: summary_scs_be_detailed_province_case_counts
+    description: "Aggregated summary from SCS_BE_DETAILED_PROVINCE_CASE_COUNTS grouped by REGION, SEX, AGEGROUP, ISO3166_1, ISO3166_2, ISO3166_3"
+  - name: summary_vh_can_detailed
+    description: "Aggregated summary from VH_CAN_DETAILED grouped by PROVINCE_STATE, HEALTHCARE_REGION, ISO3166_1, ISO3166_2, LAST_REPORTED_FLAG"
+  - name: summary_who_daily_report
+    description: "Aggregated summary from WHO_DAILY_REPORT grouped by TRANSMISSION_CLASSIFICATION, ISO3166_1"
+  - name: summary_who_situation_reports
+    description: "Aggregated summary from WHO_SITUATION_REPORTS grouped by TRANSMISSION_CLASSIFICATION, ISO3166_1, COUNTRY_REGION, SITUATION_REPORT_NAME, SITUATION_REPORT_URL, LAST_REPORTED_FLAG"
+  - name: summary_who_timeseries
+    description: "Aggregated summary from WHO_TIMESERIES grouped by TRANSMISSION_CLASSIFICATION, ISO3166_1"

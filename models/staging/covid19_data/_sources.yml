@@ -1,0 +1,1442 @@
+version: 2
+
+sources:
+  - name: covid19_data
+    description: "Auto-discovered source from COVID19_EPIDEMIOLOGICAL_DATA.PUBLIC"
+    database: "COVID19_EPIDEMIOLOGICAL_DATA"
+    schema: "PUBLIC"
+    quoting:
+      identifier: true
+    tables:
+      - name: APPLE_MOBILITY
+        description: "Raw apple_mobility table (~3,851,311 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: DATE
+            description: ""
+          - name: TRANSPORTATION_TYPE
+            description: ""
+          - name: DIFFERENCE
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: CDC_INPATIENT_BEDS_ALL
+        description: "Raw cdc_inpatient_beds_all table (~1,581 rows)"
+        columns:
+          - name: STATE
+            description: ""
+          - name: DATE
+            description: ""
+          - name: INPATIENT_BEDS_OCCUPIED
+            description: ""
+          - name: INPATIENT_BEDS_LOWER_BOUND
+            description: ""
+          - name: INPATIENT_BEDS_UPPER_BOUND
+            description: ""
+          - name: INPATIENT_BEDS_IN_USE_PCT
+            description: ""
+          - name: INPATIENT_BEDS_IN_USE_PCT_LOWER_BOUND
+            description: ""
+          - name: INPATIENT_BEDS_IN_USE_PCT_UPPER_BOUND
+            description: ""
+          - name: TOTAL_INPATIENT_BEDS
+            description: ""
+          - name: TOTAL_INPATIENT_BEDS_LOWER_BOUND
+            description: ""
+          - name: TOTAL_INPATIENT_BEDS_UPPER_BOUND
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: CDC_INPATIENT_BEDS_COVID_19
+        description: "Raw cdc_inpatient_beds_covid_19 table (~1,581 rows)"
+        columns:
+          - name: STATE
+            description: ""
+          - name: DATE
+            description: ""
+          - name: INPATIENT_BEDS_OCCUPIED
+            description: ""
+          - name: INPATIENT_BEDS_LOWER_BOUND
+            description: ""
+          - name: INPATIENT_BEDS_UPPER_BOUND
+            description: ""
+          - name: INPATIENT_BEDS_IN_USE_PCT
+            description: ""
+          - name: INPATIENT_BEDS_IN_USE_PCT_LOWER_BOUND
+            description: ""
+          - name: INPATIENT_BEDS_IN_USE_PCT_UPPER_BOUND
+            description: ""
+          - name: TOTAL_INPATIENT_BEDS
+            description: ""
+          - name: TOTAL_INPATIENT_BEDS_LOWER_BOUND
+            description: ""
+          - name: TOTAL_INPATIENT_BEDS_UPPER_BOUND
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: CDC_INPATIENT_BEDS_ICU_ALL
+        description: "Raw cdc_inpatient_beds_icu_all table (~1,581 rows)"
+        columns:
+          - name: STATE
+            description: ""
+          - name: DATE
+            description: ""
+          - name: STAFFED_ADULT_ICU_BEDS_OCCUPIED
+            description: ""
+          - name: STAFFED_ADULT_ICU_BEDS_OCCUPIED_LOWER_BOUND
+            description: ""
+          - name: STAFFED_ADULT_ICU_BEDS_OCCUPIED_UPPER_BOUND
+            description: ""
+          - name: STAFFED_ADULT_ICU_BEDS_OCCUPIED_PCT
+            description: ""
+          - name: STAFFED_ADULT_ICU_BEDS_OCCUPIED_PCT_LOWER_BOUND
+            description: ""
+          - name: STAFFED_ADULT_ICU_BEDS_OCCUPIED_PCT_UPPER_BOUND
+            description: ""
+          - name: TOTAL_STAFFED_ICU_BEDS
+            description: ""
+          - name: TOTAL_STAFFED_ICU_BEDS_LOWER_BOUND
+            description: ""
+          - name: TOTAL_STAFFED_ICU_BEDS_UPPER_BOUND
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: CDC_POLICY_MEASURES
+        description: "Raw cdc_policy_measures table (~4,217 rows)"
+        columns:
+          - name: STATE_ID
+            description: ""
+          - name: COUNTY
+            description: ""
+          - name: FIPS_CODE
+            description: ""
+          - name: POLICY_LEVEL
+            description: ""
+          - name: DATE
+            description: ""
+          - name: POLICY_TYPE
+            description: ""
+          - name: START_STOP
+            description: ""
+          - name: COMMENTS
+            description: ""
+          - name: SOURCE
+            description: ""
+          - name: TOTAL_PHASE
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: CDC_REPORTED_PATIENT_IMPACT
+        description: "Raw cdc_reported_patient_impact table (~48,881 rows)"
+        columns:
+          - name: STATE
+            description: ""
+          - name: CRITICAL_STAFFING_SHORTAGE_TODAY_YES
+            description: ""
+          - name: CRITICAL_STAFFING_SHORTAGE_TODAY_NO
+            description: ""
+          - name: CRITICAL_STAFFING_SHORTAGE_TODAY_NOT_REPORTED
+            description: ""
+          - name: CRITICAL_STAFFING_SHORTAGE_ANTICIPATED_WITHIN_WEEK_YES
+            description: ""
+          - name: CRITICAL_STAFFING_SHORTAGE_ANTICIPATED_WITHIN_WEEK_NO
+            description: ""
+          - name: CRITICAL_STAFFING_SHORTAGE_ANTICIPATED_WITHIN_WEEK_NOT_REPORTED
+            description: ""
+          - name: HOSPITAL_ONSET_COVID
+            description: ""
+          - name: HOSPITAL_ONSET_COVID_COVERAGE
+            description: ""
+          - name: INPATIENT_BEDS
+            description: ""
+          - name: INPATIENT_BEDS_COVERAGE
+            description: ""
+          - name: INPATIENT_BEDS_USED
+            description: ""
+          - name: INPATIENT_BEDS_USED_COVERAGE
+            description: ""
+          - name: INPATIENT_BEDS_USED_COVID
+            description: ""
+          - name: INPATIENT_BEDS_USED_COVID_COVERAGE
+            description: ""
+          - name: PREVIOUS_DAY_ADMISSION_ADULT_COVID_CONFIRMED
+            description: ""
+          - name: PREVIOUS_DAY_ADMISSION_ADULT_COVID_CONFIRMED_COVERAGE
+            description: ""
+          - name: PREVIOUS_DAY_ADMISSION_ADULT_COVID_SUSPECTED
+            description: ""
+          - name: PREVIOUS_DAY_ADMISSION_ADULT_COVID_SUSPECTED_COVERAGE
+            description: ""
+          - name: PREVIOUS_DAY_ADMISSION_PEDIATRIC_COVID_CONFIRMED
+            description: ""
+          - name: PREVIOUS_DAY_ADMISSION_PEDIATRIC_COVID_CONFIRMED_COVERAGE
+            description: ""
+          - name: PREVIOUS_DAY_ADMISSION_PEDIATRIC_COVID_SUSPECTED
+            description: ""
+          - name: PREVIOUS_DAY_ADMISSION_PEDIATRIC_COVID_SUSPECTED_COVERAGE
+            description: ""
+          - name: STAFFED_ADULT_ICU_BED_OCCUPANCY
+            description: ""
+          - name: STAFFED_ADULT_ICU_BED_OCCUPANCY_COVERAGE
+            description: ""
+          - name: STAFFED_ICU_ADULT_PATIENTS_CONFIRMED_AND_SUSPECTED_COVID
+            description: ""
+          - name: STAFFED_ICU_ADULT_PATIENTS_CONFIRMED_AND_SUSPECTED_COVID_COVERAGE
+            description: ""
+          - name: STAFFED_ICU_ADULT_PATIENTS_CONFIRMED_COVID
+            description: ""
+          - name: STAFFED_ICU_ADULT_PATIENTS_CONFIRMED_COVID_COVERAGE
+            description: ""
+          - name: TOTAL_ADULT_PATIENTS_HOSPITALIZED_CONFIRMED_AND_SUSPECTED_COVID
+            description: ""
+          - name: TOTAL_ADULT_PATIENTS_HOSPITALIZED_CONFIRMED_AND_SUSPECTED_COVID_COVERAGE
+            description: ""
+          - name: TOTAL_ADULT_PATIENTS_HOSPITALIZED_CONFIRMED_COVID
+            description: ""
+          - name: TOTAL_ADULT_PATIENTS_HOSPITALIZED_CONFIRMED_COVID_COVERAGE
+            description: ""
+          - name: TOTAL_PEDIATRIC_PATIENTS_HOSPITALIZED_CONFIRMED_AND_SUSPECTED_COVID
+            description: ""
+          - name: TOTAL_PEDIATRIC_PATIENTS_HOSPITALIZED_CONFIRMED_AND_SUSPECTED_COVID_COVERAGE
+            description: ""
+          - name: TOTAL_PEDIATRIC_PATIENTS_HOSPITALIZED_CONFIRMED_COVID
+            description: ""
+          - name: TOTAL_PEDIATRIC_PATIENTS_HOSPITALIZED_CONFIRMED_COVID_COVERAGE
+            description: ""
+          - name: TOTAL_STAFFED_ADULT_ICU_BEDS
+            description: ""
+          - name: TOTAL_STAFFED_ADULT_ICU_BEDS_COVERAGE
+            description: ""
+          - name: INPATIENT_BEDS_UTILIZATION
+            description: ""
+          - name: INPATIENT_BEDS_UTILIZATION_COVERAGE
+            description: ""
+          - name: INPATIENT_BEDS_UTILIZATION_NUMERATOR
+            description: ""
+          - name: INPATIENT_BEDS_UTILIZATION_DENOMINATOR
+            description: ""
+          - name: PERCENT_OF_INPATIENTS_WITH_COVID
+            description: ""
+          - name: PERCENT_OF_INPATIENTS_WITH_COVID_COVERAGE
+            description: ""
+          - name: PERCENT_OF_INPATIENTS_WITH_COVID_NUMERATOR
+            description: ""
+          - name: PERCENT_OF_INPATIENTS_WITH_COVID_DENOMINATOR
+            description: ""
+          - name: INPATIENT_BED_COVID_UTILIZATION
+            description: ""
+          - name: INPATIENT_BED_COVID_UTILIZATION_COVERAGE
+            description: ""
+          - name: INPATIENT_BED_COVID_UTILIZATION_NUMERATOR
+            description: ""
+          - name: INPATIENT_BED_COVID_UTILIZATION_DENOMINATOR
+            description: ""
+          - name: ADULT_ICU_BED_COVID_UTILIZATION
+            description: ""
+          - name: ADULT_ICU_BED_COVID_UTILIZATION_COVERAGE
+            description: ""
+          - name: ADULT_ICU_BED_COVID_UTILIZATION_NUMERATOR
+            description: ""
+          - name: ADULT_ICU_BED_COVID_UTILIZATION_DENOMINATOR
+            description: ""
+          - name: ADULT_ICU_BED_UTILIZATION
+            description: ""
+          - name: ADULT_ICU_BED_UTILIZATION_COVERAGE
+            description: ""
+          - name: ADULT_ICU_BED_UTILIZATION_NUMERATOR
+            description: ""
+          - name: ADULT_ICU_BED_UTILIZATION_DENOMINATOR
+            description: ""
+          - name: DATE
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: CDC_TESTING
+        description: "Raw cdc_testing table (~50,107 rows)"
+        columns:
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: DATE
+            description: ""
+          - name: POSITIVE
+            description: ""
+          - name: NEGATIVE
+            description: ""
+          - name: INCONCLUSIVE
+            description: ""
+      - name: CT_US_COVID_TESTS
+        description: "Raw ct_us_covid_tests table (~20,780 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: DATE
+            description: ""
+            tests:
+              - not_null
+          - name: POSITIVE
+            description: ""
+          - name: POSITIVE_SINCE_PREVIOUS_DAY
+            description: ""
+          - name: NEGATIVE
+            description: ""
+          - name: NEGATIVE_SINCE_PREVIOUS_DAY
+            description: ""
+          - name: PENDING
+            description: ""
+          - name: PENDING_SINCE_PREVIOUS_DAY
+            description: ""
+          - name: DEATH
+            description: ""
+          - name: DEATH_SINCE_PREVIOUS_DAY
+            description: ""
+          - name: HOSPITALIZED
+            description: ""
+          - name: HOSPITALIZED_SINCE_PREVIOUS_DAY
+            description: ""
+          - name: TOTAL
+            description: ""
+          - name: TOTAL_SINCE_PREVIOUS_DAY
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+          - name: HOSPITALIZEDCURRENTLY
+            description: ""
+          - name: HOSPITALIZEDCURRENTLYINCREASE
+            description: ""
+          - name: HOSPITALIZEDCUMULATIVE
+            description: ""
+          - name: HOSPITALIZEDCUMULATIVEINCREASE
+            description: ""
+          - name: INICUCURRENTLY
+            description: ""
+          - name: INICUCURRENTLYINCREASE
+            description: ""
+          - name: INICUCUMULATIVE
+            description: ""
+          - name: INICUCUMULATIVEINCREASE
+            description: ""
+          - name: ONVENTILATORCURRENTLY
+            description: ""
+          - name: ONVENTILATORCURRENTLYINCREASE
+            description: ""
+          - name: ONVENTILATORCUMULATIVE
+            description: ""
+          - name: ONVENTILATORCUMULATIVEINCREASE
+            description: ""
+      - name: DATABANK_DEMOGRAPHICS
+        description: "Raw databank_demographics table (~216 rows)"
+        columns:
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: FIPS
+            description: ""
+          - name: LATITUDE
+            description: ""
+          - name: LONGITUDE
+            description: ""
+          - name: STATE
+            description: ""
+          - name: COUNTY
+            description: ""
+          - name: TOTAL_POPULATION
+            description: ""
+          - name: TOTAL_MALE_POPULATION
+            description: ""
+          - name: TOTAL_FEMALE_POPULATION
+            description: ""
+          - name: COUNTRY_REGION
+            description: ""
+      - name: DEMOGRAPHICS
+        description: "Raw demographics table (~3,140 rows)"
+        columns:
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: FIPS
+            description: ""
+          - name: LATITUDE
+            description: ""
+          - name: LONGITUDE
+            description: ""
+          - name: STATE
+            description: ""
+          - name: COUNTY
+            description: ""
+          - name: TOTAL_POPULATION
+            description: ""
+          - name: TOTAL_MALE_POPULATION
+            description: ""
+          - name: TOTAL_FEMALE_POPULATION
+            description: ""
+      - name: ECDC_GLOBAL
+        description: "Raw ecdc_global table (~61,900 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: CONTINENTEXP
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: CASES
+            description: ""
+          - name: DEATHS
+            description: ""
+          - name: CASES_SINCE_PREV_DAY
+            description: ""
+          - name: DEATHS_SINCE_PREV_DAY
+            description: ""
+          - name: POPULATION
+            description: ""
+          - name: DATE
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: ECDC_GLOBAL_WEEKLY
+        description: "Raw ecdc_global_weekly table (~6,407 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: CONTINENTEXP
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: CASES_WEEKLY
+            description: ""
+          - name: DEATHS_WEEKLY
+            description: ""
+          - name: CASES_SINCE_PREV_WEEK
+            description: ""
+          - name: DEATHS_SINCE_PREV_WEEK
+            description: ""
+          - name: POPULATION
+            description: ""
+          - name: DATE
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: GOOG_GLOBAL_MOBILITY_REPORT
+        description: "Raw goog_global_mobility_report table (~11,730,025 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: ISO_3166_1
+            description: ""
+          - name: ISO_3166_2
+            description: ""
+          - name: DATE
+            description: ""
+          - name: GROCERY_AND_PHARMACY_CHANGE_PERC
+            description: ""
+          - name: PARKS_CHANGE_PERC
+            description: ""
+          - name: RESIDENTIAL_CHANGE_PERC
+            description: ""
+          - name: RETAIL_AND_RECREATION_CHANGE_PERC
+            description: ""
+          - name: TRANSIT_STATIONS_CHANGE_PERC
+            description: ""
+          - name: WORKPLACES_CHANGE_PERC
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+          - name: SUB_REGION_2
+            description: ""
+      - name: HDX_ACAPS
+        description: "Raw hdx_acaps table (~23,923 rows)"
+        columns:
+          - name: COUNTRY_STATE
+            description: ""
+          - name: ADMIN_2
+            description: ""
+          - name: REGION
+            description: ""
+          - name: CATEGORY
+            description: ""
+          - name: MEASURE
+            description: ""
+            tests:
+              - not_null
+          - name: TARGETED_POP_GROUP
+            description: ""
+          - name: COMMENTS
+            description: ""
+          - name: NON_COMPLIANCE
+            description: ""
+          - name: DATE_IMPLEMENTED
+            description: ""
+          - name: SOURCE
+            description: ""
+          - name: SOURCE_TYPE
+            description: ""
+          - name: LINK
+            description: ""
+          - name: ENTRY_DATE
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+            tests:
+              - not_null
+          - name: LOG_TYPE
+            description: ""
+      - name: HS_BULK_DATA
+        description: "Raw hs_bulk_data table (~727,762 rows)"
+        columns:
+          - name: LONG
+            description: ""
+          - name: LAT
+            description: ""
+          - name: HEALTHCARE_PROVIDER_TYPE
+            description: ""
+          - name: NAME
+            description: ""
+          - name: OPERATOR
+            description: ""
+          - name: BEDS
+            description: ""
+          - name: STAFF_MEDICAL
+            description: ""
+          - name: STAFF_NURSING
+            description: ""
+      - name: HUM_RESTRICTIONS_AIRLINE
+        description: "Raw hum_restrictions_airline table (~687 rows)"
+        columns:
+          - name: COUNTRY
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: LONG
+            description: ""
+          - name: LAT
+            description: ""
+          - name: PUBLISHED
+            description: ""
+          - name: SOURCES
+            description: ""
+          - name: AIRLINE
+            description: ""
+          - name: RESTRICTION_TEXT
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+      - name: HUM_RESTRICTIONS_COUNTRY
+        description: "Raw hum_restrictions_country table (~235 rows)"
+        columns:
+          - name: COUNTRY
+            description: ""
+            tests:
+              - unique
+              - not_null
+          - name: ISO3166_1
+            description: ""
+          - name: LONG
+            description: ""
+          - name: LAT
+            description: ""
+          - name: PUBLISHED
+            description: ""
+          - name: SOURCES
+            description: ""
+          - name: RESTRICTION_TEXT
+            description: ""
+          - name: INFO_DATE
+            description: ""
+          - name: QUARANTINE_TEXT
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+      - name: IHME_COVID_19
+        description: "Raw ihme_covid_19 table (~208,406 rows)"
+        columns:
+          - name: DATE
+            description: ""
+          - name: ALLBED_MEAN
+            description: ""
+          - name: ALLBED_LOWER
+            description: ""
+          - name: ALLBED_UPPER
+            description: ""
+          - name: ICUBED_MEAN
+            description: ""
+          - name: ICUBED_LOWER
+            description: ""
+          - name: ICUBED_UPPER
+            description: ""
+          - name: INVVEN_MEAN
+            description: ""
+          - name: INVVEN_LOWER
+            description: ""
+          - name: INVVEN_UPPER
+            description: ""
+          - name: DEATHS_MEAN
+            description: ""
+          - name: DEATHS_LOWER
+            description: ""
+          - name: DEATHS_UPPER
+            description: ""
+          - name: ADMIS_MEAN
+            description: ""
+          - name: ADMIS_LOWER
+            description: ""
+          - name: ADMIS_UPPER
+            description: ""
+          - name: NEWICU_MEAN
+            description: ""
+          - name: NEWICU_LOWER
+            description: ""
+          - name: NEWICU_UPPER
+            description: ""
+          - name: TOTDEA_MEAN
+            description: ""
+          - name: TOTDEA_LOWER
+            description: ""
+          - name: TOTDEA_UPPER
+            description: ""
+          - name: BEDOVER_MEAN
+            description: ""
+          - name: BEDOVER_LOWER
+            description: ""
+          - name: BEDOVER_UPPER
+            description: ""
+          - name: ICUOVER_MEAN
+            description: ""
+          - name: ICUOVER_LOWER
+            description: ""
+          - name: ICUOVER_UPPER
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+            tests:
+              - not_null
+          - name: LAST_REPORTED_FLAG
+            description: ""
+          - name: COUNTRY_REGION
+            description: ""
+          - name: ISO_3166_1
+            description: ""
+          - name: ISO_3166_2
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+      - name: JHU_COVID_19
+        description: "Raw jhu_covid_19 table (~9,738,292 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: COUNTY
+            description: ""
+          - name: FIPS
+            description: ""
+          - name: DATE
+            description: ""
+          - name: CASE_TYPE
+            description: ""
+          - name: CASES
+            description: ""
+          - name: LONG
+            description: ""
+          - name: LAT
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: DIFFERENCE
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: JHU_COVID_19_TIMESERIES
+        description: "Raw jhu_covid_19_timeseries table (~12,450,699 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: COUNTY
+            description: ""
+          - name: FIPS
+            description: ""
+          - name: LAT
+            description: ""
+          - name: LONG
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: DATE
+            description: ""
+          - name: CASES
+            description: ""
+          - name: CASE_TYPE
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+          - name: DIFFERENCE
+            description: ""
+      - name: JHU_DASHBOARD_COVID_19_GLOBAL
+        description: "Raw jhu_dashboard_covid_19_global table (~4,632 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: COUNTY
+            description: ""
+          - name: FIPS
+            description: ""
+          - name: DATE
+            description: ""
+          - name: ACTIVE
+            description: ""
+          - name: PEOPLE_TESTED
+            description: ""
+          - name: CONFIRMED
+            description: ""
+          - name: PEOPLE_HOSPITALIZED
+            description: ""
+          - name: DEATHS
+            description: ""
+          - name: RECOVERED
+            description: ""
+          - name: INCIDENT_RATE
+            description: ""
+          - name: TESTING_RATE
+            description: ""
+          - name: HOSPITALIZATION_RATE
+            description: ""
+          - name: MORTALITY_RATE
+            description: ""
+          - name: LONG
+            description: ""
+          - name: LAT
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: JHU_VACCINES
+        description: "Raw jhu_vaccines table (~40,054 rows)"
+        columns:
+          - name: DATE
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: FIPS
+            description: ""
+          - name: DOSES_ALLOC_TOTAL
+            description: ""
+          - name: DOSES_ALLOC_MODERNA
+            description: ""
+          - name: DOSES_ALLOC_PFIZER
+            description: ""
+          - name: DOSES_ALLOC_JOHNSON_AND_JOHNSON
+            description: ""
+          - name: DOSES_ALLOC_UNASSIGNED
+            description: ""
+          - name: DOSES_ALLOC_UNKNOWN
+            description: ""
+          - name: DOSES_SHIPPED_TOTAL
+            description: ""
+          - name: DOSES_SHIPPED_MODERNA
+            description: ""
+          - name: DOSES_SHIPPED_PFIZER
+            description: ""
+          - name: DOSES_SHIPPED_JOHNSON_AND_JOHNSON
+            description: ""
+          - name: DOSES_SHIPPED_UNASSIGNED
+            description: ""
+          - name: DOSES_SHIPPED_UNKNOWN
+            description: ""
+          - name: DOSES_ADMIN_TOTAL
+            description: ""
+          - name: DOSES_ADMIN_MODERNA
+            description: ""
+          - name: DOSES_ADMIN_PFIZER
+            description: ""
+          - name: DOSES_ADMIN_JOHNSON_AND_JOHNSON
+            description: ""
+          - name: DOSES_ADMIN_UNASSIGNED
+            description: ""
+          - name: DOSES_ADMIN_UNKNOWN
+            description: ""
+          - name: PEOPLE_TOTAL
+            description: ""
+          - name: PEOPLE_TOTAL_2ND_DOSE
+            description: ""
+          - name: COUNTRY_REGION
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+          - name: STABBR
+            description: ""
+      - name: KFF_HCP_CAPACITY
+        description: "Raw kff_hcp_capacity table (~51 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: TOTAL_HOSPITAL_BEDS
+            description: ""
+          - name: HOSPITAL_BEDS_PER_1000_POPULATION
+            description: ""
+          - name: TOTAL_CHCS
+            description: ""
+          - name: CHC_SERVICE_DELIVERY_SITES
+            description: ""
+      - name: KFF_US_ICU_BEDS
+        description: "Raw kff_us_icu_beds table (~3,142 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: NOTE
+            description: ""
+          - name: STATE
+            description: ""
+          - name: HOSPITALS
+            description: ""
+          - name: ICU_BEDS
+            description: ""
+          - name: COUNTY
+            description: ""
+          - name: FIPS
+            description: ""
+      - name: KFF_US_POLICY_ACTIONS
+        description: "Raw kff_us_policy_actions table (~51 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: WAIVE_COST_SHARING_FOR_COVID_19_TREATMENT
+            description: ""
+          - name: FREE_COST_VACCINE_WHEN_AVAILABLE
+            description: ""
+          - name: STATE_REQUIRES_WAIVER_OF_PRIOR_AUTHORIZATION_REQUIREMENTS
+            description: ""
+          - name: EARLY_PRESCRIPTION_REFILLS
+            description: ""
+          - name: MARKETPLACE_SPECIAL_ENROLLMENT_PERIOD
+            description: ""
+          - name: SECTION_1135_WAIVER
+            description: ""
+          - name: PAID_SICK_LEAVE
+            description: ""
+          - name: PREMIUM_PAYMENT_GRACE_PERIOD
+            description: ""
+          - name: NOTES
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+      - name: KFF_US_REOPENING_TIMELINE_INCREMENT
+        description: "Raw kff_us_reopening_timeline_increment table (~15,402 rows)"
+        columns:
+          - name: DATE
+            description: ""
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: STATUS
+            description: ""
+      - name: KFF_US_STATE_MITIGATIONS
+        description: "Raw kff_us_state_mitigations table (~51 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: STATUS_OF_REOPENING
+            description: ""
+          - name: STAY_AT_HOME_ORDER
+            description: ""
+          - name: MANDATORY_QUARANTINE_FOR_TRAVELERS
+            description: ""
+          - name: NON_ESSENTIAL_BUSINESS_CLOSURES
+            description: ""
+          - name: LARGE_GATHERINGS_BAN
+            description: ""
+          - name: RESTAURANT_LIMITS
+            description: ""
+          - name: BAR_CLOSURES
+            description: ""
+          - name: FACE_COVERING_REQUIREMENT
+            description: ""
+          - name: PRIMARY_ELECTION_POSTPONEMENT
+            description: ""
+          - name: EMERGENCY_DECLARATION
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+      - name: METADATA
+        description: "Raw metadata table (~317 rows)"
+        columns:
+          - name: TABLE
+            description: ""
+          - name: DESCRIPTION
+            description: ""
+          - name: COLUMN
+            description: ""
+          - name: TYPE
+            description: ""
+          - name: NULLABLE
+            description: ""
+          - name: COMMENTS
+            description: ""
+          - name: SOURCE
+            description: ""
+      - name: NYC_HEALTH_TESTS
+        description: "Raw nyc_health_tests table (~130,453 rows)"
+        columns:
+          - name: MODIFIED_ZCTA
+            description: ""
+          - name: COVID_CASE_COUNT
+            description: ""
+          - name: TOTAL_COVID_TESTS
+            description: ""
+          - name: PERCENT_POSITIVE
+            description: ""
+          - name: DATE
+            description: ""
+          - name: FIPS
+            description: ""
+          - name: COUNTRY_REGION
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+          - name: LAST_REPORTED_DATE
+            description: ""
+      - name: NYT_US_COVID19
+        description: "Raw nyt_us_covid19 table (~3,525,161 rows)"
+        columns:
+          - name: DATE
+            description: ""
+          - name: COUNTY
+            description: ""
+          - name: STATE
+            description: ""
+          - name: FIPS
+            description: ""
+          - name: CASES
+            description: ""
+          - name: DEATHS
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: CASES_SINCE_PREV_DAY
+            description: ""
+          - name: DEATHS_SINCE_PREV_DAY
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: NYT_US_REOPEN_STATUS
+        description: "Raw nyt_us_reopen_status table (~52 rows)"
+        columns:
+          - name: STATE_CODE
+            description: ""
+            tests:
+              - unique
+              - not_null
+          - name: STATE
+            description: ""
+          - name: STATUS_DESCRIPTION
+            description: ""
+          - name: DATE_DETAILS_DESCRIPTION
+            description: ""
+          - name: RESTRICTION_START
+            description: ""
+          - name: RESTRICTION_END
+            description: ""
+          - name: STATUS_DETAILS
+            description: ""
+          - name: EXTERNAL_LINK
+            description: ""
+          - name: OPENED_PERSONAL_CARE
+            description: ""
+          - name: CLOSED_OUTDOOR_AND_RECREATION
+            description: ""
+          - name: CLOSED_ENTERTAINMENT
+            description: ""
+          - name: OPENED_OUTDOOR_AND_RECREATION
+            description: ""
+          - name: CLOSED_FOOD_AND_DRINK
+            description: ""
+          - name: OPENED_HOUSES_OF_WORSHIP
+            description: ""
+          - name: OPENED_ENTERTAINMENT
+            description: ""
+          - name: OPENED_FOOD_AND_DRINK
+            description: ""
+          - name: OPENED_RETAIL
+            description: ""
+          - name: OPENED_INDUSTRIES
+            description: ""
+          - name: POPULATION
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+      - name: OWID_VACCINATIONS
+        description: "Raw owid_vaccinations table (~169,179 rows)"
+        columns:
+          - name: DATE
+            description: ""
+          - name: COUNTRY_REGION
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: TOTAL_VACCINATIONS
+            description: ""
+          - name: PEOPLE_VACCINATED
+            description: ""
+          - name: PEOPLE_FULLY_VACCINATED
+            description: ""
+          - name: DAILY_VACCINATIONS_RAW
+            description: ""
+          - name: DAILY_VACCINATIONS
+            description: ""
+          - name: TOTAL_VACCINATIONS_PER_HUNDRED
+            description: ""
+          - name: PEOPLE_VACCINATED_PER_HUNDRED
+            description: ""
+          - name: PEOPLE_FULLY_VACCINATED_PER_HUNDRED
+            description: ""
+          - name: DAILY_VACCINATIONS_PER_MILLION
+            description: ""
+          - name: VACCINES
+            description: ""
+          - name: LAST_OBSERVATION_DATE
+            description: ""
+          - name: SOURCE_NAME
+            description: ""
+          - name: SOURCE_WEBSITE
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: PCM_DPS_COVID19
+        description: "Raw pcm_dps_covid19 table (~116,088 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: DATE
+            description: ""
+            tests:
+              - not_null
+          - name: CASE_TYPE
+            description: ""
+            tests:
+              - not_null
+          - name: CASES
+            description: ""
+            tests:
+              - not_null
+          - name: LONG
+            description: ""
+            tests:
+              - not_null
+          - name: LAT
+            description: ""
+            tests:
+              - not_null
+          - name: DIFFERENCE
+            description: ""
+            tests:
+              - not_null
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: PCM_DPS_COVID19_DETAILS
+        description: "Raw pcm_dps_covid19_details table (~29,022 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: DATE
+            description: ""
+          - name: HOSPITALIZED
+            description: ""
+          - name: INTENSIVE_CARE
+            description: ""
+          - name: TOTAL_HOSPITALIZED
+            description: ""
+          - name: HOME_ISOLATION
+            description: ""
+          - name: TOTAL_POSITIVE
+            description: ""
+          - name: NEW_POSITIVE
+            description: ""
+          - name: DISCHARGED_HEALED
+            description: ""
+          - name: DECEASED
+            description: ""
+          - name: TOTAL_CASES
+            description: ""
+          - name: TESTED
+            description: ""
+          - name: HOSPITALIZED_SINCE_PREV_DAY
+            description: ""
+          - name: INTENSIVE_CARE_SINCE_PREV_DAY
+            description: ""
+          - name: TOTAL_HOSPITALIZED_SINCE_PREV_DAY
+            description: ""
+          - name: HOME_ISOLATION_SINCE_PREV_DAY
+            description: ""
+          - name: TOTAL_POSITIVE_SINCE_PREV_DAY
+            description: ""
+          - name: DISCHARGED_HEALED_SINCE_PREV_DAY
+            description: ""
+          - name: DECEASED_SINCE_PREV_DAY
+            description: ""
+          - name: TOTAL_CASES_SINCE_PREV_DAY
+            description: ""
+          - name: TESTED_SINCE_PREV_DAY
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: NOTE_IT
+            description: ""
+          - name: NOTE_EN
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: RKI_GER_COVID19_DASHBOARD
+        description: "Raw rki_ger_covid19_dashboard table (~411 rows)"
+        columns:
+          - name: DISTRICT_ID
+            description: ""
+            tests:
+              - unique
+              - not_null
+          - name: COUNTY
+            description: ""
+          - name: STATE_ID
+            description: ""
+          - name: STATE
+            description: ""
+          - name: DISTRICT_TYPE
+            description: ""
+          - name: POPULATION
+            description: ""
+          - name: DEATH_RATE
+            description: ""
+          - name: CASES
+            description: ""
+          - name: DEATHS
+            description: ""
+          - name: CASES_PER_100K
+            description: ""
+          - name: CASES_PER_POPULATION
+            description: ""
+          - name: CASES7_PER_100K
+            description: ""
+          - name: LAST_UPDATE
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: SCS_BE_DETAILED_HOSPITALISATIONS
+        description: "Raw scs_be_detailed_hospitalisations table (~12,595 rows)"
+        columns:
+          - name: PROVINCE
+            description: ""
+          - name: REGION
+            description: ""
+            tests:
+              - not_null
+          - name: DATE
+            description: ""
+            tests:
+              - not_null
+          - name: NR_REPORTING
+            description: ""
+          - name: TOTAL_IN
+            description: ""
+          - name: TOTAL_IN_ICU
+            description: ""
+          - name: TOTAL_IN_RESP
+            description: ""
+          - name: TOTAL_IN_ECMO
+            description: ""
+          - name: NEW_IN
+            description: ""
+          - name: NEW_OUT
+            description: ""
+          - name: ISO3166_1
+            description: ""
+            tests:
+              - not_null
+          - name: ISO3166_2
+            description: ""
+          - name: ISO3166_3
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+            tests:
+              - not_null
+      - name: SCS_BE_DETAILED_MORTALITY
+        description: "Raw scs_be_detailed_mortality table (~11,413 rows)"
+        columns:
+          - name: REGION
+            description: ""
+          - name: SEX
+            description: ""
+          - name: AGEGROUP
+            description: ""
+          - name: DATE
+            description: ""
+            tests:
+              - not_null
+          - name: DEATHS
+            description: ""
+          - name: ISO3166_1
+            description: ""
+            tests:
+              - not_null
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+            tests:
+              - not_null
+      - name: SCS_BE_DETAILED_PROVINCE_CASE_COUNTS
+        description: "Raw scs_be_detailed_province_case_counts table (~236,625 rows)"
+        columns:
+          - name: PROVINCE
+            description: ""
+          - name: REGION
+            description: ""
+          - name: SEX
+            description: ""
+          - name: AGEGROUP
+            description: ""
+          - name: DATE
+            description: ""
+          - name: ISO3166_1
+            description: ""
+            tests:
+              - not_null
+          - name: ISO3166_2
+            description: ""
+          - name: ISO3166_3
+            description: ""
+          - name: NEW_CASES
+            description: ""
+          - name: TOTAL_CASES
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+            tests:
+              - not_null
+      - name: SCS_BE_DETAILED_TESTS
+        description: "Raw scs_be_detailed_tests table (~13,908 rows)"
+        columns:
+          - name: DATE
+            description: ""
+          - name: TESTS
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+            tests:
+              - not_null
+      - name: VH_CAN_DETAILED
+        description: "Raw vh_can_detailed table (~2,338 rows)"
+        columns:
+          - name: DATE
+            description: ""
+          - name: PROVINCE_STATE
+            description: ""
+          - name: HEALTHCARE_REGION
+            description: ""
+          - name: CASES
+            description: ""
+          - name: DEATHS
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: ISO3166_2
+            description: ""
+          - name: LAST_UPDATED_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: WHO_DAILY_REPORT
+        description: "Raw who_daily_report table (~238 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: CASES_TOTAL
+            description: ""
+          - name: CASES_TOTAL_PER_100000
+            description: ""
+          - name: CASES
+            description: ""
+          - name: DEATHS_TOTAL
+            description: ""
+          - name: DEATHS_TOTAL_PER_100000
+            description: ""
+          - name: DEATHS
+            description: ""
+          - name: TRANSMISSION_CLASSIFICATION
+            description: ""
+          - name: DATE
+            description: ""
+          - name: ISO3166_1
+            description: ""
+      - name: WHO_SITUATION_REPORTS
+        description: "Raw who_situation_reports table (~30,722 rows)"
+        columns:
+          - name: COUNTRY
+            description: ""
+          - name: TOTAL_CASES
+            description: ""
+            tests:
+              - not_null
+          - name: CASES_NEW
+            description: ""
+          - name: DEATHS
+            description: ""
+            tests:
+              - not_null
+          - name: DEATHS_NEW
+            description: ""
+            tests:
+              - not_null
+          - name: TRANSMISSION_CLASSIFICATION
+            description: ""
+          - name: DAYS_SINCE_LAST_REPORTED_CASE
+            description: ""
+          - name: ISO3166_1
+            description: ""
+          - name: COUNTRY_REGION
+            description: ""
+          - name: DATE
+            description: ""
+          - name: SITUATION_REPORT_NAME
+            description: ""
+          - name: SITUATION_REPORT_URL
+            description: ""
+          - name: LAST_UPDATE_DATE
+            description: ""
+          - name: LAST_REPORTED_FLAG
+            description: ""
+      - name: WHO_TIMESERIES
+        description: "Raw who_timeseries table (~238 rows)"
+        columns:
+          - name: COUNTRY_REGION
+            description: ""
+          - name: CASES_TOTAL
+            description: ""
+          - name: CASES_TOTAL_PER_100000
+            description: ""
+          - name: CASES
+            description: ""
+          - name: DEATHS_TOTAL
+            description: ""
+          - name: DEATHS_TOTAL_PER_100000
+            description: ""
+          - name: DEATHS
+            description: ""
+          - name: TRANSMISSION_CLASSIFICATION
+            description: ""
+          - name: DATE
+            description: ""
+          - name: ISO3166_1
+            description: ""

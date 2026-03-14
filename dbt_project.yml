@@ -16,8 +16,8 @@ clean-targets:
   - "dbt_packages"
 
 vars:
-  source_database: "JAPANESE_ECOMMERCE__C2C_SALES_DATA_FOR_PRICE__TREND_INSIGHTS"
-  source_schema: "SAMPLE_DATE"
+  source_database: "COVID19_EPIDEMIOLOGICAL_DATA"
+  source_schema: "PUBLIC"
 
 models:
   snowflake_dbt_starter_kit:

@@ -1,0 +1,1435 @@
+version: 2
+
+models:
+  - name: stg_covid19_data__apple_mobility
+    description: "Staged apple_mobility from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: date
+        description: ""
+      - name: transportation_type
+        description: ""
+      - name: difference
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_updated_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__cdc_inpatient_beds_all
+    description: "Staged cdc_inpatient_beds_all from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: state
+        description: ""
+      - name: date
+        description: ""
+      - name: inpatient_beds_occupied
+        description: ""
+      - name: inpatient_beds_lower_bound
+        description: ""
+      - name: inpatient_beds_upper_bound
+        description: ""
+      - name: inpatient_beds_in_use_pct
+        description: ""
+      - name: inpatient_beds_in_use_pct_lower_bound
+        description: ""
+      - name: inpatient_beds_in_use_pct_upper_bound
+        description: ""
+      - name: total_inpatient_beds
+        description: ""
+      - name: total_inpatient_beds_lower_bound
+        description: ""
+      - name: total_inpatient_beds_upper_bound
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__cdc_inpatient_beds_covid_19
+    description: "Staged cdc_inpatient_beds_covid_19 from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: state
+        description: ""
+      - name: date
+        description: ""
+      - name: inpatient_beds_occupied
+        description: ""
+      - name: inpatient_beds_lower_bound
+        description: ""
+      - name: inpatient_beds_upper_bound
+        description: ""
+      - name: inpatient_beds_in_use_pct
+        description: ""
+      - name: inpatient_beds_in_use_pct_lower_bound
+        description: ""
+      - name: inpatient_beds_in_use_pct_upper_bound
+        description: ""
+      - name: total_inpatient_beds
+        description: ""
+      - name: total_inpatient_beds_lower_bound
+        description: ""
+      - name: total_inpatient_beds_upper_bound
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__cdc_inpatient_beds_icu_all
+    description: "Staged cdc_inpatient_beds_icu_all from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: state
+        description: ""
+      - name: date
+        description: ""
+      - name: staffed_adult_icu_beds_occupied
+        description: ""
+      - name: staffed_adult_icu_beds_occupied_lower_bound
+        description: ""
+      - name: staffed_adult_icu_beds_occupied_upper_bound
+        description: ""
+      - name: staffed_adult_icu_beds_occupied_pct
+        description: ""
+      - name: staffed_adult_icu_beds_occupied_pct_lower_bound
+        description: ""
+      - name: staffed_adult_icu_beds_occupied_pct_upper_bound
+        description: ""
+      - name: total_staffed_icu_beds
+        description: ""
+      - name: total_staffed_icu_beds_lower_bound
+        description: ""
+      - name: total_staffed_icu_beds_upper_bound
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__cdc_policy_measures
+    description: "Staged cdc_policy_measures from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: state_id
+        description: ""
+      - name: county
+        description: ""
+      - name: fips_code
+        description: ""
+      - name: policy_level
+        description: ""
+      - name: date
+        description: ""
+      - name: policy_type
+        description: ""
+      - name: start_stop
+        description: ""
+      - name: comments
+        description: ""
+      - name: source
+        description: ""
+      - name: total_phase
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__cdc_reported_patient_impact
+    description: "Staged cdc_reported_patient_impact from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: state
+        description: ""
+      - name: critical_staffing_shortage_today_yes
+        description: ""
+      - name: critical_staffing_shortage_today_no
+        description: ""
+      - name: critical_staffing_shortage_today_not_reported
+        description: ""
+      - name: critical_staffing_shortage_anticipated_within_week_yes
+        description: ""
+      - name: critical_staffing_shortage_anticipated_within_week_no
+        description: ""
+      - name: critical_staffing_shortage_anticipated_within_week_not_reported
+        description: ""
+      - name: hospital_onset_covid
+        description: ""
+      - name: hospital_onset_covid_coverage
+        description: ""
+      - name: inpatient_beds
+        description: ""
+      - name: inpatient_beds_coverage
+        description: ""
+      - name: inpatient_beds_used
+        description: ""
+      - name: inpatient_beds_used_coverage
+        description: ""
+      - name: inpatient_beds_used_covid
+        description: ""
+      - name: inpatient_beds_used_covid_coverage
+        description: ""
+      - name: previous_day_admission_adult_covid_confirmed
+        description: ""
+      - name: previous_day_admission_adult_covid_confirmed_coverage
+        description: ""
+      - name: previous_day_admission_adult_covid_suspected
+        description: ""
+      - name: previous_day_admission_adult_covid_suspected_coverage
+        description: ""
+      - name: previous_day_admission_pediatric_covid_confirmed
+        description: ""
+      - name: previous_day_admission_pediatric_covid_confirmed_coverage
+        description: ""
+      - name: previous_day_admission_pediatric_covid_suspected
+        description: ""
+      - name: previous_day_admission_pediatric_covid_suspected_coverage
+        description: ""
+      - name: staffed_adult_icu_bed_occupancy
+        description: ""
+      - name: staffed_adult_icu_bed_occupancy_coverage
+        description: ""
+      - name: staffed_icu_adult_patients_confirmed_and_suspected_covid
+        description: ""
+      - name: staffed_icu_adult_patients_confirmed_and_suspected_covid_coverage
+        description: ""
+      - name: staffed_icu_adult_patients_confirmed_covid
+        description: ""
+      - name: staffed_icu_adult_patients_confirmed_covid_coverage
+        description: ""
+      - name: total_adult_patients_hospitalized_confirmed_and_suspected_covid
+        description: ""
+      - name: total_adult_patients_hospitalized_confirmed_and_suspected_covid_coverage
+        description: ""
+      - name: total_adult_patients_hospitalized_confirmed_covid
+        description: ""
+      - name: total_adult_patients_hospitalized_confirmed_covid_coverage
+        description: ""
+      - name: total_pediatric_patients_hospitalized_confirmed_and_suspected_covid
+        description: ""
+      - name: total_pediatric_patients_hospitalized_confirmed_and_suspected_covid_coverage
+        description: ""
+      - name: total_pediatric_patients_hospitalized_confirmed_covid
+        description: ""
+      - name: total_pediatric_patients_hospitalized_confirmed_covid_coverage
+        description: ""
+      - name: total_staffed_adult_icu_beds
+        description: ""
+      - name: total_staffed_adult_icu_beds_coverage
+        description: ""
+      - name: inpatient_beds_utilization
+        description: ""
+      - name: inpatient_beds_utilization_coverage
+        description: ""
+      - name: inpatient_beds_utilization_numerator
+        description: ""
+      - name: inpatient_beds_utilization_denominator
+        description: ""
+      - name: percent_of_inpatients_with_covid
+        description: ""
+      - name: percent_of_inpatients_with_covid_coverage
+        description: ""
+      - name: percent_of_inpatients_with_covid_numerator
+        description: ""
+      - name: percent_of_inpatients_with_covid_denominator
+        description: ""
+      - name: inpatient_bed_covid_utilization
+        description: ""
+      - name: inpatient_bed_covid_utilization_coverage
+        description: ""
+      - name: inpatient_bed_covid_utilization_numerator
+        description: ""
+      - name: inpatient_bed_covid_utilization_denominator
+        description: ""
+      - name: adult_icu_bed_covid_utilization
+        description: ""
+      - name: adult_icu_bed_covid_utilization_coverage
+        description: ""
+      - name: adult_icu_bed_covid_utilization_numerator
+        description: ""
+      - name: adult_icu_bed_covid_utilization_denominator
+        description: ""
+      - name: adult_icu_bed_utilization
+        description: ""
+      - name: adult_icu_bed_utilization_coverage
+        description: ""
+      - name: adult_icu_bed_utilization_numerator
+        description: ""
+      - name: adult_icu_bed_utilization_denominator
+        description: ""
+      - name: date
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__cdc_testing
+    description: "Staged cdc_testing from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: date
+        description: ""
+      - name: positive
+        description: ""
+      - name: negative
+        description: ""
+      - name: inconclusive
+        description: ""
+  - name: stg_covid19_data__ct_us_covid_tests
+    description: "Staged ct_us_covid_tests from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: date
+        description: ""
+        tests:
+          - not_null
+      - name: positive
+        description: ""
+      - name: positive_since_previous_day
+        description: ""
+      - name: negative
+        description: ""
+      - name: negative_since_previous_day
+        description: ""
+      - name: pending
+        description: ""
+      - name: pending_since_previous_day
+        description: ""
+      - name: death
+        description: ""
+      - name: death_since_previous_day
+        description: ""
+      - name: hospitalized
+        description: ""
+      - name: hospitalized_since_previous_day
+        description: ""
+      - name: total
+        description: ""
+      - name: total_since_previous_day
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_updated_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+      - name: hospitalizedcurrently
+        description: ""
+      - name: hospitalizedcurrentlyincrease
+        description: ""
+      - name: hospitalizedcumulative
+        description: ""
+      - name: hospitalizedcumulativeincrease
+        description: ""
+      - name: inicucurrently
+        description: ""
+      - name: inicucurrentlyincrease
+        description: ""
+      - name: inicucumulative
+        description: ""
+      - name: inicucumulativeincrease
+        description: ""
+      - name: onventilatorcurrently
+        description: ""
+      - name: onventilatorcurrentlyincrease
+        description: ""
+      - name: onventilatorcumulative
+        description: ""
+      - name: onventilatorcumulativeincrease
+        description: ""
+  - name: stg_covid19_data__databank_demographics
+    description: "Staged databank_demographics from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: fips
+        description: ""
+      - name: latitude
+        description: ""
+      - name: longitude
+        description: ""
+      - name: state
+        description: ""
+      - name: county
+        description: ""
+      - name: total_population
+        description: ""
+      - name: total_male_population
+        description: ""
+      - name: total_female_population
+        description: ""
+      - name: country_region
+        description: ""
+  - name: stg_covid19_data__demographics
+    description: "Staged demographics from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: fips
+        description: ""
+      - name: latitude
+        description: ""
+      - name: longitude
+        description: ""
+      - name: state
+        description: ""
+      - name: county
+        description: ""
+      - name: total_population
+        description: ""
+      - name: total_male_population
+        description: ""
+      - name: total_female_population
+        description: ""
+  - name: stg_covid19_data__ecdc_global
+    description: "Staged ecdc_global from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: continentexp
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: cases
+        description: ""
+      - name: deaths
+        description: ""
+      - name: cases_since_prev_day
+        description: ""
+      - name: deaths_since_prev_day
+        description: ""
+      - name: population
+        description: ""
+      - name: date
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__ecdc_global_weekly
+    description: "Staged ecdc_global_weekly from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: continentexp
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: cases_weekly
+        description: ""
+      - name: deaths_weekly
+        description: ""
+      - name: cases_since_prev_week
+        description: ""
+      - name: deaths_since_prev_week
+        description: ""
+      - name: population
+        description: ""
+      - name: date
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__goog_global_mobility_report
+    description: "Staged goog_global_mobility_report from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: iso_3166_1
+        description: ""
+      - name: iso_3166_2
+        description: ""
+      - name: date
+        description: ""
+      - name: grocery_and_pharmacy_change_perc
+        description: ""
+      - name: parks_change_perc
+        description: ""
+      - name: residential_change_perc
+        description: ""
+      - name: retail_and_recreation_change_perc
+        description: ""
+      - name: transit_stations_change_perc
+        description: ""
+      - name: workplaces_change_perc
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+      - name: sub_region_2
+        description: ""
+  - name: stg_covid19_data__hdx_acaps
+    description: "Staged hdx_acaps from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_state
+        description: ""
+      - name: admin_2
+        description: ""
+      - name: region
+        description: ""
+      - name: category
+        description: ""
+      - name: measure
+        description: ""
+        tests:
+          - not_null
+      - name: targeted_pop_group
+        description: ""
+      - name: comments
+        description: ""
+      - name: non_compliance
+        description: ""
+      - name: date_implemented
+        description: ""
+      - name: source
+        description: ""
+      - name: source_type
+        description: ""
+      - name: link
+        description: ""
+      - name: entry_date
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: last_updated_date
+        description: ""
+        tests:
+          - not_null
+      - name: log_type
+        description: ""
+  - name: stg_covid19_data__hs_bulk_data
+    description: "Staged hs_bulk_data from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: long
+        description: ""
+      - name: lat
+        description: ""
+      - name: healthcare_provider_type
+        description: ""
+      - name: name
+        description: ""
+      - name: operator
+        description: ""
+      - name: beds
+        description: ""
+      - name: staff_medical
+        description: ""
+      - name: staff_nursing
+        description: ""
+  - name: stg_covid19_data__hum_restrictions_airline
+    description: "Staged hum_restrictions_airline from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: long
+        description: ""
+      - name: lat
+        description: ""
+      - name: published
+        description: ""
+      - name: sources
+        description: ""
+      - name: airline
+        description: ""
+      - name: restriction_text
+        description: ""
+      - name: last_update_date
+        description: ""
+  - name: stg_covid19_data__hum_restrictions_country
+    description: "Staged hum_restrictions_country from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country
+        description: ""
+        tests:
+          - unique
+          - not_null
+      - name: iso3166_1
+        description: ""
+      - name: long
+        description: ""
+      - name: lat
+        description: ""
+      - name: published
+        description: ""
+      - name: sources
+        description: ""
+      - name: restriction_text
+        description: ""
+      - name: info_date
+        description: ""
+      - name: quarantine_text
+        description: ""
+      - name: last_update_date
+        description: ""
+  - name: stg_covid19_data__ihme_covid_19
+    description: "Staged ihme_covid_19 from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: date
+        description: ""
+      - name: allbed_mean
+        description: ""
+      - name: allbed_lower
+        description: ""
+      - name: allbed_upper
+        description: ""
+      - name: icubed_mean
+        description: ""
+      - name: icubed_lower
+        description: ""
+      - name: icubed_upper
+        description: ""
+      - name: invven_mean
+        description: ""
+      - name: invven_lower
+        description: ""
+      - name: invven_upper
+        description: ""
+      - name: deaths_mean
+        description: ""
+      - name: deaths_lower
+        description: ""
+      - name: deaths_upper
+        description: ""
+      - name: admis_mean
+        description: ""
+      - name: admis_lower
+        description: ""
+      - name: admis_upper
+        description: ""
+      - name: newicu_mean
+        description: ""
+      - name: newicu_lower
+        description: ""
+      - name: newicu_upper
+        description: ""
+      - name: totdea_mean
+        description: ""
+      - name: totdea_lower
+        description: ""
+      - name: totdea_upper
+        description: ""
+      - name: bedover_mean
+        description: ""
+      - name: bedover_lower
+        description: ""
+      - name: bedover_upper
+        description: ""
+      - name: icuover_mean
+        description: ""
+      - name: icuover_lower
+        description: ""
+      - name: icuover_upper
+        description: ""
+      - name: last_updated_date
+        description: ""
+        tests:
+          - not_null
+      - name: last_reported_flag
+        description: ""
+      - name: country_region
+        description: ""
+      - name: iso_3166_1
+        description: ""
+      - name: iso_3166_2
+        description: ""
+      - name: province_state
+        description: ""
+  - name: stg_covid19_data__jhu_covid_19
+    description: "Staged jhu_covid_19 from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: county
+        description: ""
+      - name: fips
+        description: ""
+      - name: date
+        description: ""
+      - name: case_type
+        description: ""
+      - name: cases
+        description: ""
+      - name: long
+        description: ""
+      - name: lat
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: difference
+        description: ""
+      - name: last_updated_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__jhu_covid_19_timeseries
+    description: "Staged jhu_covid_19_timeseries from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: county
+        description: ""
+      - name: fips
+        description: ""
+      - name: lat
+        description: ""
+      - name: long
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: date
+        description: ""
+      - name: cases
+        description: ""
+      - name: case_type
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+      - name: difference
+        description: ""
+  - name: stg_covid19_data__jhu_dashboard_covid_19_global
+    description: "Staged jhu_dashboard_covid_19_global from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: county
+        description: ""
+      - name: fips
+        description: ""
+      - name: date
+        description: ""
+      - name: active
+        description: ""
+      - name: people_tested
+        description: ""
+      - name: confirmed
+        description: ""
+      - name: people_hospitalized
+        description: ""
+      - name: deaths
+        description: ""
+      - name: recovered
+        description: ""
+      - name: incident_rate
+        description: ""
+      - name: testing_rate
+        description: ""
+      - name: hospitalization_rate
+        description: ""
+      - name: mortality_rate
+        description: ""
+      - name: long
+        description: ""
+      - name: lat
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__jhu_vaccines
+    description: "Staged jhu_vaccines from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: date
+        description: ""
+      - name: province_state
+        description: ""
+      - name: fips
+        description: ""
+      - name: doses_alloc_total
+        description: ""
+      - name: doses_alloc_moderna
+        description: ""
+      - name: doses_alloc_pfizer
+        description: ""
+      - name: doses_alloc_johnson_and_johnson
+        description: ""
+      - name: doses_alloc_unassigned
+        description: ""
+      - name: doses_alloc_unknown
+        description: ""
+      - name: doses_shipped_total
+        description: ""
+      - name: doses_shipped_moderna
+        description: ""
+      - name: doses_shipped_pfizer
+        description: ""
+      - name: doses_shipped_johnson_and_johnson
+        description: ""
+      - name: doses_shipped_unassigned
+        description: ""
+      - name: doses_shipped_unknown
+        description: ""
+      - name: doses_admin_total
+        description: ""
+      - name: doses_admin_moderna
+        description: ""
+      - name: doses_admin_pfizer
+        description: ""
+      - name: doses_admin_johnson_and_johnson
+        description: ""
+      - name: doses_admin_unassigned
+        description: ""
+      - name: doses_admin_unknown
+        description: ""
+      - name: people_total
+        description: ""
+      - name: people_total_2nd_dose
+        description: ""
+      - name: country_region
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+      - name: stabbr
+        description: ""
+  - name: stg_covid19_data__kff_hcp_capacity
+    description: "Staged kff_hcp_capacity from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: total_hospital_beds
+        description: ""
+      - name: hospital_beds_per_1000_population
+        description: ""
+      - name: total_chcs
+        description: ""
+      - name: chc_service_delivery_sites
+        description: ""
+  - name: stg_covid19_data__kff_us_icu_beds
+    description: "Staged kff_us_icu_beds from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: note
+        description: ""
+      - name: state
+        description: ""
+      - name: hospitals
+        description: ""
+      - name: icu_beds
+        description: ""
+      - name: county
+        description: ""
+      - name: fips
+        description: ""
+  - name: stg_covid19_data__kff_us_policy_actions
+    description: "Staged kff_us_policy_actions from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: waive_cost_sharing_for_covid_19_treatment
+        description: ""
+      - name: free_cost_vaccine_when_available
+        description: ""
+      - name: state_requires_waiver_of_prior_authorization_requirements
+        description: ""
+      - name: early_prescription_refills
+        description: ""
+      - name: marketplace_special_enrollment_period
+        description: ""
+      - name: section_1135_waiver
+        description: ""
+      - name: paid_sick_leave
+        description: ""
+      - name: premium_payment_grace_period
+        description: ""
+      - name: notes
+        description: ""
+      - name: last_updated_date
+        description: ""
+  - name: stg_covid19_data__kff_us_reopening_timeline_increment
+    description: "Staged kff_us_reopening_timeline_increment from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: date
+        description: ""
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: status
+        description: ""
+  - name: stg_covid19_data__kff_us_state_mitigations
+    description: "Staged kff_us_state_mitigations from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: status_of_reopening
+        description: ""
+      - name: stay_at_home_order
+        description: ""
+      - name: mandatory_quarantine_for_travelers
+        description: ""
+      - name: non_essential_business_closures
+        description: ""
+      - name: large_gatherings_ban
+        description: ""
+      - name: restaurant_limits
+        description: ""
+      - name: bar_closures
+        description: ""
+      - name: face_covering_requirement
+        description: ""
+      - name: primary_election_postponement
+        description: ""
+      - name: emergency_declaration
+        description: ""
+      - name: last_updated_date
+        description: ""
+  - name: stg_covid19_data__metadata
+    description: "Staged metadata from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: table
+        description: ""
+      - name: description
+        description: ""
+      - name: column
+        description: ""
+      - name: type
+        description: ""
+      - name: nullable
+        description: ""
+      - name: comments
+        description: ""
+      - name: source
+        description: ""
+  - name: stg_covid19_data__nyc_health_tests
+    description: "Staged nyc_health_tests from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: modified_zcta
+        description: ""
+      - name: covid_case_count
+        description: ""
+      - name: total_covid_tests
+        description: ""
+      - name: percent_positive
+        description: ""
+      - name: date
+        description: ""
+      - name: fips
+        description: ""
+      - name: country_region
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_updated_date
+        description: ""
+      - name: last_reported_date
+        description: ""
+  - name: stg_covid19_data__nyt_us_covid19
+    description: "Staged nyt_us_covid19 from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: date
+        description: ""
+      - name: county
+        description: ""
+      - name: state
+        description: ""
+      - name: fips
+        description: ""
+      - name: cases
+        description: ""
+      - name: deaths
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: cases_since_prev_day
+        description: ""
+      - name: deaths_since_prev_day
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__nyt_us_reopen_status
+    description: "Staged nyt_us_reopen_status from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: state_code
+        description: ""
+        tests:
+          - unique
+          - not_null
+      - name: state
+        description: ""
+      - name: status_description
+        description: ""
+      - name: date_details_description
+        description: ""
+      - name: restriction_start
+        description: ""
+      - name: restriction_end
+        description: ""
+      - name: status_details
+        description: ""
+      - name: external_link
+        description: ""
+      - name: opened_personal_care
+        description: ""
+      - name: closed_outdoor_and_recreation
+        description: ""
+      - name: closed_entertainment
+        description: ""
+      - name: opened_outdoor_and_recreation
+        description: ""
+      - name: closed_food_and_drink
+        description: ""
+      - name: opened_houses_of_worship
+        description: ""
+      - name: opened_entertainment
+        description: ""
+      - name: opened_food_and_drink
+        description: ""
+      - name: opened_retail
+        description: ""
+      - name: opened_industries
+        description: ""
+      - name: population
+        description: ""
+      - name: last_update_date
+        description: ""
+  - name: stg_covid19_data__owid_vaccinations
+    description: "Staged owid_vaccinations from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: date
+        description: ""
+      - name: country_region
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: total_vaccinations
+        description: ""
+      - name: people_vaccinated
+        description: ""
+      - name: people_fully_vaccinated
+        description: ""
+      - name: daily_vaccinations_raw
+        description: ""
+      - name: daily_vaccinations
+        description: ""
+      - name: total_vaccinations_per_hundred
+        description: ""
+      - name: people_vaccinated_per_hundred
+        description: ""
+      - name: people_fully_vaccinated_per_hundred
+        description: ""
+      - name: daily_vaccinations_per_million
+        description: ""
+      - name: vaccines
+        description: ""
+      - name: last_observation_date
+        description: ""
+      - name: source_name
+        description: ""
+      - name: source_website
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__pcm_dps_covid19
+    description: "Staged pcm_dps_covid19 from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: date
+        description: ""
+        tests:
+          - not_null
+      - name: case_type
+        description: ""
+        tests:
+          - not_null
+      - name: cases
+        description: ""
+        tests:
+          - not_null
+      - name: long
+        description: ""
+        tests:
+          - not_null
+      - name: lat
+        description: ""
+        tests:
+          - not_null
+      - name: difference
+        description: ""
+        tests:
+          - not_null
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_updated_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__pcm_dps_covid19_details
+    description: "Staged pcm_dps_covid19_details from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: province_state
+        description: ""
+      - name: date
+        description: ""
+      - name: hospitalized
+        description: ""
+      - name: intensive_care
+        description: ""
+      - name: total_hospitalized
+        description: ""
+      - name: home_isolation
+        description: ""
+      - name: total_positive
+        description: ""
+      - name: new_positive
+        description: ""
+      - name: discharged_healed
+        description: ""
+      - name: deceased
+        description: ""
+      - name: total_cases
+        description: ""
+      - name: tested
+        description: ""
+      - name: hospitalized_since_prev_day
+        description: ""
+      - name: intensive_care_since_prev_day
+        description: ""
+      - name: total_hospitalized_since_prev_day
+        description: ""
+      - name: home_isolation_since_prev_day
+        description: ""
+      - name: total_positive_since_prev_day
+        description: ""
+      - name: discharged_healed_since_prev_day
+        description: ""
+      - name: deceased_since_prev_day
+        description: ""
+      - name: total_cases_since_prev_day
+        description: ""
+      - name: tested_since_prev_day
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: note_it
+        description: ""
+      - name: note_en
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__rki_ger_covid19_dashboard
+    description: "Staged rki_ger_covid19_dashboard from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: district_id
+        description: ""
+        tests:
+          - unique
+          - not_null
+      - name: county
+        description: ""
+      - name: state_id
+        description: ""
+      - name: state
+        description: ""
+      - name: district_type
+        description: ""
+      - name: population
+        description: ""
+      - name: death_rate
+        description: ""
+      - name: cases
+        description: ""
+      - name: deaths
+        description: ""
+      - name: cases_per_100k
+        description: ""
+      - name: cases_per_population
+        description: ""
+      - name: cases7_per_100k
+        description: ""
+      - name: last_update
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__scs_be_detailed_hospitalisations
+    description: "Staged scs_be_detailed_hospitalisations from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: province
+        description: ""
+      - name: region
+        description: ""
+        tests:
+          - not_null
+      - name: date
+        description: ""
+        tests:
+          - not_null
+      - name: nr_reporting
+        description: ""
+      - name: total_in
+        description: ""
+      - name: total_in_icu
+        description: ""
+      - name: total_in_resp
+        description: ""
+      - name: total_in_ecmo
+        description: ""
+      - name: new_in
+        description: ""
+      - name: new_out
+        description: ""
+      - name: iso3166_1
+        description: ""
+        tests:
+          - not_null
+      - name: iso3166_2
+        description: ""
+      - name: iso3166_3
+        description: ""
+      - name: last_updated_date
+        description: ""
+        tests:
+          - not_null
+  - name: stg_covid19_data__scs_be_detailed_mortality
+    description: "Staged scs_be_detailed_mortality from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: region
+        description: ""
+      - name: sex
+        description: ""
+      - name: agegroup
+        description: ""
+      - name: date
+        description: ""
+        tests:
+          - not_null
+      - name: deaths
+        description: ""
+      - name: iso3166_1
+        description: ""
+        tests:
+          - not_null
+      - name: iso3166_2
+        description: ""
+      - name: last_updated_date
+        description: ""
+        tests:
+          - not_null
+  - name: stg_covid19_data__scs_be_detailed_province_case_counts
+    description: "Staged scs_be_detailed_province_case_counts from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: province
+        description: ""
+      - name: region
+        description: ""
+      - name: sex
+        description: ""
+      - name: agegroup
+        description: ""
+      - name: date
+        description: ""
+      - name: iso3166_1
+        description: ""
+        tests:
+          - not_null
+      - name: iso3166_2
+        description: ""
+      - name: iso3166_3
+        description: ""
+      - name: new_cases
+        description: ""
+      - name: total_cases
+        description: ""
+      - name: last_updated_date
+        description: ""
+        tests:
+          - not_null
+  - name: stg_covid19_data__scs_be_detailed_tests
+    description: "Staged scs_be_detailed_tests from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: date
+        description: ""
+      - name: tests
+        description: ""
+      - name: last_updated_date
+        description: ""
+        tests:
+          - not_null
+  - name: stg_covid19_data__vh_can_detailed
+    description: "Staged vh_can_detailed from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: date
+        description: ""
+      - name: province_state
+        description: ""
+      - name: healthcare_region
+        description: ""
+      - name: cases
+        description: ""
+      - name: deaths
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: iso3166_2
+        description: ""
+      - name: last_updated_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__who_daily_report
+    description: "Staged who_daily_report from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: cases_total
+        description: ""
+      - name: cases_total_per_100000
+        description: ""
+      - name: cases
+        description: ""
+      - name: deaths_total
+        description: ""
+      - name: deaths_total_per_100000
+        description: ""
+      - name: deaths
+        description: ""
+      - name: transmission_classification
+        description: ""
+      - name: date
+        description: ""
+      - name: iso3166_1
+        description: ""
+  - name: stg_covid19_data__who_situation_reports
+    description: "Staged who_situation_reports from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country
+        description: ""
+      - name: total_cases
+        description: ""
+        tests:
+          - not_null
+      - name: cases_new
+        description: ""
+      - name: deaths
+        description: ""
+        tests:
+          - not_null
+      - name: deaths_new
+        description: ""
+        tests:
+          - not_null
+      - name: transmission_classification
+        description: ""
+      - name: days_since_last_reported_case
+        description: ""
+      - name: iso3166_1
+        description: ""
+      - name: country_region
+        description: ""
+      - name: date
+        description: ""
+      - name: situation_report_name
+        description: ""
+      - name: situation_report_url
+        description: ""
+      - name: last_update_date
+        description: ""
+      - name: last_reported_flag
+        description: ""
+  - name: stg_covid19_data__who_timeseries
+    description: "Staged who_timeseries from covid19_data — renamed columns, 1:1 with source"
+    columns:
+      - name: country_region
+        description: ""
+      - name: cases_total
+        description: ""
+      - name: cases_total_per_100000
+        description: ""
+      - name: cases
+        description: ""
+      - name: deaths_total
+        description: ""
+      - name: deaths_total_per_100000
+        description: ""
+      - name: deaths
+        description: ""
+      - name: transmission_classification
+        description: ""
+      - name: date
+        description: ""
+      - name: iso3166_1
+        description: ""
