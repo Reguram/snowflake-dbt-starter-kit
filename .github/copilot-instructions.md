@@ -74,6 +74,16 @@ This project includes an MCP server with these tools:
 - `review_sql` — Static analysis of SQL models
 - `check_data_quality` — Run dbt tests with pass/fail summary
 - `generate_streamlit_app` — Create Streamlit-in-Snowflake dashboard
+- `list_medallion_models` — List dbt models by layer (bronze/silver/gold)
+- `read_model_sql` — Read any model's SQL source code
+- `suggest_silver_model` — Suggest intermediate (silver) layer models
+- `suggest_gold_model` — Suggest marts (gold) fact/dimension models
+- `write_medallion_model` — Write a generated silver/gold model to disk
+
+## Medallion Architecture Agent
+- `scripts/medallion_agent.py` — CLI agent for interactive model design (Cortex-powered)
+- `streamlit/medallion_advisor_app.py` — Streamlit-in-Snowflake advisor UI
+- The agent reads bronze data, profiles columns, and generates silver/gold models via natural language
 
 ## Bootstrap & Setup
 - For first-time setup, use `scripts/bootstrap.sh` (automates Steps 1–7)

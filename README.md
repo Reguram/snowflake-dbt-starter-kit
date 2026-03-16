@@ -25,8 +25,9 @@ Production-ready dbt project for Snowflake with a **Snowflake Managed MCP Server
 7. [Models Overview](#models-overview)
 8. [MCP Server (Tools for AI Agents)](#mcp-server-tools-for-ai-agents)
 9. [Claude Skills](#claude-skills)
-10. [Evaluation Framework](#evaluation-framework)
-11. [Troubleshooting](#troubleshooting)
+10. [Medallion Architecture Agent](#medallion-architecture-agent)
+11. [Evaluation Framework](#evaluation-framework)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -580,7 +581,7 @@ Models are auto-generated based on your source data:
 
 ## MCP Server (Tools for AI Agents)
 
-The MCP server exposes 6+ tools that Claude/Copilot can use:
+The MCP server exposes 11+ tools that Claude/Copilot can use:
 
 | Tool | Description |
 |------|-------------|
@@ -592,6 +593,11 @@ The MCP server exposes 6+ tools that Claude/Copilot can use:
 | `execute_query` | Run read-only SQL (SELECT, SHOW, DESCRIBE) |
 | `revenue_analyst` | Natural language queries via Cortex Analyst + Semantic View |
 | `run_sql` | Execute SQL via SYSTEM_EXECUTE_SQL (managed MCP only) |
+| `list_medallion_models` | List dbt models by medallion layer |
+| `read_model_sql` | Read any model's SQL source code |
+| `suggest_silver_model` | Suggest intermediate (silver) layer models |
+| `suggest_gold_model` | Suggest marts (gold) layer fact/dimension models |
+| `write_medallion_model` | Write a generated model to disk with schema.yml |
 
 **Architecture**:
 - **Snowflake Managed** (default): Tools run as UDFs/stored procs inside Snowflake. No local process. OAuth authentication. Endpoint: `https://<account>/api/v2/databases/DBT_DEV/schemas/MCP_TOOLS/mcp-servers/DBT_AGENT_MCP/sse`
@@ -606,6 +612,89 @@ Skill files in `.github/skills/` encode domain knowledge:
 - **code-review.md** — SQL review checklist (critical/warning/info)
 - **data-quality.md** — Test types, custom tests, freshness checks
 - **streamlit-generation.md** — Streamlit-in-Snowflake app patterns
+
+## Medallion Architecture Agent
+
+An AI-powered agent that reads your bronze (staging) layer data and helps you design, generate, and refine silver (intermediate) and gold (marts) layer dbt models through natural language conversation.
+
+### How It Works
+
+```
+ User: "Create a dim_companies table from free_company_data"
+       │
+       ▼
+ ┌──────────────────────────────────────┐
+ │  Medallion Agent (Cortex LLM)       │
+ │  ─ Reads staging models & schemas   │
+ │  ─ Profiles data (nulls, cardinality)│
+ │  ─ Suggests transformations          │
+ │  ─ Generates dbt SQL with ref()     │
+ │  ─ Writes models to disk            │
+ └──────────────┬───────────────────────┘
+                │
+       ┌────────┴────────┐
+       ▼                 ▼
+  int_*.sql          fct_*.sql / dim_*.sql
+  (silver layer)     (gold layer)
+```
+
+### Three Access Methods
+
+| Method | Best For | Location |
+|--------|----------|----------|
+| **CLI Agent** | Local development, scripted usage | `scripts/medallion_agent.py` |
+| **Streamlit App** | Interactive use in Snowsight | `streamlit/medallion_advisor_app.py` |
+| **MCP Tools** | VS Code / Copilot integration | `snowflake-dbt-mcp/server.py` |
+
+### CLI Agent
+
+```bash
+# Interactive chat mode
+python scripts/medallion_agent.py
+
+# Single question
+python scripts/medallion_agent.py --ask "Suggest silver models for japan_ecomm_data"
+
+# Use a different Cortex model
+python scripts/medallion_agent.py --model llama3.1-70b
+```
+
+The CLI agent connects to Snowflake, queries actual data, and can write models directly to disk.
+
+**Agent Tools:**
+- `list_sources` / `list_models` — See what data and models exist
+- `sample_data` / `describe_table` / `profile_data` — Inspect actual data
+- `run_query` — Execute read-only SQL
+- `generate_silver_model` / `generate_gold_model` — Write new dbt models
+- `modify_model` — Update existing models
+
+### Streamlit Advisor App
+
+Deploy to Snowflake for browser-based access:
+
+```sql
+-- In Snowsight SQL worksheet
+CREATE STREAMLIT DBT_DEV.MCP_TOOLS.MEDALLION_ADVISOR_APP
+  ROOT_LOCATION = '@dbt_stage/streamlit'
+  MAIN_FILE = 'medallion_advisor_app.py';
+```
+
+Features:
+- **Chat Advisor** — Conversational model design with data-aware context
+- **Data Explorer** — Browse tables, profile columns, run queries
+- **Model Generator** — Select source tables, describe requirements, generate SQL with AI
+
+### MCP Tools (VS Code)
+
+The MCP server includes 5 medallion-specific tools for Copilot/Claude:
+
+| Tool | Description |
+|------|-------------|
+| `list_medallion_models` | List models by layer (bronze/silver/gold) |
+| `read_model_sql` | Read any model's SQL source |
+| `suggest_silver_model` | Get silver layer model suggestions with context |
+| `suggest_gold_model` | Get gold layer fact/dimension suggestions |
+| `write_medallion_model` | Write generated model to disk |
 
 ## Evaluation Framework
 

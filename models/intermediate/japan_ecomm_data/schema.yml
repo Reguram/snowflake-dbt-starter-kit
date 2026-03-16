@@ -1,0 +1,7 @@
+version: 2
+models:
+- name: int_cleaned_transactions
+  description: Cleaned and conformed transaction data with type casting, null handling,
+    and standardization.
+- name: int_enriched_transactions
+  description: Enriched transaction data with additional business logic.

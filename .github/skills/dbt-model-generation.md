@@ -1,3 +1,8 @@
+---
+applyTo: "models/**/*.sql"
+description: "dbt model generation patterns for staging, intermediate, and mart layers. Auto-activates when editing SQL model files."
+---
+
 # Skill: dbt Model Generation
 
 ## When to Use

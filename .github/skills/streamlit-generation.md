@@ -1,3 +1,8 @@
+---
+applyTo: "streamlit/**/*.py"
+description: "Streamlit-in-Snowflake app patterns — Snowpark session, Cortex AI chat, dashboard layouts, deployment SQL. Auto-activates when editing Streamlit app files."
+---
+
 # Skill: Streamlit-in-Snowflake App Generation
 
 ## When to Use

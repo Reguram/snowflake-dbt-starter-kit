@@ -1,3 +1,8 @@
+---
+applyTo: "models/**/*.sql"
+description: "SQL code review checklist for Snowflake dbt projects — critical, warning, and info severity rules. Auto-activates when editing SQL model files."
+---
+
 # Skill: Snowflake SQL Code Review
 
 ## When to Use

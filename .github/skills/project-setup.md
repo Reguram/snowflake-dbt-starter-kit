@@ -1,3 +1,8 @@
+---
+applyTo: "scripts/bootstrap.sh,scripts/snowflake_setup.sql,dbt_project.yml,profiles.yml"
+description: "Project setup and bootstrap — Python venv, Snowflake objects, dbt configuration, discover_and_generate.py, and troubleshooting. Auto-activates when editing setup scripts or project config."
+---
+
 # Skill: Project Setup & Bootstrap
 
 ## When to Use

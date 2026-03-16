@@ -1,3 +1,8 @@
+---
+applyTo: "models/**/schema.yml,models/**/_sources.yml,tests/**"
+description: "Data quality testing patterns — schema tests (unique, not_null, relationships, accepted_values), custom singular tests, and source freshness. Auto-activates when editing schema.yml, sources, or test files."
+---
+
 # Skill: Data Quality Checks
 
 ## When to Use

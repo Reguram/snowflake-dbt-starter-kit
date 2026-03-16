@@ -16,6 +16,12 @@ st.set_page_config(page_title="dbt Agent", page_icon="🔧", layout="wide")
 
 session = get_active_session()
 
+# Enable cross-region inference so Cortex models work regardless of region
+try:
+    session.sql("ALTER SESSION SET CORTEX_ENABLED_CROSS_REGION = 'ANY_REGION'").collect()
+except Exception:
+    pass  # May already be set or require higher privileges
+
 # ---------------------------------------------------------------------------
 # System prompt (dbt conventions baked in)
 # ---------------------------------------------------------------------------

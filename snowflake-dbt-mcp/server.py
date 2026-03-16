@@ -311,6 +311,80 @@ Question: {{user_question}}"""
 
 # ===== MCP Tool Definitions ================================================
 
+# ===== Medallion Advisor Helpers =============================================
+
+def _list_models_by_layer(layer: str = "all") -> dict:
+    """List dbt model files organized by medallion layer."""
+    models_dir = PROJECT_ROOT / "models"
+    result = {}
+    layers = ["staging", "intermediate", "marts"] if layer == "all" else [layer]
+
+    for l in layers:
+        layer_dir = models_dir / l
+        layer_models = []
+        if layer_dir.exists():
+            for source_dir in sorted(layer_dir.iterdir()):
+                if source_dir.is_dir():
+                    for f in sorted(source_dir.glob("*.sql")):
+                        layer_models.append({
+                            "name": f.stem,
+                            "source": source_dir.name,
+                            "path": str(f.relative_to(PROJECT_ROOT)),
+                        })
+                elif source_dir.suffix == ".sql":
+                    layer_models.append({"name": source_dir.stem, "source": "root", "path": str(source_dir.relative_to(PROJECT_ROOT))})
+        result[l] = layer_models
+    return result
+
+
+def _read_model_sql(model_name: str) -> dict:
+    """Read the SQL of a dbt model file."""
+    models_dir = PROJECT_ROOT / "models"
+    for layer in ["staging", "intermediate", "marts", "semantic"]:
+        layer_dir = models_dir / layer
+        if layer_dir.exists():
+            for sql_file in layer_dir.rglob(f"{model_name}.sql"):
+                return {
+                    "model": model_name,
+                    "layer": layer,
+                    "path": str(sql_file.relative_to(PROJECT_ROOT)),
+                    "sql": sql_file.read_text(),
+                }
+    return {"error": f"Model '{model_name}' not found"}
+
+
+def _write_model(layer: str, source_name: str, model_name: str, sql: str, description: str = "") -> dict:
+    """Write a dbt model SQL file and update schema.yml."""
+    import yaml as _yaml
+
+    target_dir = PROJECT_ROOT / "models" / layer / source_name
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    sql_path = target_dir / f"{model_name}.sql"
+    sql_path.write_text(sql)
+
+    schema_path = target_dir / "schema.yml"
+    if schema_path.exists():
+        with open(schema_path) as f:
+            data = _yaml.safe_load(f) or {}
+    else:
+        data = {"version": 2, "models": []}
+    if "models" not in data:
+        data["models"] = []
+    existing = next((m for m in data["models"] if m.get("name") == model_name), None)
+    if existing:
+        existing["description"] = description or f"Generated {layer} model"
+    else:
+        data["models"].append({"name": model_name, "description": description or f"Generated {layer} model"})
+    with open(schema_path, "w") as f:
+        _yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+
+    return {
+        "created": str(sql_path.relative_to(PROJECT_ROOT)),
+        "schema": str(schema_path.relative_to(PROJECT_ROOT)),
+    }
+
+
 @server.list_tools()
 async def list_tools() -> list[Tool]:
     return [
@@ -459,6 +533,111 @@ async def list_tools() -> list[Tool]:
                 "required": ["model_name"],
             },
         ),
+        # ── Medallion Advisor Tools ──
+        Tool(
+            name="list_medallion_models",
+            description="List dbt models by medallion layer: 'staging' (bronze), 'intermediate' (silver), 'marts' (gold), or 'all'",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "layer": {
+                        "type": "string",
+                        "enum": ["all", "staging", "intermediate", "marts"],
+                        "description": "Medallion layer to list",
+                        "default": "all",
+                    },
+                },
+            },
+        ),
+        Tool(
+            name="read_model_sql",
+            description="Read the SQL source code of a specific dbt model by name",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "model_name": {
+                        "type": "string",
+                        "description": "Exact model name without .sql extension",
+                    },
+                },
+                "required": ["model_name"],
+            },
+        ),
+        Tool(
+            name="suggest_silver_model",
+            description="Suggest a silver (intermediate) dbt model with SQL given a source model and business description",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source_models": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of staging model names to base the silver model on",
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Natural language description of the desired transformation",
+                    },
+                },
+                "required": ["source_models", "description"],
+            },
+        ),
+        Tool(
+            name="suggest_gold_model",
+            description="Suggest a gold (marts) dbt model — fact or dimension — with SQL",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source_models": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of model names (staging or intermediate) to base the gold model on",
+                    },
+                    "model_type": {
+                        "type": "string",
+                        "enum": ["fact", "dimension"],
+                        "description": "Whether this is a fact table (fct_) or dimension table (dim_)",
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Natural language description of the desired mart",
+                    },
+                },
+                "required": ["source_models", "model_type", "description"],
+            },
+        ),
+        Tool(
+            name="write_medallion_model",
+            description="Write a generated silver or gold layer dbt model to disk",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "layer": {
+                        "type": "string",
+                        "enum": ["intermediate", "marts"],
+                        "description": "Target layer — intermediate (silver) or marts (gold)",
+                    },
+                    "source_name": {
+                        "type": "string",
+                        "description": "Source subdirectory name (e.g., 'free_company_data')",
+                    },
+                    "model_name": {
+                        "type": "string",
+                        "description": "Model name (e.g., 'int_orders_enriched' or 'fct_revenue')",
+                    },
+                    "sql": {
+                        "type": "string",
+                        "description": "Complete dbt SQL for the model",
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Model description for schema.yml",
+                        "default": "",
+                    },
+                },
+                "required": ["layer", "source_name", "model_name", "sql"],
+            },
+        ),
     ]
 
 
@@ -574,6 +753,90 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         return [TextContent(
             type="text",
             text=f"## Streamlit App for {model_name}\n\n```python\n{code}\n```",
+        )]
+
+    # ── Medallion Advisor Tool Handlers ──
+
+    elif name == "list_medallion_models":
+        layer = arguments.get("layer", "all")
+        result = _list_models_by_layer(layer)
+        formatted = json.dumps(result, indent=2)
+        return [TextContent(type="text", text=f"## Models by Layer\n\n```json\n{formatted}\n```")]
+
+    elif name == "read_model_sql":
+        model_name = arguments["model_name"]
+        result = _read_model_sql(model_name)
+        if "error" in result:
+            return [TextContent(type="text", text=f"Error: {result['error']}")]
+        return [TextContent(
+            type="text",
+            text=f"## {result['model']} ({result['layer']})\n\nPath: `{result['path']}`\n\n```sql\n{result['sql']}\n```",
+        )]
+
+    elif name == "suggest_silver_model":
+        source_models = arguments["source_models"]
+        description = arguments["description"]
+        # Read source model SQL for context
+        sources_context = []
+        for m in source_models:
+            info = _read_model_sql(m)
+            if "sql" in info:
+                sources_context.append(f"### {m} ({info['layer']})\n```sql\n{info['sql']}\n```")
+            else:
+                sources_context.append(f"### {m}\n(not found on disk)")
+
+        suggestion = (
+            f"## Suggested Silver (Intermediate) Model\n\n"
+            f"**Business Requirement:** {description}\n\n"
+            f"**Source Models:**\n\n" + "\n\n".join(sources_context) + "\n\n"
+            f"### Suggested SQL\n\n"
+            f"Create a file like `models/intermediate/<source>/int_<name>.sql` with a CTE-based model that:\n"
+            f"- References source models with `{{{{ ref('{source_models[0]}') }}}}`\n"
+            f"- Applies business logic: {description}\n"
+            f"- Uses Snowflake-native functions\n\n"
+            f"Use the `write_medallion_model` tool to save the model after finalizing the SQL."
+        )
+        return [TextContent(type="text", text=suggestion)]
+
+    elif name == "suggest_gold_model":
+        source_models = arguments["source_models"]
+        model_type = arguments["model_type"]
+        description = arguments["description"]
+        prefix = "fct_" if model_type == "fact" else "dim_"
+
+        sources_context = []
+        for m in source_models:
+            info = _read_model_sql(m)
+            if "sql" in info:
+                sources_context.append(f"### {m} ({info['layer']})\n```sql\n{info['sql']}\n```")
+            else:
+                sources_context.append(f"### {m}\n(not found on disk)")
+
+        suggestion = (
+            f"## Suggested Gold ({model_type.title()}) Model\n\n"
+            f"**Prefix:** `{prefix}`\n"
+            f"**Business Requirement:** {description}\n\n"
+            f"**Source Models:**\n\n" + "\n\n".join(sources_context) + "\n\n"
+            f"### Guidelines\n\n"
+            f"- Name: `{prefix}<entity>` (e.g., `{prefix}orders`)\n"
+            f"- Use `dbt_utils.generate_surrogate_key()` for surrogate keys\n"
+            f"- Explicitly list all columns (no SELECT *)\n"
+            f"- Include pk tests (unique + not_null) in schema.yml\n\n"
+            f"Use the `write_medallion_model` tool to save the model after finalizing the SQL."
+        )
+        return [TextContent(type="text", text=suggestion)]
+
+    elif name == "write_medallion_model":
+        layer = arguments["layer"]
+        source_name = arguments["source_name"]
+        model_name = arguments["model_name"]
+        sql = arguments["sql"]
+        description = arguments.get("description", "")
+
+        result = _write_model(layer, source_name, model_name, sql, description)
+        return [TextContent(
+            type="text",
+            text=f"## Model Written\n\n- SQL: `{result['created']}`\n- Schema: `{result['schema']}`\n\nRun `dbt build --select {model_name}` to materialize.",
         )]
 
     return [TextContent(type="text", text=f"Unknown tool: {name}")]

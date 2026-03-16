@@ -1,3 +1,8 @@
+---
+applyTo: "models/semantic/**"
+description: "Snowflake Semantic View design, DDL generation, dimensions and metrics definition. Auto-activates when editing semantic model files."
+---
+
 # Skill: Snowflake Semantic View Design
 
 ## When to Use
