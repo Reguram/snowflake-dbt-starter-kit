@@ -26,7 +26,7 @@ models:
       +schema: DBT_STAGING
       +tags: ["staging"]
     intermediate:
-      +materialized: ephemeral
+      +materialized: view
       +schema: DBT_INTERMEDIATE
       +tags: ["intermediate"]
     marts:
