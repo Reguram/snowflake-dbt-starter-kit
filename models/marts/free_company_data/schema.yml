@@ -1,7 +1,10 @@
 version: 2
-
 models:
-  - name: fct_freecompanydataset
-    description: "Detail fact table from free_company_data — all columns from the richest source table"
-  - name: summary_freecompanydataset
-    description: "Aggregated summary from FREECOMPANYDATASET grouped by COUNTRY, INDUSTRY, LOCALITY, REGION, SIZE"
+- name: fct_freecompanydataset
+  description: "Detail fact table from free_company_data \u2014 all columns from the\
+    \ richest source table"
+- name: summary_freecompanydataset
+  description: Aggregated summary from FREECOMPANYDATASET grouped by COUNTRY, INDUSTRY,
+    LOCALITY, REGION, SIZE
+- name: dim_countries
+  description: Dimension table for countries
