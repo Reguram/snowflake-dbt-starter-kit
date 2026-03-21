@@ -24,7 +24,14 @@ Production-ready dbt project for Snowflake with a **Snowflake Managed MCP Server
 6. [Project Structure](#project-structure)
 7. [Models Overview](#models-overview)
 8. [MCP Server (Tools for AI Agents)](#mcp-server-tools-for-ai-agents)
-9. [Claude Skills](#claude-skills)
+9. [AI Agent Skills & Copilot Integration](#ai-agent-skills--copilot-integration)
+   - [dbt Agent Skills (Upstream)](#dbt-agent-skills-upstream)
+   - [VS Code Active Skills (Auto-Activation)](#vs-code-active-skills-auto-activation)
+   - [Snowflake Semantic View Creator (Custom Skill)](#snowflake-semantic-view-creator-custom-skill)
+   - [Two Semantic Approaches](#two-semantic-approaches)
+   - [Reusable Copilot Prompts](#reusable-copilot-prompts)
+   - [Custom Copilot Agent](#custom-copilot-agent)
+   - [Semantic View Generator Script](#semantic-view-generator-script)
 10. [Medallion Architecture Agent](#medallion-architecture-agent)
 11. [Evaluation Framework](#evaluation-framework)
 12. [Troubleshooting](#troubleshooting)
@@ -125,7 +132,7 @@ dbt build --select "source:free_company_data+"
 dbt build
 ```
 
-> **Using Copilot/Claude?** Just say: *"Set up this dbt project for me"* — the agent skill in `.github/skills/project-setup.md` will guide the process automatically.
+> **Using Copilot/Claude?** Just say: *"Set up this dbt project for me"* — the agent skill in `.github/skills/project-setup.instructions.md` will guide the process automatically.
 
 If you prefer to understand each step, follow the manual guide below.
 
@@ -518,6 +525,8 @@ On re-generation (`--overwrite`), stale mart files from previous runs are automa
 ├── scripts/
 │   ├── bootstrap.sh              # One-command setup (Steps 1-7 automated)
 │   ├── discover_and_generate.py  # Source discovery + model generation (the core script)
+│   ├── generate_semantic_view.py # Semantic view scaffold (profile → classify → generate)
+│   ├── medallion_agent.py        # CLI agent for silver/gold model design (Cortex-powered)
 │   └── snowflake_setup.sql       # Generated Snowflake setup SQL (run in Snowsight)
 ├── models/
 │   ├── staging/<source_name>/    # Source-conformed views (stg_<source>__*)
@@ -551,9 +560,28 @@ On re-generation (`--overwrite`), stale mart files from previous runs are automa
 │   ├── REPORT.md                 # Results template
 │   ├── tasks/                    # 8 standardized evaluation prompts
 │   └── results/                  # Captured outputs + scores
+├── .agents/
+│   └── skills/                   # dbt-agent-skills (upstream from dbt-labs)
+│       ├── using-dbt-for-analytics-engineering/
+│       ├── building-dbt-semantic-layer/
+│       ├── adding-dbt-unit-test/
+│       ├── running-dbt-commands/
+│       ├── troubleshooting-dbt-job-errors/
+│       ├── configuring-dbt-mcp-server/
+│       ├── fetching-dbt-docs/
+│       ├── answering-natural-language-questions-with-dbt/
+│       ├── creating-mermaid-dbt-dag/
+│       ├── migrating-dbt-core-to-fusion/
+│       └── migrating-dbt-project-across-platforms/
+├── .cortex/
+│   └── skills/                   # Same 11 upstream + custom Snowflake SV Creator
+│       ├── (11 upstream skills)  # Mirror of .agents/skills/ for Cortex Code
+│       └── snowflake-semantic-view-creator/  # Custom skill for Snowflake Semantic Views
 ├── .github/
 │   ├── copilot-instructions.md   # Project conventions for Copilot
-│   ├── skills/                   # Domain-specific skill files
+│   ├── skills/                   # VS Code auto-activation skills (10 skills)
+│   ├── prompts/                  # Reusable Copilot Chat prompts (4 prompts)
+│   ├── agents/                   # Custom Copilot agents (@dbt-semantic-advisor)
 │   └── workflows/                # CI: dbt build on PRs
 └── .vscode/
     └── mcp.json                  # MCP server config (Snowflake managed or local)
@@ -603,15 +631,261 @@ The MCP server exposes 11+ tools that Claude/Copilot can use:
 - **Snowflake Managed** (default): Tools run as UDFs/stored procs inside Snowflake. No local process. OAuth authentication. Endpoint: `https://<account>/api/v2/databases/DBT_DEV/schemas/MCP_TOOLS/mcp-servers/DBT_AGENT_MCP/sse`
 - **Local Fallback**: Python stdio server for offline/development. See `server.py`.
 
-## Claude Skills
+## AI Agent Skills & Copilot Integration
 
-Skill files in `.github/skills/` encode domain knowledge:
+This project has a comprehensive AI skill system with three layers:
+1. **Upstream dbt-agent-skills** (`.agents/skills/` and `.cortex/skills/`) — Deep dbt expertise from [dbt-labs](https://github.com/dbt-labs/dbt-agent-skills)
+2. **VS Code active skills** (`.github/skills/`) — Auto-activate when you open matching files
+3. **Custom skills, prompts & agents** — Project-specific Snowflake Semantic View expertise
 
-- **dbt-model-generation.md** — Staging/intermediate/mart generation patterns
-- **semantic-view-design.md** — Snowflake Semantic View design and DDL
-- **code-review.md** — SQL review checklist (critical/warning/info)
-- **data-quality.md** — Test types, custom tests, freshness checks
-- **streamlit-generation.md** — Streamlit-in-Snowflake app patterns
+### dbt Agent Skills (Upstream)
+
+11 skills from [dbt-labs/dbt-agent-skills](https://github.com/dbt-labs/dbt-agent-skills), installed to `.agents/skills/` (for GitHub Copilot) and `.cortex/skills/` (for Cortex Code). These are passive — they activate when Copilot matches your prompt to the skill's description.
+
+| Skill | What It Does | Example Prompt |
+|-------|-------------|----------------|
+| `using-dbt-for-analytics-engineering` | Build/modify models, DRY principles, `dbt show` validation | *"Create a staging model for the orders table"* |
+| `building-dbt-semantic-layer` | dbt Semantic Layer (MetricFlow) — YAML semantic models, metrics | *"Add a MetricFlow semantic model for revenue"* |
+| `adding-dbt-unit-test` | Unit testing / TDD patterns for dbt models | *"Write a unit test for the tax calculation in fct_orders"* |
+| `running-dbt-commands` | CLI commands with correct flags and selectors | *"How do I build only staging models?"* |
+| `troubleshooting-dbt-job-errors` | Diagnose job failures, log analysis | *"My dbt Cloud job failed, help me debug"* |
+| `configuring-dbt-mcp-server` | MCP server setup and configuration | *"Set up the dbt MCP server for VS Code"* |
+| `fetching-dbt-docs` | Documentation lookup from docs.getdbt.com | *"How do incremental models work in dbt?"* |
+| `answering-natural-language-questions-with-dbt` | NL querying via Semantic Layer | *"What were total sales last quarter?"* |
+| `creating-mermaid-dbt-dag` | Mermaid DAG visualization | *"Show me the lineage DAG for fct_orders"* |
+| `migrating-dbt-core-to-fusion` | Migration to dbt Fusion | *"Help me migrate to dbt Fusion"* |
+| `migrating-dbt-project-across-platforms` | Cross-platform migration | *"Migrate this project from Snowflake to Databricks"* |
+
+#### Installing / Updating dbt Agent Skills
+
+Skills are installed via the [Vercel Skills CLI](https://agentskills.io). To reinstall or update:
+
+```bash
+# Install for GitHub Copilot (writes to .agents/skills/)
+npx skills add dbt-labs/dbt-agent-skills --agent github-copilot --copy -y
+
+# Install for Cortex Code (writes to .cortex/skills/)
+npx skills add dbt-labs/dbt-agent-skills --agent cortex --copy -y
+```
+
+Each skill contains a `SKILL.md` file with YAML frontmatter (name, description, allowed-tools) and detailed instructions that the AI reads at query time.
+
+### VS Code Active Skills (Auto-Activation)
+
+Skills in `.github/skills/` use `applyTo` glob patterns to **automatically activate** when you open or edit matching files. No prompting required — the AI reads the skill context as soon as the file is active.
+
+> **Important**: Files must use the `.instructions.md` extension for VS Code Copilot auto-activation to work. Plain `.md` files are ignored by the `applyTo` mechanism.
+
+| Skill File | Triggers On | What It Does |
+|-----------|------------|-------------|
+| `dbt-model-generation.instructions.md` | `models/**/*.sql`, `models/**/*.yml` | Staging/intermediate/mart generation patterns, DRY principles, `dbt show` validation |
+| `code-review.instructions.md` | `models/**/*.sql` | SQL review checklist (critical/warning/info severity levels) |
+| `data-quality.instructions.md` | `models/**/schema.yml`, `tests/**` | Schema tests, unit tests (TDD), custom singular tests, freshness checks |
+| `semantic-view-design.instructions.md` | `models/semantic/**`, `models/marts/**/*.sql`, `models/marts/**/schema.yml` | Snowflake-native Semantic View design, dimension/metric classification, DDL generation |
+| `natural-language-queries.instructions.md` | `models/semantic/**`, `models/marts/**/schema.yml` | NL querying via Cortex Analyst + Semantic Views |
+| `running-dbt-commands.instructions.md` | `dbt_project.yml`, `profiles.yml*`, `packages.yml` | CLI commands, selectors, flags, cost management |
+| `troubleshooting.instructions.md` | `logs/**`, `target/**/*.json` | Error classification, log reading, run result analysis |
+| `dbt-docs.instructions.md` | `models/**/schema.yml`, `models/**/_sources.yml` | Documentation patterns, schema.yml structure, doc blocks |
+| `project-setup.instructions.md` | `scripts/bootstrap.sh`, `dbt_project.yml`, `profiles.yml` | Project setup, MCP server configuration |
+| `streamlit-generation.instructions.md` | `streamlit/**/*.py` | Streamlit-in-Snowflake app patterns |
+
+**Example — auto-activation in action:**
+1. Open `models/marts/japan_ecomm_data/fct_sales.sql` in VS Code
+2. The `dbt-model-generation`, `code-review`, and `semantic-view-design` skills all auto-activate
+3. Ask Copilot: *"Review this model"* — it applies all three skills' knowledge automatically
+4. Ask Copilot: *"Create a semantic view for this mart"* — it uses the `semantic-view-design` skill to classify columns and generate DDL
+
+### Snowflake Semantic View Creator (Custom Skill)
+
+A custom skill at `.cortex/skills/snowflake-semantic-view-creator/` for creating Snowflake-native `CREATE SEMANTIC VIEW` DDL. This is distinct from the upstream `building-dbt-semantic-layer` (MetricFlow) skill.
+
+**Contents:**
+```
+.cortex/skills/snowflake-semantic-view-creator/
+├── SKILL.md                                # Main skill file with classification heuristics
+└── references/
+    ├── semantic-view-ddl-syntax.md          # Full DDL syntax reference
+    └── dimension-metric-patterns.md         # Column classification patterns
+```
+
+**What it does:**
+- Reads a mart model's SQL and schema.yml
+- Classifies columns as dimensions (filter/group-by) or metrics (aggregatable measures)
+- Generates `sem_*.sql` dbt model, `schema.yml` metadata, and `CREATE SEMANTIC VIEW` DDL
+- Provides heuristics for dimension vs metric classification:
+
+| Column Pattern | Classification | Reasoning |
+|---------------|---------------|----------|
+| `*_id`, `*_key` | Dimension | Entity identifiers, used for joins/filters |
+| `*_name`, `*_type`, `*_status`, `*_category` | Dimension | Categorical, used for group-by |
+| `*_date`, `*_at`, `*_timestamp` | Dimension (time) | Time-based filtering |
+| `*_amount`, `*_total`, `*_revenue`, `*_cost` | Metric (SUM) | Additive currency measures |
+| `*_count`, `*_qty`, `*_quantity` | Metric (SUM) | Additive count measures |
+| `*_rate`, `*_ratio`, `*_pct`, `*_percent` | Metric (AVG) | Non-additive rate measures |
+
+### Two Semantic Approaches
+
+This project supports **both** semantic approaches — they coexist without conflict:
+
+| Aspect | dbt Semantic Layer (MetricFlow) | Snowflake Semantic Views |
+|--------|-------------------------------|-------------------------|
+| **Definition** | YAML semantic models in `schema.yml` | `CREATE SEMANTIC VIEW` DDL |
+| **Query tool** | `dbt sl query`, MetricFlow | Cortex Analyst (natural language) |
+| **Skill** | `.agents/skills/building-dbt-semantic-layer/` | `.cortex/skills/snowflake-semantic-view-creator/` |
+| **VS Code skill** | (uses upstream agent skill) | `.github/skills/semantic-view-design.md` |
+| **Best for** | Cross-platform BI tools, dbt Cloud | Snowflake-native NL querying, Cortex Analyst |
+
+**When to use which:**
+- Use **MetricFlow** if you need metrics consumed by BI tools (Tableau, Looker) via dbt Cloud Semantic Layer
+- Use **Snowflake Semantic Views** if you want Cortex Analyst natural language querying inside Snowflake/Snowsight
+- Use **both** if you want maximum coverage — they define metrics differently and don't conflict
+
+### Reusable Copilot Prompts
+
+4 clickable prompts in `.github/prompts/` for common workflows. In VS Code Copilot Chat, click the prompt icon or type `/` to see them:
+
+| Prompt | File | What It Does |
+|--------|------|-------------|
+| **Suggest Semantic View** | `suggest-semantic-view.prompt.md` | Analyzes a mart model, classifies columns, generates `sem_*.sql` + `schema.yml` + DDL |
+| **Suggest Tests** | `suggest-tests.prompt.md` | Analyzes a model and suggests schema tests, unit tests, and custom singular tests |
+| **Validate and Build** | `validate-and-build.prompt.md` | Compiles, builds, runs tests, diagnoses errors, previews results with `dbt show` |
+| **Review Model** | `review-model.prompt.md` | Full code review against project conventions (critical/warning/info) |
+
+**Example — using a prompt:**
+1. Open a mart model (e.g., `fct_orders.sql`)
+2. Open Copilot Chat (Ctrl+Shift+I / Cmd+Shift+I)
+3. Click the prompt icon (bookmark/slash) → select **"Suggest Semantic View"**
+4. Copilot reads the model, classifies columns, and generates all three artifacts
+
+### Custom Copilot Agent
+
+A custom agent `@dbt-semantic-advisor` defined in `.github/agents/dbt-semantic-advisor.agent.md`. Invoke it in Copilot Chat by typing `@dbt-semantic-advisor`.
+
+**What it can do:**
+- Analyze any mart model and classify columns as dimensions vs metrics
+- Generate `sem_*.sql` models, `schema.yml` metadata, and `CREATE SEMANTIC VIEW` DDL
+- Explain the difference between MetricFlow and Snowflake Semantic Views
+- Recommend which semantic approach to use for a given use case
+- Validate semantic view designs
+
+**Example usage:**
+```
+@dbt-semantic-advisor Analyze fct_sales and create a semantic view for revenue analysis
+
+@dbt-semantic-advisor What's the difference between MetricFlow and Snowflake Semantic Views?
+
+@dbt-semantic-advisor Which columns in fct_orders should be dimensions vs metrics?
+```
+
+### Semantic View Generator Script
+
+A Python script at `scripts/generate_semantic_view.py` that automates semantic view scaffolding by connecting to Snowflake, profiling column data, and auto-classifying columns.
+
+#### Prerequisites
+
+```bash
+pip install snowflake-connector-python pyyaml
+```
+
+Ensure your Snowflake env vars are set (same as dbt — `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD`, etc.).
+
+#### Usage
+
+```bash
+# Generate semantic view artifacts for a mart model
+python scripts/generate_semantic_view.py --model fct_orders
+
+# Preview without writing files (dry run)
+python scripts/generate_semantic_view.py --model fct_orders --dry-run
+
+# Custom analysis name (default: derived from model name)
+python scripts/generate_semantic_view.py --model fct_orders --analysis-name revenue_analysis
+
+# Skip Snowflake profiling (uses schema.yml metadata only)
+python scripts/generate_semantic_view.py --model fct_orders --skip-profile
+```
+
+#### What It Generates
+
+For `--model fct_orders`, the script creates:
+
+**1. `models/semantic/sem_orders_analysis.sql`** — dbt view model:
+```sql
+{{ config(materialized='view', schema='SEMANTIC') }}
+
+with source as (
+    select * from {{ ref('fct_orders') }}
+)
+
+select
+    -- Dimensions
+    order_status,
+    customer_segment,
+    order_date,
+    order_month,
+    order_year,
+    -- Metrics
+    order_amount,
+    discount_amount,
+    quantity
+from source
+```
+
+**2. `models/semantic/schema.yml`** — metadata block:
+```yaml
+models:
+  - name: sem_orders_analysis
+    description: "Semantic view for orders analysis"
+    meta:
+      snowflake_semantic_view:
+        target_database: DBT_DEV
+        target_schema: SEMANTIC
+        dimensions:
+          - name: order_status
+            synonyms: ["status", "order state"]
+            data_type: VARCHAR
+          - name: order_date
+            synonyms: ["date", "when"]
+            data_type: DATE
+        metrics:
+          - name: total_revenue
+            expression: "SUM(order_amount)"
+            description: "Total order revenue"
+          - name: avg_order_value
+            expression: "AVG(order_amount)"
+            description: "Average order value"
+```
+
+**3. `CREATE SEMANTIC VIEW` DDL** (printed to stdout or written to file):
+```sql
+CREATE OR REPLACE SEMANTIC VIEW DBT_DEV.SEMANTIC.SEM_ORDERS_ANALYSIS
+  AS SELECT * FROM DBT_DEV.SEMANTIC.SEM_ORDERS_ANALYSIS
+  COMMENT = 'Semantic view for orders analysis'
+  COLUMNS (
+    order_status DIMENSION SYNONYMS ('status', 'order state'),
+    customer_segment DIMENSION,
+    order_date DIMENSION SYNONYMS ('date', 'when'),
+    order_amount METRIC SUM SYNONYMS ('revenue', 'sales'),
+    quantity METRIC SUM
+  )
+  METRICS (
+    total_revenue AS SUM(order_amount),
+    avg_order_value AS AVG(order_amount)
+  );
+```
+
+#### How Classification Works
+
+The script connects to Snowflake and runs:
+```sql
+SELECT COUNT(*), COUNT(DISTINCT col1), ... FROM mart_table
+```
+
+Then applies heuristic rules:
+- **Dimension**: String/boolean columns with low cardinality (<500 distinct or <5% cardinality ratio)
+- **Metric**: Numeric columns that aren't keys (no `_id`, `_key` suffix)
+- **Time dimension**: DATE/TIMESTAMP columns
+- **Skip**: High-cardinality strings (names, URLs), key columns
 
 ## Medallion Architecture Agent
 
@@ -666,6 +940,7 @@ The CLI agent connects to Snowflake, queries actual data, and can write models d
 - `sample_data` / `describe_table` / `profile_data` — Inspect actual data
 - `run_query` — Execute read-only SQL
 - `generate_silver_model` / `generate_gold_model` — Write new dbt models
+- `generate_semantic_view` — Scaffold a Snowflake Semantic View from a mart model
 - `modify_model` — Update existing models
 
 ### Streamlit Advisor App

@@ -198,6 +198,56 @@ Use `--dry-run` to preview without writing files.
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `Env var required but not provided: SNOWFLAKE_ACCOUNT` | Env vars not set in current shell | Add exports to `~/.zshrc` and run `source ~/.zshrc`, or use direct credentials |
+
+## MCP Server Configuration
+
+This project includes an MCP server for AI agent tooling. There are two modes:
+
+### Local Python MCP Server (Development)
+Use for local development — runs via stdio, no Snowflake-managed server needed:
+
+1. Ensure `mcp` package is installed: `pip install mcp`
+2. In `.vscode/mcp.json`, use the stdio configuration:
+```json
+{
+  "servers": {
+    "snowflake-dbt-mcp": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["snowflake-dbt-mcp/server.py"],
+      "env": {
+        "DBT_PROJECT_DIR": "${workspaceFolder}"
+      }
+    }
+  }
+}
+```
+3. Restart VS Code — MCP tools will be available in Copilot Chat
+
+### Snowflake-Managed MCP Server (Production)
+For full data access and Cortex Analyst integration:
+
+1. Run setup scripts in Snowsight as ACCOUNTADMIN (in order):
+   - `snowflake-dbt-mcp/setup/01_database_objects.sql`
+   - `snowflake-dbt-mcp/setup/02_udf_tools.sql`
+   - `snowflake-dbt-mcp/setup/03_mcp_server.sql`
+   - `snowflake-dbt-mcp/setup/04_oauth_security.sql`
+   - `snowflake-dbt-mcp/setup/05_grants.sql`
+2. Get the MCP endpoint URL from Snowflake
+3. Update `.vscode/mcp.json` with the streamableHttp configuration
+4. Use OAuth for authentication (configured in step 4)
+
+### MCP Tools Available
+| Tool | Purpose |
+|------|---------|
+| `generate_dbt_model` | Auto-scaffold staging model from source table |
+| `generate_semantic_view` | Generate CREATE SEMANTIC VIEW DDL |
+| `run_dbt_command` | Execute dbt CLI commands |
+| `review_sql` | Static analysis against best practices |
+| `check_data_quality` | Null/duplicate/row-count checks |
+| `generate_streamlit_app` | Scaffold Streamlit dashboard |
+| `list_medallion_models` | List models by layer (bronze/silver/gold) |
+| `suggest_silver_model` / `suggest_gold_model` | AI-powered model suggestions |
 | `003001 (42501): Insufficient privileges` | Role missing grants | Run the GRANT statements as ACCOUNTADMIN in Snowsight |
 | `Compilation Error: source ... not found` | `dbt deps` not run | Run `dbt deps` to install packages |
 | Tables in wrong schema (PUBLIC instead of DBT_MARTS) | Missing `generate_schema_name` macro | Verify `macros/generate_schema_name.sql` exists — it overrides dbt default schema behavior |

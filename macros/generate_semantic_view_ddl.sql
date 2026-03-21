@@ -1,5 +1,6 @@
 {#
     Generate Snowflake Semantic View DDL from dbt model metadata.
+    Uses current Snowflake syntax: TABLES / DIMENSIONS / METRICS.
     
     Usage in a run-operation or post-hook:
     {{ generate_semantic_view_ddl('sem_revenue_analysis') }}
@@ -16,21 +17,26 @@
     {% set sv_desc = meta.get('description', '') %}
     {% set dimensions = meta.get('dimensions', []) %}
     {% set metrics = meta.get('metrics', []) %}
+    {% set table_alias = model_name | replace('sem_', '') %}
 
     {% set ddl %}
 CREATE OR REPLACE SEMANTIC VIEW {{ target.database }}.{{ target.schema }}.{{ sv_name }}
-  COMMENT = '{{ sv_desc }}'
-AS SELECT * FROM {{ ref(model_name) }}
-COLUMNS (
+  TABLES (
+    {{ table_alias }} AS {{ ref(model_name) }}
+  )
+  DIMENSIONS (
     {% for dim in dimensions %}
-    {{ dim.name }} AS DIMENSION COMMENT '{{ dim.description }}'{{ "," if not loop.last }}
+    {{ table_alias }}.{{ dim.name }} AS {{ dim.expression if dim.expression is defined else dim.name }}
+      COMMENT = '{{ dim.description }}'{{ "," if not loop.last }}
     {% endfor %}
-)
-METRICS (
+  )
+  METRICS (
     {% for metric in metrics %}
-    {{ metric.name }} AS {{ metric.type | upper }}({{ metric.expression }}) COMMENT '{{ metric.description }}'{{ "," if not loop.last }}
+    {{ table_alias }}.{{ metric.name }} AS {{ metric.type | upper }}({{ metric.expression }})
+      COMMENT = '{{ metric.description }}'{{ "," if not loop.last }}
     {% endfor %}
-);
+  )
+  COMMENT = '{{ sv_desc }}';
     {% endset %}
 
     {{ return(ddl) }}

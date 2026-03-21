@@ -1,1 +1,47 @@
-WITH source_data AS (SELECT SALES_DATE, MAKER, ITEM_CATEGORY, PRICE FROM {{ ref('int_enriched_transactions') }}), aggregated_data AS (SELECT SALES_DATE, MAKER, ITEM_CATEGORY, SUM(PRICE) AS TOTAL_SALES, AVG(PRICE) AS AVERAGE_PRICE, COUNT(*) AS TRANSACTION_COUNT FROM source_data GROUP BY SALES_DATE, MAKER, ITEM_CATEGORY) SELECT * FROM aggregated_data
+{{
+    config(
+        materialized='table',
+        cluster_by=['sales_date']
+    )
+}}
+
+with source_data as (
+
+    select
+        sales_date,
+        maker,
+        item_category,
+        price
+    from {{ ref('int_enriched_transactions') }}
+
+),
+
+aggregated_data as (
+
+    select
+        sales_date,
+        maker,
+        item_category,
+        sum(price)   as total_sales,
+        avg(price)   as average_price,
+        count(*)     as transaction_count
+    from source_data
+    group by sales_date, maker, item_category
+
+),
+
+final as (
+
+    select
+        {{ dbt_utils.generate_surrogate_key(['sales_date', 'maker', 'item_category']) }} as sales_key,
+        sales_date,
+        maker,
+        item_category,
+        total_sales,
+        average_price,
+        transaction_count
+    from aggregated_data
+
+)
+
+select * from final

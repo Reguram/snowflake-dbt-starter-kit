@@ -1,0 +1,87 @@
+version: 2
+models:
+- name: sem_revenue_analysis
+  description: 'Semantic base model for sales analytics built from fct_sales. Grain:
+    one row per (sales_date, maker, item_category).
+
+    '
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_REVENUE_ANALYSIS
+        description: Revenue analysis by maker, category, and time
+        dimensions:
+        - name: sales_date
+          description: Date of sales activity
+        - name: sales_month
+          description: Sales month derived from sales_date
+        - name: sales_quarter
+          description: Sales quarter derived from sales_date
+        - name: sales_year
+          description: Sales year derived from sales_date
+        - name: maker
+          description: Manufacturer or brand of the sold item
+        - name: item_category
+          description: Product category for analysis
+        metrics:
+        - name: total_revenue
+          type: sum
+          expression: total_sales
+          description: Total sales amount
+        - name: total_transactions
+          type: sum
+          expression: transaction_count
+          description: Total number of transactions
+        - name: avg_group_price
+          type: avg
+          expression: average_price
+          description: Average of row-level grouped average prices; use with caution
+  columns:
+  - name: sales_date
+    description: Date of sales activity
+    tests:
+    - not_null
+  - name: sales_month
+    description: Month bucket for sales_date
+  - name: sales_quarter
+    description: Quarter bucket for sales_date
+  - name: sales_year
+    description: Year extracted from sales_date
+  - name: maker
+    description: Manufacturer or brand
+    tests:
+    - not_null
+  - name: item_category
+    description: Product category
+    tests:
+    - not_null
+  - name: total_sales
+    description: Total sales value for the row grain
+  - name: average_price
+    description: Average price for the row grain
+  - name: transaction_count
+    description: Transaction count for the row grain
+- name: sem_sales_analysis
+  description: Semantic view base model for sales analysis. Auto-generated.
+  meta:
+    snowflake_semantic_view:
+      name: SEM_SALES_ANALYSIS
+      description: Sales Analysis semantic view
+      dimensions:
+      - name: sales_date
+        description: Sales date
+      - name: item_category
+        description: Item category
+      metrics:
+      - name: total_sales
+        type: SUM
+        expression: total_sales
+        description: Total sales
+      - name: total_average_price
+        type: SUM
+        expression: average_price
+        description: Average price
+      - name: total_transaction_count
+        type: SUM
+        expression: transaction_count
+        description: Transaction count

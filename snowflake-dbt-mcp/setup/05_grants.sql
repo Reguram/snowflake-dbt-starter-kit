@@ -77,14 +77,20 @@ GRANT USAGE ON WAREHOUSE DBT_AGENT_WH TO ROLE DBT_MCP_ROLE;
 
 
 -- ==========================================
--- 4. Assign the role to your user
+-- 4. Grant PAT security integration to the role
+-- ==========================================
+GRANT USAGE ON INTEGRATION DBT_MCP_PAT TO ROLE DBT_MCP_ROLE;
+
+
+-- ==========================================
+-- 5. Assign the role to your user
 -- Replace <YOUR_USERNAME> with your Snowflake username
 -- ==========================================
 -- GRANT ROLE DBT_MCP_ROLE TO USER <YOUR_USERNAME>;
 
 
 -- ==========================================
--- 5. Verify grants
+-- 6. Verify grants
 -- ==========================================
 SHOW GRANTS TO ROLE DBT_MCP_ROLE;
 SHOW GRANTS ON MCP SERVER DBT_DEV.MCP_TOOLS.DBT_AGENT_MCP;

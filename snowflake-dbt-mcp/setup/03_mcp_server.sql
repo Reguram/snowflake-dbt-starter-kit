@@ -13,8 +13,9 @@ USE ROLE ACCOUNTADMIN;
 USE DATABASE DBT_DEV;
 USE SCHEMA MCP_TOOLS;
 
--- Create the MCP Server object
+-- Create the MCP Server object with PAT authentication
 CREATE OR REPLACE MCP SERVER DBT_DEV.MCP_TOOLS.DBT_AGENT_MCP
+AUTH_SECURITY_INTEGRATION = 'DBT_MCP_PAT'
 FROM SPECIFICATION $$
   tools:
     - name: "generate_dbt_model"

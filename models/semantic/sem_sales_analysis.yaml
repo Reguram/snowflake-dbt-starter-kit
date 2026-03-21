@@ -1,0 +1,49 @@
+# Snowflake Semantic View YAML Specification for Sales Analysis
+# Use with: CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('<db>.<schema>', $$<yaml>$$);
+#
+# To validate without creating:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$, TRUE);
+# To create:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$);
+
+name: SEM_SALES_ANALYSIS
+description: Sales Analysis semantic view for Japan e-commerce data
+
+tables:
+  - name: SEM_SALES
+    description: Sales analysis base view aggregated by date, maker, and item category
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: SEM_SALES_ANALYSIS
+    dimensions:
+      - name: SALES_DATE
+        description: Date of sales activity
+        expr: sales_date
+        data_type: DATE
+      - name: ITEM_CATEGORY
+        description: Product category (Smartphone or Other)
+        expr: item_category
+        data_type: VARCHAR
+      - name: SALES_MONTH
+        description: Sales month derived from sales_date
+        expr: DATE_TRUNC('month', sales_date)
+        data_type: DATE
+      - name: SALES_QUARTER
+        description: Sales quarter derived from sales_date
+        expr: DATE_TRUNC('quarter', sales_date)
+        data_type: DATE
+      - name: SALES_YEAR
+        description: Sales year derived from sales_date
+        expr: EXTRACT(YEAR FROM sales_date)
+        data_type: "NUMBER(4,0)"
+    metrics:
+      - name: TOTAL_SALES
+        description: Total sales amount
+        expr: SUM(total_sales)
+      - name: TOTAL_AVERAGE_PRICE
+        description: Average price across groupings
+        expr: AVG(average_price)
+      - name: TOTAL_TRANSACTION_COUNT
+        description: Total number of transactions
+        expr: SUM(transaction_count)

@@ -80,10 +80,64 @@ This project includes an MCP server with these tools:
 - `suggest_gold_model` — Suggest marts (gold) fact/dimension models
 - `write_medallion_model` — Write a generated silver/gold model to disk
 
+## dbt Agent Skills
+This project includes the full [dbt-agent-skills](https://github.com/dbt-labs/dbt-agent-skills) collection, installed to `.agents/skills/` for GitHub Copilot and `.cortex/skills/` for Cortex Code. These provide deep dbt expertise:
+
+### Installed Skills (from dbt-labs)
+| Skill | What It Does |
+|-------|-------------|
+| `using-dbt-for-analytics-engineering` | Build/modify models, DRY principles, `dbt show` validation |
+| `building-dbt-semantic-layer` | dbt Semantic Layer (MetricFlow) — YAML semantic models, metrics |
+| `adding-dbt-unit-test` | Unit testing / TDD patterns for dbt models |
+| `running-dbt-commands` | CLI commands with correct flags and selectors |
+| `troubleshooting-dbt-job-errors` | Diagnose job failures, log analysis |
+| `configuring-dbt-mcp-server` | MCP server setup and configuration |
+| `fetching-dbt-docs` | Documentation lookup from docs.getdbt.com |
+| `answering-natural-language-questions-with-dbt` | NL querying via Semantic Layer |
+| `migrating-dbt-core-to-fusion` | Migration to dbt Fusion |
+| `migrating-dbt-project-across-platforms` | Cross-platform migration |
+| `creating-mermaid-dbt-dag` | Mermaid DAG visualization |
+
+### Custom Skills (project-specific)
+| Skill | Location | What It Does |
+|-------|----------|-------------|
+| Snowflake Semantic View Creator | `.cortex/skills/snowflake-semantic-view-creator/` | Create Snowflake-native `CREATE SEMANTIC VIEW` DDL (distinct from MetricFlow) |
+
+### Two Semantic Approaches
+This project supports both semantic approaches — they coexist:
+1. **dbt Semantic Layer (MetricFlow)** — `building-dbt-semantic-layer` skill → YAML semantic models, `dbt sl query`
+2. **Snowflake Semantic Views** — `snowflake-semantic-view-creator` skill + `semantic-view-design.md` → `CREATE SEMANTIC VIEW` DDL, Cortex Analyst NL querying
+
+## Active Skills (VS Code Auto-Activation)
+Skills in `.github/skills/` auto-activate when editing matching files:
+| Skill | Triggers On |
+|-------|------------|
+| `dbt-model-generation` | `models/**/*.sql`, `models/**/*.yml` |
+| `code-review` | `models/**/*.sql` |
+| `data-quality` | `models/**/schema.yml`, `tests/**` |
+| `semantic-view-design` | `models/semantic/**`, `models/marts/**/*.sql`, `models/marts/**/schema.yml` |
+| `natural-language-queries` | `models/semantic/**`, `models/marts/**/schema.yml` |
+| `running-dbt-commands` | `dbt_project.yml`, `profiles.yml*`, `packages.yml` |
+| `troubleshooting` | `logs/**`, `target/**/*.json` |
+| `dbt-docs` | `models/**/schema.yml`, `models/**/_sources.yml` |
+| `project-setup` | `scripts/bootstrap.sh`, `dbt_project.yml`, `profiles.yml` |
+| `streamlit-generation` | `streamlit/**/*.py` |
+
+## Reusable Prompts
+Click these in Copilot Chat for common workflows:
+- `suggest-semantic-view` — Analyze a mart model and generate a Snowflake Semantic View
+- `suggest-tests` — Analyze a model and suggest comprehensive dbt tests
+- `validate-and-build` — Compile, build, and validate a dbt model
+- `review-model` — Full code review against project conventions
+
+## Custom Agent
+- `@dbt-semantic-advisor` — Expert in Snowflake Semantic Views. Analyzes marts, classifies dimensions/metrics, generates DDL.
+
 ## Medallion Architecture Agent
 - `scripts/medallion_agent.py` — CLI agent for interactive model design (Cortex-powered)
 - `streamlit/medallion_advisor_app.py` — Streamlit-in-Snowflake advisor UI
 - The agent reads bronze data, profiles columns, and generates silver/gold models via natural language
+- Also supports semantic view generation via `generate_semantic_view` tool
 
 ## Bootstrap & Setup
 - For first-time setup, use `scripts/bootstrap.sh` (automates Steps 1–7)

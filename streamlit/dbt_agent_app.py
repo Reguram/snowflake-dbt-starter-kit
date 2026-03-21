@@ -97,26 +97,28 @@ if page == "💬 Chat":
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
+    # Display conversation history
     for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+        role_label = "🧑 You" if msg["role"] == "user" else "🤖 Assistant"
+        st.markdown(f"**{role_label}:**")
+        st.markdown(msg["content"])
+        st.divider()
 
-    if prompt := st.chat_input("Ask about dbt, Snowflake, or this project..."):
+    # Input area
+    prompt = st.text_input("Ask about dbt, Snowflake, or this project...")
+    if st.button("Send", type="primary") and prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
 
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                # Build context from conversation history
-                context = "\n".join(
-                    f"{m['role']}: {m['content']}"
-                    for m in st.session_state.messages[-5:]
-                )
-                full_prompt = f"Conversation context:\n{context}\n\nRespond to the latest user message."
-                response = call_cortex(full_prompt)
-                st.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
+        with st.spinner("Thinking..."):
+            # Build context from conversation history
+            context = "\n".join(
+                f"{m['role']}: {m['content']}"
+                for m in st.session_state.messages[-5:]
+            )
+            full_prompt = f"Conversation context:\n{context}\n\nRespond to the latest user message."
+            response = call_cortex(full_prompt)
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            st.experimental_rerun()
 
 # ---------------------------------------------------------------------------
 # Page: Model Generator

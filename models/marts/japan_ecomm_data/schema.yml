@@ -11,6 +11,36 @@ models:
   description: Aggregated summary from MALL_MARKETS_YEARLY_REPORT grouped by WEBSITE_TYPE,
     DATA_SOURCE, MAKER, ITEM_NAME, MODEL, CONDITION, VOLUME
 - name: fct_sales
-  description: Fact table containing sales data aggregated by various dimensions.
+  description: >
+    Fact table containing sales aggregated by date, maker, and item category.
+    Grain: one row per (sales_date, maker, item_category) combination.
+  columns:
+    - name: sales_key
+      description: Surrogate primary key — hash of sales_date, maker, and item_category.
+      tests:
+        - unique
+        - not_null
+    - name: sales_date
+      description: The date of the sale.
+      tests:
+        - not_null
+    - name: maker
+      description: The manufacturer or brand of the item sold.
+      tests:
+        - not_null
+    - name: item_category
+      description: Derived product category (Smartphone or Other).
+      tests:
+        - not_null
+        - accepted_values:
+            values: ['Smartphone', 'Other']
+    - name: total_sales
+      description: Sum of item prices for this grouping.
+      tests:
+        - not_null
+    - name: average_price
+      description: Average item price for this grouping.
+    - name: transaction_count
+      description: Number of individual transactions in this grouping.
 - name: dim_items
   description: Dimension table containing item details.

@@ -16,7 +16,7 @@ Order of execution:
   1. setup/01_database_objects.sql   — database, schema, warehouse, roles
   2. setup/02_udf_tools.sql          — UDFs and stored procedures for custom tools
   3. setup/03_mcp_server.sql         — CREATE MCP SERVER with all tools
-  4. setup/04_oauth_security.sql     — OAuth security integration
+  4. setup/04_oauth_security.sql     — PAT security integration (replaces OAuth)
   5. setup/05_grants.sql             — RBAC grants for MCP server and tools
 
 =============================================================================
