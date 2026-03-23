@@ -4,13 +4,13 @@ with source as (
 
 staged as (
     select
-        table,
+        "TABLE" as table_name,
         description,
-        column,
-        type,
+        "COLUMN" as column_name,
+        "TYPE" as data_type,
         nullable,
         comments,
-        source
+        "SOURCE" as data_source
     from source
 )
 

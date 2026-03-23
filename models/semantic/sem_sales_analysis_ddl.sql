@@ -1,3 +1,9 @@
+-- This file contains raw DDL for a Snowflake Semantic View.
+-- It is NOT a dbt model — run it directly in Snowflake or via a post-hook.
+{{ config(enabled=false) }}
+
+-- To execute this DDL, run it in a Snowflake worksheet:
+/*
 CREATE OR REPLACE SEMANTIC VIEW DBT_DEV.SEMANTIC.SEM_SALES_ANALYSIS
   TABLES (
     sem_sales AS DBT_DEV.DBT_MARTS.SEM_SALES_ANALYSIS
@@ -23,3 +29,4 @@ CREATE OR REPLACE SEMANTIC VIEW DBT_DEV.SEMANTIC.SEM_SALES_ANALYSIS
       COMMENT = 'Transaction count'
   )
   COMMENT = 'Sales Analysis semantic view';
+*/

@@ -7,8 +7,8 @@ with source as (
 )
 
 select
-    type,
+    data_type,
     count(*) as record_count
 
 from source
-group by type
+group by data_type
