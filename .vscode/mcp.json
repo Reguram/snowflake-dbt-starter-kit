@@ -24,5 +24,20 @@
     //   "args": ["snowflake-dbt-mcp/server.py"],
     //   "env": {}
     // }
+
+    // =====================================================
+    // Option 3: dbt One-Stop Agent (unified, context-aware)
+    // Combines source discovery, model gen, semantic views,
+    // code review, data quality, and medallion advising.
+    // Works with both VS Code Copilot and Cortex Code.
+    // =====================================================
+    // "dbt-one-stop-agent": {
+    //   "type": "stdio",
+    //   "command": "python",
+    //   "args": ["scripts/dbt_agent.py", "--mcp"],
+    //   "env": {
+    //     "DBT_PROJECT_DIR": "${workspaceFolder}"
+    //   }
+    // }
   }
 }
