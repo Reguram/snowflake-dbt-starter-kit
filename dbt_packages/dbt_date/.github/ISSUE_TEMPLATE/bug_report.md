@@ -2,8 +2,9 @@
 name: Bug report
 about: I think I've found a bug
 title: "[BUG]"
-labels: ""
-assignees: ""
+labels: ''
+assignees: ''
+
 ---
 
 ### Is this a new bug in dbt-date?
@@ -23,12 +24,17 @@ assignees: ""
 
 ```markdown
 - OS:
-- Python (`python3 --version`):
-- dbt(`dbt --version`):
+- Python:
+- dbt:
+- dbt-expectations:
 ```
-
-**The contents of your `packages.yml` file:**
 
 ### Which database adapter are you using with dbt?
 
-Note: dbt-date currently does not support database adapters other than the ones listed [here](https://github.com/godatadriven/dbt-date?tab=readme-ov-file#supported-adapters).
+Note: dbt-date currently does not support database adapters other than the ones listed below.
+
+- Postgres
+- Snowflake
+- BigQuery
+
+### Additional Context
