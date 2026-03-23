@@ -35,7 +35,7 @@ from typing import Any
 # MCP SDK imports
 try:
     from mcp.server import Server
-    from mcp.server.stdio import run_stdio
+    from mcp.server.stdio import stdio_server
     from mcp.types import TextContent, Tool
 except ImportError:
     print("MCP SDK not installed. Run: pip install mcp", file=sys.stderr)
@@ -846,8 +846,8 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
 
 async def main():
     logger.info("Starting Snowflake dbt MCP Server...")
-    async with run_stdio(server):
-        pass
+    async with stdio_server() as (read_stream, write_stream):
+        await server.run(read_stream, write_stream, server.create_initialization_options())
 
 if __name__ == "__main__":
     import asyncio

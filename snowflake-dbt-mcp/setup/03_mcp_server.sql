@@ -61,8 +61,9 @@ FROM SPECIFICATION $$
       title: "Revenue Analyst"
 
     - name: "run_sql"
-      type: "SYSTEM_EXECUTE_SQL"
-      description: "Execute SQL statements in the Snowflake session context. Intended for DDL, DML, and complex queries beyond read-only SELECT."
+      type: "GENERIC"
+      identifier: "DBT_DEV.MCP_TOOLS.EXECUTE_DBT_QUERY"
+      description: "Execute SQL statements against the Snowflake database. Supports SELECT, SHOW, DESCRIBE, and EXPLAIN. Returns up to 100 rows as JSON. Use this for ad-hoc queries, table discovery, and data inspection."
       title: "Run SQL"
 $$;
 

@@ -1598,7 +1598,7 @@ def run_mcp_server():
     """
     try:
         from mcp.server import Server
-        from mcp.server.stdio import run_stdio
+        from mcp.server.stdio import stdio_server
         from mcp.types import TextContent, Tool
     except ImportError:
         print("MCP SDK not installed. Run: pip install mcp", file=sys.stderr)
@@ -1669,7 +1669,12 @@ def run_mcp_server():
             return [TextContent(type="text", text=f"Error in {name}: {e}")]
 
     logger.info("Starting dbt One-Stop Agent MCP Server...")
-    asyncio.run(run_stdio(server))
+
+    async def _run():
+        async with stdio_server() as (read_stream, write_stream):
+            await server.run(read_stream, write_stream, server.create_initialization_options())
+
+    asyncio.run(_run())
 
 
 # =============================================================================

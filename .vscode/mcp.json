@@ -12,7 +12,7 @@
       "headers": {
         "Authorization": "Bearer eyJraWQiOiI4ODQxNzY4MTQxNyIsImFsZyI6IkVTMjU2In0.eyJwIjoiMzQ1MzgxMzgwOjM0NTM4MTM4MCIsImlzcyI6IlNGOjEwMTIiLCJleHAiOjE4MDU2MTE1NTN9.mRMuuLRtHSm3C2xxL6OVlUoRsx-Q_klfJ7Bklc0EMQ7nx6gEn_7VzGclFOD6-_k2JkePLZogJvuxqH4Pd4hkLg"
       }
-    }
+    },
 
     // =====================================================
     // Option 2: Local MCP Server (for development/offline)
@@ -31,13 +31,13 @@
     // code review, data quality, and medallion advising.
     // Works with both VS Code Copilot and Cortex Code.
     // =====================================================
-    // "dbt-one-stop-agent": {
-    //   "type": "stdio",
-    //   "command": "python",
-    //   "args": ["scripts/dbt_agent.py", "--mcp"],
-    //   "env": {
-    //     "DBT_PROJECT_DIR": "${workspaceFolder}"
-    //   }
-    // }
+    "dbt-one-stop-agent": {
+      "type": "stdio",
+      "command": "/bin/sh",
+      "args": ["-c", "\"${workspaceFolder}/.venv/bin/python\" \"${workspaceFolder}/scripts/dbt_agent.py\" --mcp"],
+      "env": {
+        "DBT_PROJECT_DIR": "${workspaceFolder}"
+      }
+    }
   }
 }
