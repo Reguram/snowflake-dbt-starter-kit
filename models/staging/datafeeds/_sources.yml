@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: datafeeds
+    description: "Amazon and e-commerce websites product views and purchases data from AMAZON_AND_ECOMMERCE_WEBSITES_PRODUCT_VIEWS_AND_PURCHASES.DATAFEEDS"
+    database: "AMAZON_AND_ECOMMERCE_WEBSITES_PRODUCT_VIEWS_AND_PURCHASES"
+    schema: "DATAFEEDS"
+    quoting:
+      identifier: true
+    tables:
+      - name: PRODUCT_VIEWS_AND_PURCHASES
+        description: "Raw product views and purchases table (~108M rows). Each row represents a product on an e-commerce site in a given country/year/month with estimated views and purchases."
+        columns:
+          - name: SITE
+            description: "E-commerce website domain (e.g., amazon.com). 6 distinct sites."
+          - name: COUNTRY
+            description: "ISO 3166-1 numeric country code (e.g., 840 = United States). Currently only 1 value."
+          - name: YEAR
+            description: "2-digit year number (e.g., 21 = 2021). Currently 2 distinct values."
+          - name: MONTH
+            description: "Month number (1–12)."
+          - name: PRODUCT
+            description: "Product identifier (ASIN or equivalent). ~40M distinct values."
+          - name: TITLE
+            description: "Product listing title."
+          - name: BRAND
+            description: "Brand name of the product. ~3.1M distinct brands."
+          - name: MAIN_CATEGORY
+            description: "Top-level product category (e.g., Electronics, Arts, Crafts & Sewing). 260 distinct values."
+          - name: SUB_CATEGORY
+            description: "Sub-category within the main category. 3,572 distinct values."
+          - name: ESTIMATED_VIEWS
+            description: "Estimated number of product page views for the period."
+          - name: ESTIMATED_PURCHASES
+            description: "Estimated number of purchases for the period."

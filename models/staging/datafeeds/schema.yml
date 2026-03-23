@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: stg_datafeeds__product_views_and_purchases
+    description: "Staged product views and purchases from datafeeds — renamed columns, surrogate key added, 1:1 with source. Grain: one row per site/country/year/month/product."
+    columns:
+      - name: product_views_key
+        description: "Surrogate key derived from (site, country_code, year_number, month_number, product_id)."
+        tests:
+          - unique
+          - not_null
+      - name: site
+        description: "E-commerce website domain (e.g., amazon.com)."
+        tests:
+          - not_null
+      - name: country_code
+        description: "ISO 3166-1 numeric country code (e.g., 840 = United States)."
+        tests:
+          - not_null
+      - name: year_number
+        description: "2-digit year number (e.g., 21 = 2021)."
+        tests:
+          - not_null
+      - name: month_number
+        description: "Month number (1–12)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      - name: product_id
+        description: "Product identifier (ASIN or equivalent)."
+        tests:
+          - not_null
+      - name: product_title
+        description: "Product listing title."
+      - name: brand
+        description: "Brand name of the product."
+      - name: main_category
+        description: "Top-level product category (e.g., Electronics)."
+      - name: sub_category
+        description: "Sub-category within the main category."
+      - name: estimated_views
+        description: "Estimated number of product page views for the period."
+      - name: estimated_purchases
+        description: "Estimated number of purchases for the period."
