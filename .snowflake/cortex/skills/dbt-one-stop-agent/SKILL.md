@@ -124,6 +124,36 @@ Agent:
   4. Generates sem_orders_analysis.sql + CREATE SEMANTIC VIEW DDL
 ```
 
+## Review Enforcement
+
+All model writes are **automatically reviewed** before being written to disk. This is a code-level gate — it cannot be skipped by the LLM.
+
+### How it works
+- `generate_model` and `write_medallion_model` run static analysis before writing
+- `discover_source` reviews generated mart models before writing (staging models are template-trusted)
+- After auto-build, each generated model is reviewed and results are returned to the LLM
+
+### Severity levels
+
+| Severity | Effect | Example |
+|----------|--------|---------|
+| **error** | **Blocks write** — returns `REVIEW_BLOCKED` | Hard-coded `database.schema.table` (use `ref()`/`source()`) |
+| **warning** | Write succeeds, reported in response | `SELECT *` in marts, missing `ref()`, naming violations |
+| **info** | Write succeeds, reported in response | `LIMIT` clause in production model |
+
+### Review rules
+
+| Rule ID | Pattern | Severity |
+|---------|---------|----------|
+| `HARDCODED_SCHEMA` | `FROM/JOIN db.schema.table` | error |
+| `NO_SELECT_STAR_MARTS` | `SELECT *` in marts/semantic | warning |
+| `MISSING_REF` | Direct table reference without `ref()`/`source()` | warning |
+| `NO_LIMIT` | `LIMIT N` in model SQL | info |
+| `NAMING_STG` | Staging model not prefixed `stg_` | warning |
+
+### Force bypass
+Pass `force=True` (agent) or `force=true` (MCP) to write despite error-severity issues. The errors are still reported in the response `review` field.
+
 ## Project Conventions
 
 - **Staging**: `stg_<source>__<table>` — 1:1 with source, rename columns to snake_case

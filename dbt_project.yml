@@ -34,9 +34,13 @@ models:
       +schema: DBT_MARTS
       +tags: ["marts"]
     semantic:
-      +materialized: view
+      +enabled: false
       +schema: SEMANTIC
       +tags: ["semantic"]
+      # Semantic models are disabled from dbt build.
+      # The Snowflake Semantic View DDL is maintained in ddl/semantic/
+      # and executed directly in Snowflake.
+      # To re-enable for testing: dbt build --select tag:semantic --vars '{semantic_enabled: true}'
 
 seeds:
   snowflake_dbt_starter_kit:

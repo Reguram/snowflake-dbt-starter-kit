@@ -64,40 +64,49 @@ dbt show --inline "
 | First/last dates | `first_order_date` | MIN/MAX |
 
 ### Step 3: Create the dbt Semantic Model
-Create `models/semantic/sem_<analysis_name>.sql`:
+Semantic models are **disabled from `dbt build`** (`+enabled: false` in dbt_project.yml).
+They exist as documentation-only files. The DDL references mart models directly.
+
+Create `models/semantic/sem_<analysis_name>.sql` as a **comment block** with the reference SQL:
 
 ```sql
--- models/semantic/sem_revenue_analysis.sql
-{{ config(materialized='view') }}
+{#
+  ======================================================================
+  Semantic View: SEM_REVENUE_ANALYSIS
+  ======================================================================
+  This model is DISABLED (enabled: false in dbt_project.yml).
+  It does NOT run during `dbt build`.
 
-with orders as (
-    select * from {{ ref('fct_orders') }}
-),
+  The Snowflake Semantic View DDL is maintained in:
+    ddl/semantic/sem_revenue_analysis_ddl.sql
 
-customers as (
-    select * from {{ ref('dim_customers') }}
-)
+  To generate DDL, use the macro:
+    dbt run-operation generate_semantic_view_ddl --args '{"model_name": "sem_revenue_analysis", "base_model": "fct_orders"}'
 
-select
-    -- Dimensions
-    o.order_date,
-    date_trunc('month', o.order_date) as order_month,
-    date_trunc('quarter', o.order_date) as order_quarter,
-    extract(year from o.order_date) as order_year,
-    o.order_status,
-    c.customer_name,
-    c.market_segment,
-    c.nation_name,
-    c.region_name,
+  Original base SELECT (kept for reference):
+  --------------------------------------------------------------------------
+  with orders as (
+      select * from {{ ref('fct_orders') }}
+  ),
+  customers as (
+      select * from {{ ref('dim_customers') }}
+  )
+  select
+      o.order_date,
+      date_trunc('month', o.order_date) as order_month,
+      ...
+  from orders o
+  left join customers c on o.customer_key = c.customer_key
+  --------------------------------------------------------------------------
+#}
 
-    -- Metrics (raw columns for aggregation in Semantic View)
-    o.total_price,
-    o.order_key,
-    o.order_priority
-
-from orders o
-left join customers c on o.customer_key = c.customer_key
+-- This model is disabled. See comment block above for details.
+select 1 as _placeholder
 ```
+
+**IMPORTANT:** Do NOT use `{{ config(materialized='view') }}` in semantic models —
+they will fail during `dbt build`. The `+enabled: false` in dbt_project.yml ensures
+they are skipped entirely.
 
 ### Step 4: Add YAML Metadata
 Add to `models/semantic/schema.yml`:
