@@ -110,6 +110,7 @@ This project includes the full [dbt-agent-skills](https://github.com/dbt-labs/db
 |-------|----------|-------------|
 | Snowflake Semantic View Creator | `.agents/skills/snowflake-semantic-view-creator/` | Create Snowflake-native `CREATE SEMANTIC VIEW` DDL (distinct from MetricFlow) |
 | Project Quality Audit | `.agents/skills/project-quality-audit/` | Full-project scan for missing tests, empty descriptions, SELECT * violations, semantic materialization issues |
+| Snowflake OpenFlow Pipeline | `.agents/skills/snowflake-openflow-pipeline/` | Create Snowflake-native Task DAGs, Streams (CDC), error handling, notification integrations, and monitoring for dbt layer orchestration |
 
 ### Two Semantic Approaches
 This project supports both semantic approaches — they coexist:
@@ -131,6 +132,7 @@ Skills in `.github/skills/` auto-activate when editing matching files:
 | `dbt-docs` | `models/**/schema.yml`, `models/**/_sources.yml` |
 | `project-setup` | `scripts/bootstrap.sh`, `dbt_project.yml`, `profiles.yml` |
 | `streamlit-generation` | `streamlit/**/*.py` |
+| `openflow-pipeline` | `ddl/openflow/**`, `scripts/snowflake_setup.sql` |
 
 ## Reusable Prompts
 Click these in Copilot Chat for common workflows:
