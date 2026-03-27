@@ -1,0 +1,67 @@
+# Snowflake Semantic View YAML Specification for E-commerce Product Performance
+# Use with: CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$);
+#
+# To validate without creating:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$, TRUE);
+# To create:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$);
+
+name: SEM_PRODUCT_PERFORMANCE
+description: E-commerce product performance — views, purchases, and conversion rates by site, brand, category, and time period
+
+tables:
+  - name: PRODUCT
+    description: Product performance fact table aggregated by site, brand, category, and period
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: FCT_PRODUCT_PERFORMANCE
+    dimensions:
+      - name: SITE
+        description: E-commerce site name
+        expr: site
+        data_type: VARCHAR
+      - name: SITE_SEGMENT
+        description: Segment of the site (e.g., domestic, international)
+        expr: site_segment
+        data_type: VARCHAR
+      - name: BRAND
+        description: Product brand
+        expr: brand
+        data_type: VARCHAR
+      - name: MAIN_CATEGORY
+        description: Primary product category
+        expr: main_category
+        data_type: VARCHAR
+      - name: SUB_CATEGORY
+        description: Secondary product sub-category
+        expr: sub_category
+        data_type: VARCHAR
+      - name: PERIOD_DATE
+        description: Date of the performance record
+        expr: period_date
+        data_type: DATE
+      - name: PERIOD_MONTH
+        description: Month derived from period_date
+        expr: DATE_TRUNC('month', period_date)
+        data_type: DATE
+      - name: PERIOD_YEAR
+        description: Year derived from period_date
+        expr: EXTRACT(YEAR FROM period_date)
+        data_type: "NUMBER(4,0)"
+    metrics:
+      - name: TOTAL_VIEWS
+        description: Total number of product page views
+        expr: SUM(total_views)
+      - name: TOTAL_PURCHASES
+        description: Total number of purchases
+        expr: SUM(total_purchases)
+      - name: AVG_CONVERSION_RATE
+        description: Average conversion rate (purchases / views)
+        expr: AVG(conversion_rate)
+      - name: MAX_CONVERSION_RATE
+        description: Maximum conversion rate achieved
+        expr: MAX(conversion_rate)
+      - name: MIN_CONVERSION_RATE
+        description: Minimum conversion rate recorded
+        expr: MIN(conversion_rate)

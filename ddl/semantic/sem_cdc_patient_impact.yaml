@@ -1,0 +1,99 @@
+# Snowflake Semantic View YAML Specification for CDC Hospital Patient Impact
+# Use with: CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$);
+#
+# To validate without creating:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$, TRUE);
+# To create:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$);
+
+name: SEM_CDC_PATIENT_IMPACT
+description: CDC reported hospital patient impact — inpatient beds, ICU utilization, staffing, and COVID admissions by US state and date
+
+tables:
+  - name: PATIENT_IMPACT
+    description: CDC hospital patient impact fact table at the state/date grain
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: FCT_CDC_REPORTED_PATIENT_IMPACT
+    dimensions:
+      - name: STATE
+        description: US state abbreviation
+        expr: state
+        data_type: VARCHAR
+      - name: ISO3166_1
+        description: ISO 3166-1 country code
+        expr: iso3166_1
+        data_type: VARCHAR
+      - name: ISO3166_2
+        description: ISO 3166-2 state/region code
+        expr: iso3166_2
+        data_type: VARCHAR
+      - name: LAST_REPORTED_FLAG
+        description: True if this is the most recent report for this state
+        expr: last_reported_flag
+        data_type: BOOLEAN
+      - name: REPORT_DATE
+        description: Date of the report
+        expr: CAST(date AS DATE)
+        data_type: DATE
+      - name: REPORT_MONTH
+        description: Report month derived from date
+        expr: DATE_TRUNC('month', CAST(date AS DATE))
+        data_type: DATE
+      - name: REPORT_YEAR
+        description: Report year derived from date
+        expr: EXTRACT(YEAR FROM CAST(date AS DATE))
+        data_type: "NUMBER(4,0)"
+    metrics:
+      - name: TOTAL_INPATIENT_BEDS
+        description: Total staffed inpatient beds
+        expr: SUM(inpatient_beds)
+      - name: TOTAL_INPATIENT_BEDS_USED
+        description: Total inpatient beds currently in use
+        expr: SUM(inpatient_beds_used)
+      - name: TOTAL_INPATIENT_BEDS_USED_COVID
+        description: Total inpatient beds occupied by COVID patients
+        expr: SUM(inpatient_beds_used_covid)
+      - name: TOTAL_HOSPITAL_ONSET_COVID
+        description: Total patients with hospital-onset COVID
+        expr: SUM(hospital_onset_covid)
+      - name: TOTAL_ADULT_COVID_HOSPITALIZED
+        description: Total adult patients hospitalized with confirmed COVID
+        expr: SUM(total_adult_patients_hospitalized_confirmed_covid)
+      - name: TOTAL_PEDIATRIC_COVID_HOSPITALIZED
+        description: Total pediatric patients hospitalized with confirmed COVID
+        expr: SUM(total_pediatric_patients_hospitalized_confirmed_covid)
+      - name: TOTAL_STAFFED_ICU_BEDS
+        description: Total staffed adult ICU beds
+        expr: SUM(total_staffed_adult_icu_beds)
+      - name: TOTAL_ICU_BED_OCCUPANCY
+        description: Total occupied adult ICU beds
+        expr: SUM(staffed_adult_icu_bed_occupancy)
+      - name: TOTAL_ICU_COVID_PATIENTS
+        description: Total adult ICU patients with confirmed COVID
+        expr: SUM(staffed_icu_adult_patients_confirmed_covid)
+      - name: TOTAL_PREV_DAY_ADULT_ADMISSIONS
+        description: Total previous-day adult COVID confirmed admissions
+        expr: SUM(previous_day_admission_adult_covid_confirmed)
+      - name: TOTAL_PREV_DAY_PEDIATRIC_ADMISSIONS
+        description: Total previous-day pediatric COVID confirmed admissions
+        expr: SUM(previous_day_admission_pediatric_covid_confirmed)
+      - name: TOTAL_STAFFING_SHORTAGE_YES
+        description: Count of facilities reporting critical staffing shortage today
+        expr: SUM(critical_staffing_shortage_today_yes)
+      - name: AVG_INPATIENT_BED_UTILIZATION
+        description: Average inpatient bed utilization rate
+        expr: AVG(inpatient_beds_utilization)
+      - name: AVG_INPATIENT_BED_COVID_UTILIZATION
+        description: Average inpatient bed COVID utilization rate
+        expr: AVG(inpatient_bed_covid_utilization)
+      - name: AVG_ADULT_ICU_BED_UTILIZATION
+        description: Average adult ICU bed utilization rate
+        expr: AVG(adult_icu_bed_utilization)
+      - name: AVG_ADULT_ICU_BED_COVID_UTILIZATION
+        description: Average adult ICU bed COVID utilization rate
+        expr: AVG(adult_icu_bed_covid_utilization)
+      - name: AVG_PCT_INPATIENTS_WITH_COVID
+        description: Average percentage of inpatients with COVID
+        expr: AVG(percent_of_inpatients_with_covid)

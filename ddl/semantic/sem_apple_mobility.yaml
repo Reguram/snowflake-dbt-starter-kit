@@ -1,0 +1,63 @@
+# Snowflake Semantic View YAML Specification for Apple Mobility
+# Use with: CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$);
+#
+# To validate without creating:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$, TRUE);
+# To create:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$);
+
+name: SEM_APPLE_MOBILITY
+description: Apple Maps mobility data — percentage change in routing requests by transportation type (driving, walking, transit) by region and month
+
+tables:
+  - name: APPLE
+    description: Apple mobility report aggregated by region, transportation type, and month
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: SUMMARY_APPLE_MOBILITY
+    dimensions:
+      - name: PROVINCE_STATE
+        description: Province or state name
+        expr: province_state
+        data_type: VARCHAR
+      - name: TRANSPORTATION_TYPE
+        description: Type of transportation (driving, walking, transit)
+        expr: transportation_type
+        data_type: VARCHAR
+      - name: ISO3166_1
+        description: ISO 3166-1 country code
+        expr: iso3166_1
+        data_type: VARCHAR
+      - name: ISO3166_2
+        description: ISO 3166-2 state/region code
+        expr: iso3166_2
+        data_type: VARCHAR
+      - name: LAST_REPORTED_FLAG
+        description: True if this is the most recent record for this location
+        expr: last_reported_flag
+        data_type: BOOLEAN
+      - name: MONTH_PERIOD
+        description: Month period of the mobility record
+        expr: month_period
+        data_type: DATE
+      - name: YEAR_PERIOD
+        description: Year period of the mobility record
+        expr: year_period
+        data_type: "NUMBER(4,0)"
+    metrics:
+      - name: TOTAL_MOBILITY_CHANGE
+        description: Total mobility change (% vs baseline, summed across periods)
+        expr: SUM(total_difference)
+      - name: AVG_MOBILITY_CHANGE
+        description: Average mobility change percentage vs baseline
+        expr: AVG(avg_difference)
+      - name: MAX_MOBILITY_CHANGE
+        description: Maximum mobility change percentage vs baseline
+        expr: MAX(max_difference)
+      - name: MIN_MOBILITY_CHANGE
+        description: Minimum mobility change percentage vs baseline
+        expr: MIN(min_difference)
+      - name: TOTAL_RECORDS
+        description: Total number of reporting records
+        expr: SUM(record_count)
