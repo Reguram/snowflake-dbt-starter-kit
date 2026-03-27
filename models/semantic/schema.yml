@@ -61,6 +61,300 @@ models:
     description: Average price for the row grain
   - name: transaction_count
     description: Transaction count for the row grain
+- name: sem_cdc_patient_impact
+  description: >
+    Semantic view for CDC hospital patient impact. Grain: one row per (state, date).
+    DDL: ddl/semantic/sem_cdc_patient_impact_ddl.sql
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_CDC_PATIENT_IMPACT
+        description: CDC hospital patient impact — inpatient beds, ICU, staffing, and COVID admissions by US state and date
+        dimensions:
+        - name: state
+          description: US state abbreviation
+        - name: iso3166_1
+          description: ISO 3166-1 country code
+        - name: iso3166_2
+          description: ISO 3166-2 state/region code
+        - name: report_date
+          description: Date of the report
+        - name: report_month
+          description: Report month derived from date
+        - name: report_year
+          description: Report year derived from date
+        metrics:
+        - name: total_inpatient_beds
+          type: sum
+          expression: inpatient_beds
+          description: Total staffed inpatient beds
+        - name: total_inpatient_beds_used_covid
+          type: sum
+          expression: inpatient_beds_used_covid
+          description: Total inpatient beds occupied by COVID patients
+        - name: total_adult_covid_hospitalized
+          type: sum
+          expression: total_adult_patients_hospitalized_confirmed_covid
+          description: Total adult patients hospitalized with confirmed COVID
+        - name: total_staffed_icu_beds
+          type: sum
+          expression: total_staffed_adult_icu_beds
+          description: Total staffed adult ICU beds
+        - name: avg_inpatient_bed_utilization
+          type: avg
+          expression: inpatient_beds_utilization
+          description: Average inpatient bed utilization rate
+        - name: avg_adult_icu_bed_covid_utilization
+          type: avg
+          expression: adult_icu_bed_covid_utilization
+          description: Average adult ICU bed COVID utilization rate
+
+- name: sem_jhu_covid19_timeseries
+  description: >
+    Semantic view for JHU COVID-19 timeseries. Grain: (province_state, county, case_type, month_period).
+    DDL: ddl/semantic/sem_jhu_covid19_timeseries_ddl.sql
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_JHU_COVID19_TIMESERIES
+        description: JHU COVID-19 timeseries — cumulative and incremental case counts by country, state, county, and case type
+        dimensions:
+        - name: province_state
+          description: Province or state name
+        - name: county
+          description: County name
+        - name: case_type
+          description: Type of COVID case (Confirmed, Deaths, etc.)
+        - name: iso3166_1
+          description: ISO 3166-1 country code
+        - name: month_period
+          description: Month period of the record
+        - name: year_period
+          description: Year period of the record
+        metrics:
+        - name: total_cases
+          type: sum
+          expression: total_cases
+          description: Total cumulative COVID cases
+        - name: total_new_cases
+          type: sum
+          expression: total_difference
+          description: Total new cases (difference from previous period)
+
+- name: sem_jhu_covid19
+  description: >
+    Semantic view for JHU COVID-19 summary. Grain: (province_state, county, case_type, month_period).
+    DDL: ddl/semantic/sem_jhu_covid19_ddl.sql
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_JHU_COVID19
+        description: JHU COVID-19 summary — cumulative and incremental case counts by country, state, county, and case type
+        dimensions:
+        - name: province_state
+          description: Province or state name
+        - name: county
+          description: County name
+        - name: case_type
+          description: Type of COVID case (Confirmed, Deaths, etc.)
+        - name: iso3166_1
+          description: ISO 3166-1 country code
+        - name: month_period
+          description: Month period of the record
+        metrics:
+        - name: total_cases
+          type: sum
+          expression: total_cases
+          description: Total cumulative COVID cases
+        - name: total_new_cases
+          type: sum
+          expression: total_difference
+          description: Total new cases (difference from previous period)
+
+- name: sem_owid_vaccinations
+  description: >
+    Semantic view for OWID global vaccinations. Grain: (country_region, month_period).
+    DDL: ddl/semantic/sem_owid_vaccinations_ddl.sql
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_OWID_VACCINATIONS
+        description: OWID global COVID-19 vaccination data — doses, people vaccinated, and per-capita rates by country and month
+        dimensions:
+        - name: country_region
+          description: Country or region name
+        - name: iso3166_1
+          description: ISO 3166-1 country code
+        - name: vaccines
+          description: Vaccine brands used in the country
+        - name: month_period
+          description: Month period of the vaccination record
+        metrics:
+        - name: total_vaccinations
+          type: sum
+          expression: total_total_vaccinations
+          description: Total vaccine doses administered
+        - name: total_people_fully_vaccinated
+          type: sum
+          expression: total_people_fully_vaccinated
+          description: Total people fully vaccinated
+        - name: avg_fully_vaccinated_per_hundred
+          type: avg
+          expression: avg_people_fully_vaccinated_per_hundred
+          description: Average people fully vaccinated per 100
+
+- name: sem_google_mobility
+  description: >
+    Semantic view for Google global mobility report. Grain: (province_state, iso_3166_1, sub_region_2, month_period).
+    DDL: ddl/semantic/sem_google_mobility_ddl.sql
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_GOOGLE_MOBILITY
+        description: Google mobility — % change in visits to retail, parks, transit, workplaces, residential by region and month
+        dimensions:
+        - name: province_state
+          description: Province or state name
+        - name: iso_3166_1
+          description: ISO 3166-1 country code
+        - name: sub_region_2
+          description: Sub-region level 2 (e.g., county)
+        - name: month_period
+          description: Month period of the mobility record
+        metrics:
+        - name: avg_retail_recreation_change
+          type: avg
+          expression: avg_retail_and_recreation_change_perc
+          description: Average % change in retail and recreation visits
+        - name: avg_workplaces_change
+          type: avg
+          expression: avg_workplaces_change_perc
+          description: Average % change in workplace visits
+
+- name: sem_ecdc_global
+  description: >
+    Semantic view for ECDC global COVID-19. Grain: (continentexp, iso3166_1, month_period).
+    DDL: ddl/semantic/sem_ecdc_global_ddl.sql
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_ECDC_GLOBAL
+        description: ECDC global COVID-19 — cumulative and daily cases, deaths, and population by country and continent
+        dimensions:
+        - name: continentexp
+          description: Continent name
+        - name: iso3166_1
+          description: ISO 3166-1 country code
+        - name: month_period
+          description: Month period of the record
+        metrics:
+        - name: total_cases
+          type: sum
+          expression: total_cases
+          description: Total cumulative COVID cases
+        - name: total_deaths
+          type: sum
+          expression: total_deaths
+          description: Total cumulative COVID deaths
+        - name: total_new_cases
+          type: sum
+          expression: total_cases_since_prev_day
+          description: Total new COVID cases since previous period
+
+- name: sem_nyt_us_covid19
+  description: >
+    Semantic view for NYT US COVID-19. Grain: (state, county, month_period).
+    DDL: ddl/semantic/sem_nyt_us_covid19_ddl.sql
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_NYT_US_COVID19
+        description: New York Times US COVID-19 — cumulative and incremental cases and deaths by state and county
+        dimensions:
+        - name: state
+          description: US state name
+        - name: county
+          description: US county name
+        - name: month_period
+          description: Month period of the record
+        metrics:
+        - name: total_cases
+          type: sum
+          expression: total_cases
+          description: Total cumulative COVID cases
+        - name: total_deaths
+          type: sum
+          expression: total_deaths
+          description: Total cumulative COVID deaths
+        - name: total_new_cases
+          type: sum
+          expression: total_cases_since_prev_day
+          description: Total new cases since previous period
+
+- name: sem_apple_mobility
+  description: >
+    Semantic view for Apple Maps mobility. Grain: (province_state, transportation_type, month_period).
+    DDL: ddl/semantic/sem_apple_mobility_ddl.sql
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_APPLE_MOBILITY
+        description: Apple Maps mobility — % change in routing requests by transport type (driving, walking, transit) by region and month
+        dimensions:
+        - name: province_state
+          description: Province or state name
+        - name: transportation_type
+          description: Type of transportation (driving, walking, transit)
+        - name: iso3166_1
+          description: ISO 3166-1 country code
+        - name: month_period
+          description: Month period of the mobility record
+        metrics:
+        - name: avg_mobility_change
+          type: avg
+          expression: avg_difference
+          description: Average mobility change percentage vs baseline
+
+- name: sem_product_performance
+  description: >
+    Semantic view for e-commerce product performance. Grain: (site, brand, main_category, period_date).
+    DDL: ddl/semantic/sem_product_performance_ddl.sql
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_PRODUCT_PERFORMANCE
+        description: E-commerce product performance — views, purchases, and conversion rates by site, brand, category, and time
+        dimensions:
+        - name: site
+          description: E-commerce site name
+        - name: site_segment
+          description: Segment of the site
+        - name: brand
+          description: Product brand
+        - name: main_category
+          description: Primary product category
+        - name: sub_category
+          description: Secondary product sub-category
+        - name: period_date
+          description: Date of the performance record
+        - name: period_month
+          description: Month derived from period_date
+        - name: period_year
+          description: Year derived from period_date
+        metrics:
+        - name: total_views
+          type: sum
+          expression: total_views
+          description: Total product page views
+        - name: total_purchases
+          type: sum
+          expression: total_purchases
+          description: Total purchases
+        - name: avg_conversion_rate
+          type: avg
+          expression: conversion_rate
+          description: Average conversion rate
+
 - name: sem_sales_analysis
   description: Semantic view base model for sales analysis. Auto-generated.
   config:

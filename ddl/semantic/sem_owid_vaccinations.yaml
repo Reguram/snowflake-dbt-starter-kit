@@ -1,0 +1,71 @@
+# Snowflake Semantic View YAML Specification for OWID Global Vaccinations
+# Use with: CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$);
+#
+# To validate without creating:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$, TRUE);
+# To create:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DBT_DEV.SEMANTIC', $$<yaml>$$);
+
+name: SEM_OWID_VACCINATIONS
+description: Our World in Data (OWID) global COVID-19 vaccination data — doses administered, people vaccinated, and per-capita rates by country and month
+
+tables:
+  - name: VAX
+    description: OWID vaccination summary aggregated by country and month
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: SUMMARY_OWID_VACCINATIONS
+    dimensions:
+      - name: COUNTRY_REGION
+        description: Country or region name
+        expr: country_region
+        data_type: VARCHAR
+      - name: ISO3166_1
+        description: ISO 3166-1 country code
+        expr: iso3166_1
+        data_type: VARCHAR
+      - name: VACCINES
+        description: Vaccine brands used in the country
+        expr: vaccines
+        data_type: VARCHAR
+      - name: LAST_REPORTED_FLAG
+        description: True if this is the most recent record for this country
+        expr: last_reported_flag
+        data_type: BOOLEAN
+      - name: MONTH_PERIOD
+        description: Month period of the vaccination record
+        expr: month_period
+        data_type: DATE
+      - name: YEAR_PERIOD
+        description: Year period of the vaccination record
+        expr: year_period
+        data_type: "NUMBER(4,0)"
+    metrics:
+      - name: TOTAL_VACCINATIONS
+        description: Total number of vaccine doses administered
+        expr: SUM(total_total_vaccinations)
+      - name: TOTAL_PEOPLE_VACCINATED
+        description: Total number of people who received at least one dose
+        expr: SUM(total_people_vaccinated)
+      - name: TOTAL_PEOPLE_FULLY_VACCINATED
+        description: Total number of people fully vaccinated
+        expr: SUM(total_people_fully_vaccinated)
+      - name: TOTAL_DAILY_VACCINATIONS
+        description: Total daily vaccination doses administered
+        expr: SUM(total_daily_vaccinations)
+      - name: AVG_VACCINATIONS_PER_HUNDRED
+        description: Average total vaccinations per 100 people
+        expr: AVG(avg_total_vaccinations_per_hundred)
+      - name: AVG_PEOPLE_VACCINATED_PER_HUNDRED
+        description: Average people vaccinated per 100 people
+        expr: AVG(avg_people_vaccinated_per_hundred)
+      - name: AVG_FULLY_VACCINATED_PER_HUNDRED
+        description: Average people fully vaccinated per 100 people
+        expr: AVG(avg_people_fully_vaccinated_per_hundred)
+      - name: AVG_DAILY_VACCINATIONS_PER_MILLION
+        description: Average daily vaccinations per 1 million people
+        expr: AVG(avg_daily_vaccinations_per_million)
+      - name: TOTAL_RECORDS
+        description: Total number of reporting records
+        expr: SUM(record_count)
