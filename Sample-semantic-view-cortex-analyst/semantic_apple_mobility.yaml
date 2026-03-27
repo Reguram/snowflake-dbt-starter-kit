@@ -1,0 +1,155 @@
+name: SEM_APPLE_MOBILITY
+tables:
+  - name: SUMMARY_APPLE_MOBILITY
+    description: |-
+      Apple Maps mobility data showing percentage change in routing requests by transportation type (driving, walking, transit) relative to a baseline period.
+      
+      This dataset is derived from Apple Maps usage and captures how mobility patterns changed across different regions and transportation modes. Data is aggregated by region, transportation type, and month period.
+      
+      Key features:
+      - Regional granularity at province/state level with ISO 3166 geographic codes
+      - Transportation type breakdown: driving, walking, and transit
+      - Mobility change metrics relative to a pre-pandemic baseline
+      - Monthly aggregation with year period for trend analysis
+      - Last reported flag to identify the most current data point per location
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: SUMMARY_APPLE_MOBILITY
+    dimensions:
+      - name: PROVINCE_STATE
+        synonyms:
+          - state
+          - province
+          - region
+        description: Province or state name where mobility data was recorded
+        expr: PROVINCE_STATE
+        data_type: VARCHAR
+        sample_values:
+          - 'California'
+          - 'New York'
+          - 'London'
+      - name: TRANSPORTATION_TYPE
+        synonyms:
+          - transport mode
+          - travel type
+          - mode of transport
+        description: Type of transportation — driving, walking, or transit
+        expr: TRANSPORTATION_TYPE
+        data_type: VARCHAR
+        sample_values:
+          - 'driving'
+          - 'walking'
+          - 'transit'
+      - name: ISO3166_1
+        synonyms:
+          - country code
+          - ISO country
+        description: ISO 3166-1 country code
+        expr: ISO3166_1
+        data_type: VARCHAR
+        sample_values:
+          - 'US'
+          - 'GB'
+          - 'DE'
+      - name: ISO3166_2
+        synonyms:
+          - state code
+          - region code
+        description: ISO 3166-2 state or region code
+        expr: ISO3166_2
+        data_type: VARCHAR
+        sample_values:
+          - 'US-CA'
+          - 'US-NY'
+          - 'GB-LND'
+      - name: LAST_REPORTED_FLAG
+        description: True if this is the most recent record for this location
+        expr: LAST_REPORTED_FLAG
+        data_type: BOOLEAN
+        sample_values:
+          - 'true'
+          - 'false'
+      - name: MONTH_PERIOD
+        synonyms:
+          - month
+          - reporting month
+        description: Month period of the mobility record
+        expr: MONTH_PERIOD
+        data_type: DATE
+        sample_values:
+          - '2020-03-01'
+          - '2021-06-01'
+          - '2022-01-01'
+      - name: YEAR_PERIOD
+        synonyms:
+          - year
+          - reporting year
+        description: Year period of the mobility record
+        expr: YEAR_PERIOD
+        data_type: NUMBER(4,0)
+        sample_values:
+          - '2020'
+          - '2021'
+          - '2022'
+    facts:
+      - name: TOTAL_DIFFERENCE
+        synonyms:
+          - total mobility change
+          - total change
+        description: Total mobility change as percentage vs baseline, summed across periods
+        expr: TOTAL_DIFFERENCE
+        data_type: NUMBER(18,2)
+        default_aggregation: sum
+        sample_values:
+          - '150.25'
+          - '-30.50'
+          - '85.00'
+      - name: AVG_DIFFERENCE
+        synonyms:
+          - average mobility change
+          - avg change
+        description: Average mobility change percentage vs baseline
+        expr: AVG_DIFFERENCE
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '12.50'
+          - '-5.30'
+          - '8.20'
+      - name: MAX_DIFFERENCE
+        synonyms:
+          - maximum mobility change
+          - peak change
+        description: Maximum mobility change percentage vs baseline in the period
+        expr: MAX_DIFFERENCE
+        data_type: NUMBER(18,2)
+        default_aggregation: max
+        sample_values:
+          - '45.00'
+          - '120.30'
+          - '78.50'
+      - name: MIN_DIFFERENCE
+        synonyms:
+          - minimum mobility change
+          - lowest change
+        description: Minimum mobility change percentage vs baseline in the period
+        expr: MIN_DIFFERENCE
+        data_type: NUMBER(18,2)
+        default_aggregation: min
+        sample_values:
+          - '-80.00'
+          - '-45.20'
+          - '-10.50'
+      - name: RECORD_COUNT
+        synonyms:
+          - number of records
+          - total records
+        description: Total number of reporting records in the aggregation
+        expr: RECORD_COUNT
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '30'
+          - '120'
+          - '365'

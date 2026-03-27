@@ -1,0 +1,195 @@
+name: SEM_OWID_VACCINATIONS
+tables:
+  - name: SUMMARY_OWID_VACCINATIONS
+    description: |-
+      Our World in Data (OWID) global COVID-19 vaccination data showing doses administered, people vaccinated, and per-capita rates by country and month.
+      
+      This dataset provides comprehensive global vaccination tracking from Our World in Data. It includes total doses, people vaccinated (partial and fully), daily rates, and per-capita metrics enabling cross-country comparison.
+      
+      Key features:
+      - Country-level vaccination tracking with ISO 3166-1 codes
+      - Vaccine brand information for each country
+      - Both absolute counts and per-capita (per 100 or per million) metrics
+      - Daily vaccination rate tracking
+      - Distinction between partially and fully vaccinated populations
+      - Monthly aggregation for trend analysis
+      - Last reported flag for identifying the most current data point
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: SUMMARY_OWID_VACCINATIONS
+    dimensions:
+      - name: COUNTRY_REGION
+        synonyms:
+          - country
+          - region
+          - nation
+        description: Country or region name
+        expr: COUNTRY_REGION
+        data_type: VARCHAR
+        sample_values:
+          - 'United States'
+          - 'United Kingdom'
+          - 'India'
+      - name: ISO3166_1
+        synonyms:
+          - country code
+          - ISO country
+        description: ISO 3166-1 country code
+        expr: ISO3166_1
+        data_type: VARCHAR
+        sample_values:
+          - 'US'
+          - 'GB'
+          - 'IN'
+      - name: VACCINES
+        synonyms:
+          - vaccine brand
+          - vaccine type
+          - vaccine name
+        description: Vaccine brands used in the country
+        expr: VACCINES
+        data_type: VARCHAR
+        sample_values:
+          - 'Pfizer/BioNTech, Moderna, Johnson&Johnson'
+          - 'Oxford/AstraZeneca, Pfizer/BioNTech'
+          - 'Covishield, Covaxin'
+      - name: LAST_REPORTED_FLAG
+        description: True if this is the most recent record for this country
+        expr: LAST_REPORTED_FLAG
+        data_type: BOOLEAN
+        sample_values:
+          - 'true'
+          - 'false'
+      - name: MONTH_PERIOD
+        synonyms:
+          - month
+          - reporting month
+        description: Month period of the vaccination record
+        expr: MONTH_PERIOD
+        data_type: DATE
+        sample_values:
+          - '2021-01-01'
+          - '2021-06-01'
+          - '2022-01-01'
+      - name: YEAR_PERIOD
+        synonyms:
+          - year
+          - reporting year
+        description: Year period of the vaccination record
+        expr: YEAR_PERIOD
+        data_type: NUMBER(4,0)
+        sample_values:
+          - '2021'
+          - '2022'
+          - '2023'
+    facts:
+      - name: TOTAL_TOTAL_VACCINATIONS
+        synonyms:
+          - total vaccine doses
+          - total doses administered
+          - vaccinations
+        description: Total number of vaccine doses administered
+        expr: TOTAL_TOTAL_VACCINATIONS
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '500000000'
+          - '120000000'
+          - '1800000000'
+      - name: TOTAL_PEOPLE_VACCINATED
+        synonyms:
+          - people with at least one dose
+          - partially vaccinated
+        description: Total number of people who received at least one dose
+        expr: TOTAL_PEOPLE_VACCINATED
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '220000000'
+          - '50000000'
+          - '900000000'
+      - name: TOTAL_PEOPLE_FULLY_VACCINATED
+        synonyms:
+          - fully vaccinated
+          - complete vaccination
+        description: Total number of people fully vaccinated
+        expr: TOTAL_PEOPLE_FULLY_VACCINATED
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '190000000'
+          - '45000000'
+          - '750000000'
+      - name: TOTAL_DAILY_VACCINATIONS
+        synonyms:
+          - daily doses
+          - daily vaccination rate
+        description: Total daily vaccination doses administered
+        expr: TOTAL_DAILY_VACCINATIONS
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '3000000'
+          - '800000'
+          - '5000000'
+      - name: AVG_TOTAL_VACCINATIONS_PER_HUNDRED
+        synonyms:
+          - vaccinations per capita
+          - doses per 100 people
+        description: Average total vaccinations per 100 people
+        expr: AVG_TOTAL_VACCINATIONS_PER_HUNDRED
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '150.50'
+          - '180.30'
+          - '130.00'
+      - name: AVG_PEOPLE_VACCINATED_PER_HUNDRED
+        synonyms:
+          - vaccinated per capita
+          - people vaccinated per 100
+        description: Average people vaccinated per 100 people
+        expr: AVG_PEOPLE_VACCINATED_PER_HUNDRED
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '65.50'
+          - '72.30'
+          - '55.00'
+      - name: AVG_PEOPLE_FULLY_VACCINATED_PER_HUNDRED
+        synonyms:
+          - fully vaccinated per capita
+          - fully vaccinated per 100
+        description: Average people fully vaccinated per 100 people
+        expr: AVG_PEOPLE_FULLY_VACCINATED_PER_HUNDRED
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '58.50'
+          - '66.00'
+          - '48.00'
+      - name: AVG_DAILY_VACCINATIONS_PER_MILLION
+        synonyms:
+          - daily rate per million
+          - vaccination rate per million
+        description: Average daily vaccinations per 1 million people
+        expr: AVG_DAILY_VACCINATIONS_PER_MILLION
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '5000.00'
+          - '8000.50'
+          - '3500.25'
+      - name: RECORD_COUNT
+        synonyms:
+          - number of records
+          - total records
+        description: Total number of reporting records in the aggregation
+        expr: RECORD_COUNT
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '30'
+          - '120'
+          - '365'

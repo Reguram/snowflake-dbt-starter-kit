@@ -1,0 +1,189 @@
+name: SEM_NYT_US_COVID19
+tables:
+  - name: SUMMARY_NYT_US_COVID19
+    description: |-
+      New York Times US COVID-19 data showing cumulative and incremental cases and deaths by US state and county over time.
+      
+      This dataset provides COVID-19 case and death tracking as compiled by The New York Times, covering all US states and counties. It enables analysis of pandemic progression at both state and county levels.
+      
+      Key features:
+      - Geographic hierarchy: state and county with FIPS codes
+      - ISO 3166 geographic codes for standardized identification
+      - Both cumulative totals and period-over-period incremental counts
+      - Separate tracking for cases and deaths
+      - Monthly aggregation with average metrics
+      - Last reported flag for identifying the most current data point
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: SUMMARY_NYT_US_COVID19
+    dimensions:
+      - name: STATE
+        synonyms:
+          - US state
+          - state name
+        description: US state name
+        expr: STATE
+        data_type: VARCHAR
+        sample_values:
+          - 'California'
+          - 'New York'
+          - 'Texas'
+      - name: COUNTY
+        synonyms:
+          - county name
+          - district
+        description: US county name
+        expr: COUNTY
+        data_type: VARCHAR
+        sample_values:
+          - 'Los Angeles'
+          - 'New York City'
+          - 'Cook'
+      - name: FIPS
+        synonyms:
+          - FIPS code
+          - geographic code
+        description: FIPS geographic code for the location
+        expr: FIPS
+        data_type: VARCHAR
+        sample_values:
+          - '06037'
+          - '36061'
+          - '17031'
+      - name: ISO3166_1
+        synonyms:
+          - country code
+          - ISO country
+        description: ISO 3166-1 country code
+        expr: ISO3166_1
+        data_type: VARCHAR
+        sample_values:
+          - 'US'
+      - name: ISO3166_2
+        synonyms:
+          - state code
+          - region code
+        description: ISO 3166-2 state code
+        expr: ISO3166_2
+        data_type: VARCHAR
+        sample_values:
+          - 'US-CA'
+          - 'US-NY'
+          - 'US-TX'
+      - name: LAST_REPORTED_FLAG
+        description: True if this is the most recent record for this location
+        expr: LAST_REPORTED_FLAG
+        data_type: BOOLEAN
+        sample_values:
+          - 'true'
+          - 'false'
+      - name: MONTH_PERIOD
+        synonyms:
+          - month
+          - reporting month
+        description: Month period of the record
+        expr: MONTH_PERIOD
+        data_type: DATE
+        sample_values:
+          - '2020-03-01'
+          - '2021-01-01'
+          - '2022-06-01'
+      - name: YEAR_PERIOD
+        synonyms:
+          - year
+          - reporting year
+        description: Year period of the record
+        expr: YEAR_PERIOD
+        data_type: NUMBER(4,0)
+        sample_values:
+          - '2020'
+          - '2021'
+          - '2022'
+    facts:
+      - name: TOTAL_CASES
+        synonyms:
+          - cumulative cases
+          - total COVID cases
+        description: Total cumulative COVID cases
+        expr: TOTAL_CASES
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '50000'
+          - '1200000'
+          - '350000'
+      - name: TOTAL_DEATHS
+        synonyms:
+          - cumulative deaths
+          - total COVID deaths
+        description: Total cumulative COVID deaths
+        expr: TOTAL_DEATHS
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '1200'
+          - '25000'
+          - '8000'
+      - name: TOTAL_CASES_SINCE_PREV_DAY
+        synonyms:
+          - new cases
+          - daily new cases
+          - incremental cases
+        description: Total new COVID cases since previous reporting period
+        expr: TOTAL_CASES_SINCE_PREV_DAY
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '5000'
+          - '50000'
+          - '15000'
+      - name: TOTAL_DEATHS_SINCE_PREV_DAY
+        synonyms:
+          - new deaths
+          - daily new deaths
+          - incremental deaths
+        description: Total new COVID deaths since previous reporting period
+        expr: TOTAL_DEATHS_SINCE_PREV_DAY
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '100'
+          - '1500'
+          - '400'
+      - name: AVG_CASES
+        synonyms:
+          - average cases
+          - mean cases per period
+        description: Average cases per reporting period
+        expr: AVG_CASES
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '1500.50'
+          - '35000.00'
+          - '10000.25'
+      - name: AVG_DEATHS
+        synonyms:
+          - average deaths
+          - mean deaths per period
+        description: Average deaths per reporting period
+        expr: AVG_DEATHS
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '35.50'
+          - '800.00'
+          - '250.25'
+      - name: RECORD_COUNT
+        synonyms:
+          - number of records
+          - total records
+        description: Total number of reporting records in the aggregation
+        expr: RECORD_COUNT
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '30'
+          - '120'
+          - '365'

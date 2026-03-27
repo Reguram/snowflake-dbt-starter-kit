@@ -1,0 +1,250 @@
+name: NHS_DATA_SEMANTIC_VIEW
+tables:
+  - name: V_ENDOCRINE_PRESCRIPTION_DATA
+    synonyms: []
+    description: |-
+      This semantic layer connects the NHS English Prescribing Dataset and the BNF/Snomed mapping data, joining the datasets on Snomed code. 
+
+      The English Prescribing Dataset (EPD) is a comprehensive monthly dataset capturing all prescriptions issued by NHS primary care prescribers in England and dispensed in the community. This includes prescriptions from GPs, nurses, and other authorised primary care prescribers. The dataset is openly available via the NHS Business Services Authority’s (NHSBSA) Open Data Portal, promoting transparency and enabling widespread analysis. With approximately 17 million rows of data added each month, the EPD provides one of the most detailed views of NHS prescribing activity of England. It is a crucial resource for analysing prescribing trends, costs, and behaviours at both national and local levels. 
+
+      Key features of this dataset are the following: Practice-Level Information: 
+      Each record is linked to a specific NHS GP practice or primary care organisation, enabling local-level analysis. 
+      BNF and SNOMED CT Codes: Prescriptions are classified using Systematized Nomenclature of Medicine Clinical Terms (SNOMED CT), British National Formulary (BNF) codes, and Dictionary of Medicines and Devices (dm+d), ensuring standardised identification and interoperability across NHS systems. 
+      Prescription Costs: Captures the financial cost associated with each prescription, reflecting reimbursement claims.
+      Quantities Dispensed: Provides data on the volume of items prescribed and dispensed.
+      Data Granularity: The dataset offers detailed insights down to the individual prescription level, allowing in-depth analyses of prescribing patterns and trends.
+
+      The BNF/Snomed mapping data
+      The BNF/Snomed mapping file published by the NHS Business Services Authority (NHSBSA) represents mapping of BNF Codes to Dictionary of Medicines and Devices (dm+d) Snomed codes.
+
+      The dataset shows one row for every VMP / AMP / VMPP / AMPP record and a field showing which BNF code this maps to. The data published early April 2020 contains information relating to January 2020 and we plan to continue to publish refreshed data on a monthly basis thereafter with the data relating to the latest available dispensing months data in ePACT2 at the time of publication, for example data published by the end of April 2020 containing data relating to February 2020  dispensed prescriptions.
+
+      The BNF Snomed mapping document contains:
+      Indication of presentation / pack level
+      Indication of VMP/AMP/VMPP/AMPP level
+      BNF Code
+      BNF Description at presentation level
+      Snomed code at VMP/AMP/VMPP/AMPP level
+      dm+d description at presentation and pack level
+      Strength
+      Unit of Measure
+      Pack
+      Sub pack
+      The Presentation / Pack level column and VMP / VMPP / AMP / AMPP column indicates if the row of data relates to a virtual (“VMP”) or actual (“AMP”) product. 
+
+      The BNF description is used for reporting purposes and is truncated to be no longer than 60 characters for drugs and 100 characters for appliances.
+      Typically BNF codes are mapped  to VMPs and AMPs but the corresponding BNF code is also mapped to a related VMPP/AMPP.   In the mapping some records will not hold a BNF code or a BNF Description , these are typically parallel imports or secondary care products.
+    base_table:
+      database: NHS_DATA
+      schema: CONS_ALIGNED
+      table: V_ENDOCRINE_PRESCRIPTION_DATA
+    dimensions:
+      - name: BNF_CHAPTER_PLUS_CODE
+        expr: BNF_CHAPTER_PLUS_CODE
+        data_type: VARCHAR
+        sample_values:
+          - '06: Endocrine System'
+      - name: BNF_CHEMICAL_SUBSTANCE
+        synonyms:
+          - active ingredient
+          - Chemical Substance
+        description: British National Formulary (BNF) Chemical Substance Description - The name of the main active ingredient in a drug
+        expr: BNF_CHEMICAL_SUBSTANCE
+        data_type: VARCHAR
+        sample_values:
+          - Fludrocortisone acetate
+          - Hydrocortisone
+          - Denosumab
+      - name: BNF_CHEMICAL_SUBSTANCE_CODE
+        synonyms:
+          - active ingredient code
+          - chemical substance code
+        description: British National Formulary (BNF) Chemical Substance Code - Unique identifier for BNF Chemical Substance.
+        expr: BNF_CHEMICAL_SUBSTANCE_CODE
+        data_type: VARCHAR
+        sample_values:
+          - 0601023Y0
+          - 0601011A0
+          - 0604011D0
+      - name: BNF_PRESENTATION_CODE
+        description: British National Formulary (BNF) Presentation Code - The unique code for BNF Presentation
+        expr: BNF_PRESENTATION_CODE
+        data_type: VARCHAR
+        sample_values:
+          - 0603020T0AAAGAG
+          - 0604011L0BKAEBL
+          - 0603020J0AADCDC
+      - name: BNF_PRESENTATION_NAME
+        description: British National Formulary (BNF) Presentation Name - representing the specific type, strength, and formulation of a drug.
+        expr: BNF_PRESENTATION_NAME
+        data_type: VARCHAR
+        sample_values:
+          - Metformin 500mg tablets
+          - Metformin 850mg modified-release tablets
+          - WaveSense JAZZ testing strips
+      - name: DMD_PRODUCT_DESCRIPTION
+        description: dm+d description at presentation level - The Dictionary of Medicines and Devices description at the presentation level. Part of the dm+d reference data published by NHS Business Services Authority (NHSBSA)
+        expr: DMD_PRODUCT_DESCRIPTION
+        data_type: VARCHAR
+        sample_values:
+          - Insulin glargine 100units/ml / Lixisenatide 50micrograms/ml solution for injection 3ml pre-filled disposable devices
+          - Progesterone micronised 100mg capsules (Imported (Germany))
+          - Levothyroxine sodium 100microgram tablets (Accord-UK Ltd)
+      - name: MEDICINE_MANUFACTURER
+        synonyms:
+          - mah
+          - manufacture
+          - marketing authorisation holder
+          - medicinal product manufacturer
+        description: A Marketing Authorization Holder (MAH), as defined by the European Medicines Agency (EMA), is a company or legal entity that has the authorization to market a medicine in one or more European Union Member States. The MAH is responsible for ensuring that the product complies with all applicable regulations and standards before it can be placed on the market.
+        expr: MEDICINE_MANUFACTURER
+        data_type: VARCHAR
+        sample_values:
+          - DEXCEL-PHARMA LTD
+          - ASTRAZENECA  LTD
+          - A. MENARINI FARMACEUTICA INTERNAZIONALE SRL
+      - name: MONTH
+        description: The calendar month for the NHS Prescription Data. The Prescription Data is limited to the years 2023, 2024 and 2025 only. The dataset is only for the month of October in those years.
+        expr: MONTH
+        data_type: NUMBER
+        sample_values:
+          - '10'
+      - name: NAME_OF_MEDICINE
+        synonyms:
+          - medicinal product
+          - medicinal product brand
+        description: A medicinal product as per the European Medicines Agency (EMA) is defined as a substance or combination of substances intended to treat, prevent, or diagnose a disease, or to restore, correct, or modify physiological functions by exerting a pharmacological, immunological, or metabolic action.
+        expr: NAME_OF_MEDICINE
+        data_type: VARCHAR
+        sample_values:
+          - HUMULIN
+          - SITAGLIPTIN
+          - YOURGLUCO
+      - name: PCO_CODE
+        synonyms:
+          - Primary care Organisation Code
+        description: Primary Care Organisation Name - An NHS organisation that commissions or provides care services
+        expr: PCO_CODE
+        data_type: VARCHAR
+        sample_values:
+          - 15C00
+          - 78H00
+          - 84H00
+      - name: PCO_NAME
+        synonyms:
+          - Primary care Organisation Name
+        description: Primary Care Organisation Code - The unique code used to refer to a PCO or a Primary care Organisation
+        expr: PCO_NAME
+        data_type: VARCHAR
+        sample_values:
+          - NHS FRIMLEY ICB - D4U1Y
+          - NHS MID AND SOUTH ESSEX ICB - 99F
+          - NHS HUMBER AND NORTH YORKSHIRE ICB - 03F
+      - name: PRACTICE_CODE
+        synonyms:
+          - GP Code
+          - Surgery code
+        description: Practice Code - The unique code used to refer to a Practice
+        expr: PRACTICE_CODE
+        data_type: VARCHAR
+        sample_values:
+          - M81048
+          - N82066
+          - K83080
+      - name: PRACTICE_NAME
+        synonyms:
+          - GP
+          - Surgery
+        description: Practice Name - The name of an organisation that employs prescribers
+        expr: PRACTICE_NAME
+        data_type: VARCHAR
+        sample_values:
+          - WELLSIDE SURGERY
+          - WINCOBANK MEDICAL CENTRE
+          - CANBURY MEDICAL CENTRE
+      - name: REGIONAL_OFFICE_CODE
+        expr: REGIONAL_OFFICE_CODE
+        data_type: VARCHAR
+        sample_values:
+          - Y60
+          - Y56
+          - Y58
+      - name: REGIONAL_OFFICE_NAME
+        expr: REGIONAL_OFFICE_NAME
+        data_type: VARCHAR
+        sample_values:
+          - SOUTH EAST
+          - NORTH WEST
+          - MIDLANDS
+      - name: SNOMED_CODE
+        expr: SNOMED_CODE
+        data_type: VARCHAR
+        sample_values:
+          - '24018511000001102'
+          - '20962411000001105'
+          - '7597611000001106'
+      - name: SUPPLIER_GROUP
+        expr: SUPPLIER_GROUP
+        data_type: VARCHAR
+        sample_values:
+          - NOVO NORDISK LTD
+          - ELI LILLY AND COMPANY LTD
+          - Other Suppliers
+      - name: YEAR
+        synonyms:
+          - Prescription Year
+        description: The calendar year for the NHS Prescription Data. The Prescription Data is limited to the years 2023, 2024 and 2025 only. The dataset is only for the month of October in those years.
+        expr: YEAR
+        data_type: NUMBER
+        sample_values:
+          - '2023'
+          - '2024'
+          - '2025'
+    facts:
+      - name: ACTUAL_COST
+        description: Actual Cost in GBP - Basic cost after adjustment for national average discount and dispenser payments
+        expr: ACTUAL_COST
+        data_type: NUMBER
+        default_aggregation: 1
+        sample_values:
+          - '0.64'
+          - '72.64'
+          - '5.05'
+      - name: ITEMS
+        description: Items - The number of times a medicinal product appears on a prescription form (paper or electronic)
+        expr: ITEMS
+        data_type: NUMBER
+        default_aggregation: 1
+        sample_values:
+          - '111'
+          - '188'
+          - '1'
+      - name: NIC
+        synonyms:
+          - Net Ingredient Cost
+        description: Net Ingredient Cost (NIC) in GBP - Amount paid using basic price and quantity prescribed
+        expr: NIC
+        data_type: NUMBER
+        default_aggregation: 1
+        sample_values:
+          - '59.78'
+          - '24.94'
+          - '29.03'
+      - name: QUANTITY
+        description: Quantity - The quantity of a medicine or medicinal product for which an item was prescribed and dispensed for each BNF Presentation
+        expr: QUANTITY
+        data_type: NUMBER
+        default_aggregation: 1
+        sample_values:
+          - '410.00'
+          - '224.00'
+          - '90.00'
+      - name: TOTAL_QUANTITY
+        description: Total Quantity - The total quantity of a drug prescribed (Quantity multiplied by Items)
+        expr: TOTAL_QUANTITY
+        data_type: NUMBER
+        default_aggregation: 1
+        sample_values:
+          - '49.00'
+          - '950.00'
+          - '7056.00'
