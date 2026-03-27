@@ -1,0 +1,186 @@
+name: SEM_GOOGLE_MOBILITY
+tables:
+  - name: SUMMARY_GOOG_GLOBAL_MOBILITY_REPORT
+    description: |-
+      Google Community Mobility Reports showing percentage change in visits to different place categories relative to a baseline period.
+      
+      This dataset captures how visits to various categories of places (retail, grocery, parks, transit, workplaces, residential areas) changed compared to a pre-pandemic baseline. Data is aggregated by region, sub-region, and month period.
+      
+      Key features:
+      - Regional granularity at province/state and sub-region (county) level
+      - ISO 3166 geographic codes for standardized identification
+      - Six mobility categories: grocery/pharmacy, parks, residential, retail/recreation, transit stations, workplaces
+      - All metrics expressed as percentage change from baseline
+      - Monthly aggregation for trend analysis
+      - Last reported flag for identifying the most current data point
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: SUMMARY_GOOG_GLOBAL_MOBILITY_REPORT
+    dimensions:
+      - name: PROVINCE_STATE
+        synonyms:
+          - state
+          - province
+          - region
+        description: Province or state name
+        expr: PROVINCE_STATE
+        data_type: VARCHAR
+        sample_values:
+          - 'California'
+          - 'New York'
+          - 'Texas'
+      - name: ISO_3166_1
+        synonyms:
+          - country code
+          - ISO country
+        description: ISO 3166-1 country code
+        expr: ISO_3166_1
+        data_type: VARCHAR
+        sample_values:
+          - 'US'
+          - 'GB'
+          - 'DE'
+      - name: ISO_3166_2
+        synonyms:
+          - state code
+          - region code
+        description: ISO 3166-2 state/region code
+        expr: ISO_3166_2
+        data_type: VARCHAR
+        sample_values:
+          - 'US-CA'
+          - 'US-NY'
+          - 'GB-ENG'
+      - name: SUB_REGION_2
+        synonyms:
+          - county
+          - sub region
+          - district
+        description: Sub-region level 2 (e.g., county or district)
+        expr: SUB_REGION_2
+        data_type: VARCHAR
+        sample_values:
+          - 'Los Angeles County'
+          - 'New York County'
+          - 'Harris County'
+      - name: LAST_REPORTED_FLAG
+        description: True if this is the most recent record for this region
+        expr: LAST_REPORTED_FLAG
+        data_type: BOOLEAN
+        sample_values:
+          - 'true'
+          - 'false'
+      - name: MONTH_PERIOD
+        synonyms:
+          - month
+          - reporting month
+        description: Month period of the mobility record
+        expr: MONTH_PERIOD
+        data_type: DATE
+        sample_values:
+          - '2020-03-01'
+          - '2021-06-01'
+          - '2022-01-01'
+      - name: YEAR_PERIOD
+        synonyms:
+          - year
+          - reporting year
+        description: Year period of the mobility record
+        expr: YEAR_PERIOD
+        data_type: NUMBER(4,0)
+        sample_values:
+          - '2020'
+          - '2021'
+          - '2022'
+    facts:
+      - name: AVG_GROCERY_AND_PHARMACY_CHANGE_PERC
+        synonyms:
+          - grocery change
+          - pharmacy visits change
+          - grocery and pharmacy mobility
+        description: Average percentage change in visits to grocery stores and pharmacies vs baseline
+        expr: AVG_GROCERY_AND_PHARMACY_CHANGE_PERC
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '-15.30'
+          - '5.20'
+          - '-8.50'
+      - name: AVG_PARKS_CHANGE_PERC
+        synonyms:
+          - parks change
+          - park visits change
+          - outdoor mobility
+        description: Average percentage change in visits to parks vs baseline
+        expr: AVG_PARKS_CHANGE_PERC
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '25.50'
+          - '-40.20'
+          - '10.00'
+      - name: AVG_RESIDENTIAL_CHANGE_PERC
+        synonyms:
+          - residential change
+          - time at home
+          - stay at home
+        description: Average percentage change in time spent at residential locations vs baseline
+        expr: AVG_RESIDENTIAL_CHANGE_PERC
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '18.50'
+          - '5.30'
+          - '12.00'
+      - name: AVG_RETAIL_AND_RECREATION_CHANGE_PERC
+        synonyms:
+          - retail change
+          - recreation change
+          - shopping mobility
+        description: Average percentage change in visits to retail and recreation vs baseline
+        expr: AVG_RETAIL_AND_RECREATION_CHANGE_PERC
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '-35.50'
+          - '-10.20'
+          - '2.50'
+      - name: AVG_TRANSIT_STATIONS_CHANGE_PERC
+        synonyms:
+          - transit change
+          - public transport change
+          - transit mobility
+        description: Average percentage change in visits to transit stations vs baseline
+        expr: AVG_TRANSIT_STATIONS_CHANGE_PERC
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '-50.30'
+          - '-20.10'
+          - '-5.50'
+      - name: AVG_WORKPLACES_CHANGE_PERC
+        synonyms:
+          - workplace change
+          - office visits change
+          - work from office
+        description: Average percentage change in visits to workplaces vs baseline
+        expr: AVG_WORKPLACES_CHANGE_PERC
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '-45.00'
+          - '-25.30'
+          - '-10.50'
+      - name: RECORD_COUNT
+        synonyms:
+          - number of records
+          - total records
+        description: Total number of reporting records in the aggregation
+        expr: RECORD_COUNT
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '30'
+          - '120'
+          - '365'

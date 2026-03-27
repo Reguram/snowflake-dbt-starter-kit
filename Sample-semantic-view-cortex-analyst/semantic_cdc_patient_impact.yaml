@@ -1,0 +1,272 @@
+name: SEM_CDC_PATIENT_IMPACT
+tables:
+  - name: FCT_CDC_REPORTED_PATIENT_IMPACT
+    description: |-
+      CDC reported hospital patient impact data capturing inpatient beds, ICU utilization, staffing shortages, and COVID admissions by US state and date.
+      
+      This dataset provides a comprehensive view of hospital capacity and COVID-19 patient impact across US states. It includes detailed metrics on inpatient bed usage, ICU capacity, COVID-specific admissions (adult and pediatric), and critical staffing shortage indicators.
+      
+      Key features:
+      - State-level hospital capacity data with ISO 3166 geographic codes
+      - Inpatient bed utilization including COVID-specific occupancy
+      - ICU bed capacity and COVID patient counts
+      - Previous-day admission tracking for adult and pediatric COVID patients
+      - Critical staffing shortage reporting
+      - Utilization rate calculations for beds and ICU
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: FCT_CDC_REPORTED_PATIENT_IMPACT
+    dimensions:
+      - name: STATE
+        synonyms:
+          - US state
+          - state abbreviation
+        description: US state abbreviation
+        expr: STATE
+        data_type: VARCHAR
+        sample_values:
+          - 'CA'
+          - 'NY'
+          - 'TX'
+      - name: ISO3166_1
+        synonyms:
+          - country code
+        description: ISO 3166-1 country code
+        expr: ISO3166_1
+        data_type: VARCHAR
+        sample_values:
+          - 'US'
+      - name: ISO3166_2
+        synonyms:
+          - state code
+          - region code
+        description: ISO 3166-2 state/region code
+        expr: ISO3166_2
+        data_type: VARCHAR
+        sample_values:
+          - 'US-CA'
+          - 'US-NY'
+          - 'US-TX'
+      - name: LAST_REPORTED_FLAG
+        description: True if this is the most recent report for this state
+        expr: LAST_REPORTED_FLAG
+        data_type: BOOLEAN
+        sample_values:
+          - 'true'
+          - 'false'
+      - name: DATE
+        synonyms:
+          - report date
+          - reporting date
+        description: Date of the CDC hospital report
+        expr: DATE
+        data_type: DATE
+        sample_values:
+          - '2020-07-15'
+          - '2021-01-10'
+          - '2022-03-01'
+    facts:
+      - name: INPATIENT_BEDS
+        synonyms:
+          - total inpatient beds
+          - staffed beds
+        description: Total staffed inpatient beds
+        expr: INPATIENT_BEDS
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '5000'
+          - '12000'
+          - '8500'
+      - name: INPATIENT_BEDS_USED
+        synonyms:
+          - beds in use
+          - occupied beds
+        description: Total inpatient beds currently in use
+        expr: INPATIENT_BEDS_USED
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '4200'
+          - '10500'
+          - '7000'
+      - name: INPATIENT_BEDS_USED_COVID
+        synonyms:
+          - COVID beds
+          - beds used for COVID
+        description: Total inpatient beds occupied by COVID patients
+        expr: INPATIENT_BEDS_USED_COVID
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '800'
+          - '3500'
+          - '1200'
+      - name: HOSPITAL_ONSET_COVID
+        synonyms:
+          - hospital acquired COVID
+        description: Total patients with hospital-onset COVID
+        expr: HOSPITAL_ONSET_COVID
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '50'
+          - '200'
+          - '120'
+      - name: TOTAL_ADULT_PATIENTS_HOSPITALIZED_CONFIRMED_COVID
+        synonyms:
+          - adult COVID hospitalized
+          - adult confirmed COVID
+        description: Total adult patients hospitalized with confirmed COVID
+        expr: TOTAL_ADULT_PATIENTS_HOSPITALIZED_CONFIRMED_COVID
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '600'
+          - '2800'
+          - '950'
+      - name: TOTAL_PEDIATRIC_PATIENTS_HOSPITALIZED_CONFIRMED_COVID
+        synonyms:
+          - pediatric COVID hospitalized
+          - child COVID patients
+        description: Total pediatric patients hospitalized with confirmed COVID
+        expr: TOTAL_PEDIATRIC_PATIENTS_HOSPITALIZED_CONFIRMED_COVID
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '15'
+          - '80'
+          - '35'
+      - name: TOTAL_STAFFED_ADULT_ICU_BEDS
+        synonyms:
+          - ICU beds
+          - ICU capacity
+        description: Total staffed adult ICU beds
+        expr: TOTAL_STAFFED_ADULT_ICU_BEDS
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '500'
+          - '1200'
+          - '850'
+      - name: STAFFED_ADULT_ICU_BED_OCCUPANCY
+        synonyms:
+          - ICU occupancy
+          - ICU beds in use
+        description: Total occupied adult ICU beds
+        expr: STAFFED_ADULT_ICU_BED_OCCUPANCY
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '420'
+          - '1050'
+          - '700'
+      - name: STAFFED_ICU_ADULT_PATIENTS_CONFIRMED_COVID
+        synonyms:
+          - ICU COVID patients
+          - COVID in ICU
+        description: Total adult ICU patients with confirmed COVID
+        expr: STAFFED_ICU_ADULT_PATIENTS_CONFIRMED_COVID
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '120'
+          - '450'
+          - '200'
+      - name: PREVIOUS_DAY_ADMISSION_ADULT_COVID_CONFIRMED
+        synonyms:
+          - previous day adult admissions
+          - yesterday adult COVID admissions
+        description: Total previous-day adult COVID confirmed admissions
+        expr: PREVIOUS_DAY_ADMISSION_ADULT_COVID_CONFIRMED
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '30'
+          - '150'
+          - '65'
+      - name: PREVIOUS_DAY_ADMISSION_PEDIATRIC_COVID_CONFIRMED
+        synonyms:
+          - previous day pediatric admissions
+          - yesterday child COVID admissions
+        description: Total previous-day pediatric COVID confirmed admissions
+        expr: PREVIOUS_DAY_ADMISSION_PEDIATRIC_COVID_CONFIRMED
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '2'
+          - '10'
+          - '5'
+      - name: CRITICAL_STAFFING_SHORTAGE_TODAY_YES
+        synonyms:
+          - staffing shortage count
+          - facilities with shortage
+        description: Count of facilities reporting critical staffing shortage today
+        expr: CRITICAL_STAFFING_SHORTAGE_TODAY_YES
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '5'
+          - '25'
+          - '12'
+      - name: INPATIENT_BEDS_UTILIZATION
+        synonyms:
+          - bed utilization rate
+          - occupancy rate
+        description: Inpatient bed utilization rate (0 to 1)
+        expr: INPATIENT_BEDS_UTILIZATION
+        data_type: NUMBER(18,4)
+        default_aggregation: avg
+        sample_values:
+          - '0.8400'
+          - '0.9200'
+          - '0.7500'
+      - name: INPATIENT_BED_COVID_UTILIZATION
+        synonyms:
+          - COVID bed utilization
+          - COVID occupancy rate
+        description: Inpatient bed COVID utilization rate (0 to 1)
+        expr: INPATIENT_BED_COVID_UTILIZATION
+        data_type: NUMBER(18,4)
+        default_aggregation: avg
+        sample_values:
+          - '0.1600'
+          - '0.3200'
+          - '0.1100'
+      - name: ADULT_ICU_BED_UTILIZATION
+        synonyms:
+          - ICU utilization rate
+          - ICU occupancy rate
+        description: Adult ICU bed utilization rate (0 to 1)
+        expr: ADULT_ICU_BED_UTILIZATION
+        data_type: NUMBER(18,4)
+        default_aggregation: avg
+        sample_values:
+          - '0.8800'
+          - '0.9500'
+          - '0.8200'
+      - name: ADULT_ICU_BED_COVID_UTILIZATION
+        synonyms:
+          - ICU COVID utilization
+          - ICU COVID rate
+        description: Adult ICU bed COVID utilization rate (0 to 1)
+        expr: ADULT_ICU_BED_COVID_UTILIZATION
+        data_type: NUMBER(18,4)
+        default_aggregation: avg
+        sample_values:
+          - '0.2400'
+          - '0.4500'
+          - '0.1800'
+      - name: PERCENT_OF_INPATIENTS_WITH_COVID
+        synonyms:
+          - COVID inpatient percentage
+          - pct inpatients COVID
+        description: Percentage of inpatients with COVID
+        expr: PERCENT_OF_INPATIENTS_WITH_COVID
+        data_type: NUMBER(18,4)
+        default_aggregation: avg
+        sample_values:
+          - '0.1900'
+          - '0.3300'
+          - '0.1200'

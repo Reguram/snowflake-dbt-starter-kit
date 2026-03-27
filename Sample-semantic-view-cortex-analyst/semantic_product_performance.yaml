@@ -1,0 +1,128 @@
+name: SEM_PRODUCT_PERFORMANCE
+tables:
+  - name: FCT_PRODUCT_PERFORMANCE
+    description: |-
+      E-commerce product performance data showing views, purchases, and conversion rates by site, brand, category, and time period.
+      
+      This dataset tracks product-level performance metrics for e-commerce platforms. It provides insights into how products perform across different sites, brands, and categories, with conversion rate analysis.
+      
+      Key features:
+      - Site-level analysis with segment breakdown (domestic vs international)
+      - Brand and category hierarchy (main category and sub-category)
+      - Product page view tracking
+      - Purchase conversion rate metrics
+      - Daily granularity with month and year derivations
+      - Useful for identifying top-performing products, brands, and categories
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: FCT_PRODUCT_PERFORMANCE
+    dimensions:
+      - name: SITE
+        synonyms:
+          - website
+          - e-commerce site
+          - platform
+        description: E-commerce site name
+        expr: SITE
+        data_type: VARCHAR
+        sample_values:
+          - 'Amazon'
+          - 'Rakuten'
+          - 'Yahoo Shopping'
+      - name: SITE_SEGMENT
+        synonyms:
+          - segment
+          - market segment
+        description: Segment of the site (e.g., domestic, international)
+        expr: SITE_SEGMENT
+        data_type: VARCHAR
+        sample_values:
+          - 'domestic'
+          - 'international'
+      - name: BRAND
+        synonyms:
+          - product brand
+          - manufacturer
+        description: Product brand name
+        expr: BRAND
+        data_type: VARCHAR
+        sample_values:
+          - 'Apple'
+          - 'Samsung'
+          - 'Sony'
+      - name: MAIN_CATEGORY
+        synonyms:
+          - category
+          - product category
+          - primary category
+        description: Primary product category
+        expr: MAIN_CATEGORY
+        data_type: VARCHAR
+        sample_values:
+          - 'Electronics'
+          - 'Clothing'
+          - 'Home & Garden'
+      - name: SUB_CATEGORY
+        synonyms:
+          - subcategory
+          - product subcategory
+          - secondary category
+        description: Secondary product sub-category
+        expr: SUB_CATEGORY
+        data_type: VARCHAR
+        sample_values:
+          - 'Smartphones'
+          - 'Laptops'
+          - 'Headphones'
+      - name: PERIOD_DATE
+        synonyms:
+          - date
+          - performance date
+        description: Date of the performance record
+        expr: PERIOD_DATE
+        data_type: DATE
+        sample_values:
+          - '2023-01-15'
+          - '2023-06-01'
+          - '2024-03-10'
+    facts:
+      - name: TOTAL_VIEWS
+        synonyms:
+          - page views
+          - product views
+          - impressions
+        description: Total number of product page views
+        expr: TOTAL_VIEWS
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '15000'
+          - '85000'
+          - '250000'
+      - name: TOTAL_PURCHASES
+        synonyms:
+          - purchases
+          - orders
+          - transactions
+        description: Total number of purchases
+        expr: TOTAL_PURCHASES
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '500'
+          - '3200'
+          - '12000'
+      - name: CONVERSION_RATE
+        synonyms:
+          - conversion
+          - purchase rate
+          - conversion percentage
+        description: Conversion rate — purchases divided by views
+        expr: CONVERSION_RATE
+        data_type: NUMBER(18,4)
+        default_aggregation: avg
+        sample_values:
+          - '0.0333'
+          - '0.0376'
+          - '0.0480'

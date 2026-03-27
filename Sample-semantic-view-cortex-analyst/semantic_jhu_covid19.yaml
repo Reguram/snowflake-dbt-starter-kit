@@ -1,0 +1,177 @@
+name: SEM_JHU_COVID19
+tables:
+  - name: SUMMARY_JHU_COVID_19
+    description: |-
+      Johns Hopkins University (JHU) COVID-19 summary data showing cumulative and incremental case counts by country, state, county, and case type.
+      
+      This dataset provides one of the most widely referenced COVID-19 tracking datasets, with geographic granularity from country level down to US county level. Cases are broken down by type (Confirmed, Deaths) and aggregated monthly.
+      
+      Key features:
+      - Geographic hierarchy: country, state/province, county with FIPS codes
+      - ISO 3166 geographic codes for standardized identification
+      - Case type breakdown: Confirmed cases and Deaths
+      - Cumulative totals and period-over-period differences
+      - Monthly aggregation with average and maximum case metrics
+      - Last reported flag for identifying the most current data point
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: SUMMARY_JHU_COVID_19
+    dimensions:
+      - name: PROVINCE_STATE
+        synonyms:
+          - state
+          - province
+          - region
+        description: Province or state name
+        expr: PROVINCE_STATE
+        data_type: VARCHAR
+        sample_values:
+          - 'California'
+          - 'New York'
+          - 'Texas'
+      - name: COUNTY
+        synonyms:
+          - county name
+          - district
+        description: County name (US-level granularity)
+        expr: COUNTY
+        data_type: VARCHAR
+        sample_values:
+          - 'Los Angeles'
+          - 'New York City'
+          - 'Cook'
+      - name: FIPS
+        synonyms:
+          - FIPS code
+          - geographic code
+        description: FIPS geographic code for the location
+        expr: FIPS
+        data_type: VARCHAR
+        sample_values:
+          - '06037'
+          - '36061'
+          - '17031'
+      - name: CASE_TYPE
+        synonyms:
+          - type of case
+          - COVID case category
+        description: Type of COVID case — Confirmed or Deaths
+        expr: CASE_TYPE
+        data_type: VARCHAR
+        sample_values:
+          - 'Confirmed'
+          - 'Deaths'
+      - name: ISO3166_1
+        synonyms:
+          - country code
+          - ISO country
+        description: ISO 3166-1 country code
+        expr: ISO3166_1
+        data_type: VARCHAR
+        sample_values:
+          - 'US'
+          - 'GB'
+          - 'IN'
+      - name: ISO3166_2
+        synonyms:
+          - state code
+          - region code
+        description: ISO 3166-2 state/region code
+        expr: ISO3166_2
+        data_type: VARCHAR
+        sample_values:
+          - 'US-CA'
+          - 'US-NY'
+          - 'US-TX'
+      - name: LAST_REPORTED_FLAG
+        description: True if this is the most recent record for this location
+        expr: LAST_REPORTED_FLAG
+        data_type: BOOLEAN
+        sample_values:
+          - 'true'
+          - 'false'
+      - name: MONTH_PERIOD
+        synonyms:
+          - month
+          - reporting month
+        description: Month period of the record
+        expr: MONTH_PERIOD
+        data_type: DATE
+        sample_values:
+          - '2020-03-01'
+          - '2021-01-01'
+          - '2022-06-01'
+      - name: YEAR_PERIOD
+        synonyms:
+          - year
+          - reporting year
+        description: Year period of the record
+        expr: YEAR_PERIOD
+        data_type: NUMBER(4,0)
+        sample_values:
+          - '2020'
+          - '2021'
+          - '2022'
+    facts:
+      - name: TOTAL_CASES
+        synonyms:
+          - cumulative cases
+          - total COVID cases
+        description: Total cumulative COVID cases
+        expr: TOTAL_CASES
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '50000'
+          - '1200000'
+          - '350000'
+      - name: TOTAL_DIFFERENCE
+        synonyms:
+          - new cases
+          - incremental cases
+          - cases difference
+        description: Total new cases (difference from previous period)
+        expr: TOTAL_DIFFERENCE
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '5000'
+          - '80000'
+          - '15000'
+      - name: AVG_CASES
+        synonyms:
+          - average cases
+          - mean cases per period
+        description: Average cases per reporting period
+        expr: AVG_CASES
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '1500.50'
+          - '35000.00'
+          - '10000.25'
+      - name: MAX_CASES
+        synonyms:
+          - maximum cases
+          - peak cases
+        description: Maximum cases recorded in a single reporting period
+        expr: MAX_CASES
+        data_type: NUMBER(18,0)
+        default_aggregation: max
+        sample_values:
+          - '25000'
+          - '150000'
+          - '60000'
+      - name: RECORD_COUNT
+        synonyms:
+          - number of records
+          - total records
+        description: Total number of reporting records in the aggregation
+        expr: RECORD_COUNT
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '30'
+          - '120'
+          - '365'
