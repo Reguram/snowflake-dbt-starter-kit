@@ -109,6 +109,8 @@ This project includes the full [dbt-agent-skills](https://github.com/dbt-labs/db
 | Skill | Location | What It Does |
 |-------|----------|-------------|
 | Snowflake Semantic View Creator | `.agents/skills/snowflake-semantic-view-creator/` | Create Snowflake-native `CREATE SEMANTIC VIEW` DDL (distinct from MetricFlow) |
+| Semantic View Coverage Audit | `.agents/skills/semantic-view-coverage-audit/` | Audit semantic view coverage across all marts — find missing views, orphans, column drift, DDL/YAML mismatches |
+| Semantic View Batch Sync | `.agents/skills/semantic-view-batch-sync/` | Batch create/update semantic views for all uncovered marts — auto-classify dimensions/metrics, generate DDL |
 | Project Quality Audit | `.agents/skills/project-quality-audit/` | Full-project scan for missing tests, empty descriptions, SELECT * violations, semantic materialization issues |
 | Snowflake OpenFlow Pipeline | `.agents/skills/snowflake-openflow-pipeline/` | Create Snowflake-native Task DAGs, Streams (CDC), error handling, notification integrations, and monitoring for dbt layer orchestration |
 
@@ -116,6 +118,8 @@ This project includes the full [dbt-agent-skills](https://github.com/dbt-labs/db
 This project supports both semantic approaches — they coexist:
 1. **dbt Semantic Layer (MetricFlow)** — `building-dbt-semantic-layer` skill → YAML semantic models, `dbt sl query`
 2. **Snowflake Semantic Views** — `snowflake-semantic-view-creator` skill + `semantic-view-design.md` → `CREATE SEMANTIC VIEW` DDL, Cortex Analyst NL querying
+   - Use `semantic-view-coverage-audit` to find marts missing semantic views
+   - Use `semantic-view-batch-sync` to batch create/update views for all uncovered marts
 
 ## Active Skills (VS Code Auto-Activation)
 Skills in `.github/skills/` auto-activate when editing matching files:
@@ -126,6 +130,8 @@ Skills in `.github/skills/` auto-activate when editing matching files:
 | `data-quality` | `models/**/schema.yml`, `tests/**` |
 | `project-quality-gate` | `models/**/*.sql`, `models/**/*.yml`, `models/**/_sources.yml` |
 | `semantic-view-design` | `models/semantic/**`, `models/marts/**/*.sql`, `models/marts/**/schema.yml` |
+| `semantic-view-coverage-audit` | `models/semantic/**`, `ddl/semantic/**`, `models/marts/**/schema.yml` |
+| `semantic-view-batch-sync` | `models/semantic/**`, `ddl/semantic/**`, `models/marts/**/*.sql` |
 | `natural-language-queries` | `models/semantic/**`, `models/marts/**/schema.yml` |
 | `running-dbt-commands` | `dbt_project.yml`, `profiles.yml*`, `packages.yml` |
 | `troubleshooting` | `logs/**`, `target/**/*.json` |
