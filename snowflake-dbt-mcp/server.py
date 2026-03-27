@@ -353,9 +353,30 @@ def _read_model_sql(model_name: str) -> dict:
     return {"error": f"Model '{model_name}' not found"}
 
 
-def _write_model(layer: str, source_name: str, model_name: str, sql: str, description: str = "") -> dict:
-    """Write a dbt model SQL file and update schema.yml."""
+def _write_model(layer: str, source_name: str, model_name: str, sql: str, description: str = "", force: bool = False) -> dict:
+    """Write a dbt model SQL file and update schema.yml.
+
+    Runs _review_sql() before writing. If error-severity issues are found
+    and force=False, returns REVIEW_BLOCKED instead of writing.
+    """
     import yaml as _yaml
+
+    file_path = str(PROJECT_ROOT / "models" / layer / source_name / f"{model_name}.sql")
+    issues = _review_sql(sql, file_path)
+    errors = [i for i in issues if i["severity"] == "error"]
+    warnings = [i for i in issues if i["severity"] == "warning"]
+    info = [i for i in issues if i["severity"] == "info"]
+
+    if errors and not force:
+        return {
+            "error": "REVIEW_BLOCKED",
+            "message": "Code review found error-severity issues that must be fixed before writing.",
+            "errors": errors,
+            "warnings": warnings,
+            "info": info,
+            "model_name": model_name,
+            "hint": "Fix the errors and retry, or pass force=true to bypass.",
+        }
 
     target_dir = PROJECT_ROOT / "models" / layer / source_name
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -379,10 +400,13 @@ def _write_model(layer: str, source_name: str, model_name: str, sql: str, descri
     with open(schema_path, "w") as f:
         _yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
-    return {
+    result = {
         "created": str(sql_path.relative_to(PROJECT_ROOT)),
         "schema": str(schema_path.relative_to(PROJECT_ROOT)),
     }
+    if warnings or info or (force and errors):
+        result["review"] = {"errors": errors, "warnings": warnings, "info": info}
+    return result
 
 
 @server.list_tools()
@@ -608,7 +632,7 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="write_medallion_model",
-            description="Write a generated silver or gold layer dbt model to disk",
+            description="Write a generated silver or gold layer dbt model to disk. Auto-reviews SQL — blocks on error-severity issues unless force=true.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -633,6 +657,11 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": "Model description for schema.yml",
                         "default": "",
+                    },
+                    "force": {
+                        "type": "boolean",
+                        "description": "Bypass review errors and write anyway (default: false)",
+                        "default": False,
                     },
                 },
                 "required": ["layer", "source_name", "model_name", "sql"],
@@ -832,11 +861,25 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         model_name = arguments["model_name"]
         sql = arguments["sql"]
         description = arguments.get("description", "")
+        force = arguments.get("force", False)
 
-        result = _write_model(layer, source_name, model_name, sql, description)
+        result = _write_model(layer, source_name, model_name, sql, description, force=force)
+
+        if result.get("error") == "REVIEW_BLOCKED":
+            import json as _json
+            return [TextContent(
+                type="text",
+                text=f"## REVIEW_BLOCKED\n\n{result['message']}\n\n```json\n{_json.dumps(result, indent=2)}\n```",
+            )]
+
+        review_note = ""
+        if "review" in result:
+            import json as _json
+            review_note = f"\n\n### Review Notes\n```json\n{_json.dumps(result['review'], indent=2)}\n```"
+
         return [TextContent(
             type="text",
-            text=f"## Model Written\n\n- SQL: `{result['created']}`\n- Schema: `{result['schema']}`\n\nRun `dbt build --select {model_name}` to materialize.",
+            text=f"## Model Written\n\n- SQL: `{result['created']}`\n- Schema: `{result['schema']}`\n\nRun `dbt build --select {model_name}` to materialize.{review_note}",
         )]
 
     return [TextContent(type="text", text=f"Unknown tool: {name}")]

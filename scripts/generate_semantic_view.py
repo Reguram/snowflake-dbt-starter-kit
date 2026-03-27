@@ -39,6 +39,7 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODELS_DIR = PROJECT_ROOT / "models"
 SEMANTIC_DIR = MODELS_DIR / "semantic"
+DDL_DIR = PROJECT_ROOT / "ddl" / "semantic"  # DDL files go outside models to avoid dbt build errors
 
 
 # ─── Snowflake Connection ───────────────────────────────────
@@ -257,12 +258,14 @@ def generate_schema_yml_block(analysis_name, dimensions, metrics):
     model_block = {
         "name": f"sem_{analysis_name}",
         "description": f"Semantic view base model for {analysis_name.replace('_', ' ')}. Auto-generated.",
-        "meta": {
-            "snowflake_semantic_view": {
-                "name": f"SEM_{analysis_name.upper()}",
-                "description": f"{analysis_name.replace('_', ' ').title()} semantic view",
-                "dimensions": sv_dims,
-                "metrics": sv_metrics,
+        "config": {
+            "meta": {
+                "snowflake_semantic_view": {
+                    "name": f"SEM_{analysis_name.upper()}",
+                    "description": f"{analysis_name.replace('_', ' ').title()} semantic view",
+                    "dimensions": sv_dims,
+                    "metrics": sv_metrics,
+                }
             }
         }
     }
@@ -425,6 +428,7 @@ def main():
     else:
         # Write files
         SEMANTIC_DIR.mkdir(parents=True, exist_ok=True)
+        DDL_DIR.mkdir(parents=True, exist_ok=True)  # Ensure DDL directory exists
 
         sql_path = SEMANTIC_DIR / f"sem_{analysis_name}.sql"
         sql_path.write_text(sql_content)
@@ -447,15 +451,18 @@ def main():
             yaml.dump(existing, f, default_flow_style=False, sort_keys=False)
         print(f"Wrote: {schema_path.relative_to(PROJECT_ROOT)}")
 
-        ddl_path = SEMANTIC_DIR / f"sem_{analysis_name}_ddl.sql"
+        # Write DDL to separate directory (outside models/ to avoid dbt build errors)
+        ddl_path = DDL_DIR / f"sem_{analysis_name}_ddl.sql"
         ddl_path.write_text(ddl)
         print(f"Wrote: {ddl_path.relative_to(PROJECT_ROOT)}")
 
         print(f"\nNext steps:")
         print(f"  1. Review and customize the generated files")
         print(f"  2. Run: dbt build --select sem_{analysis_name}")
-        print(f"  3. Execute the DDL in Snowsight: {ddl_path.relative_to(PROJECT_ROOT)}")
+        print(f"  3. Execute the DDL in Snowsight or via Snowflake CLI:")
+        print(f"     snowsql -f {ddl_path.relative_to(PROJECT_ROOT)}")
         print(f"  4. Test with Cortex Analyst")
+        print(f"\nNote: DDL is stored in ddl/ (outside models/) to prevent dbt build errors")
 
 
 if __name__ == "__main__":

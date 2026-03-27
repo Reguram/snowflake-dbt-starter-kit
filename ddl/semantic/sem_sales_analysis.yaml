@@ -15,7 +15,7 @@ tables:
     base_table:
       database: DBT_DEV
       schema: DBT_MARTS
-      table: SEM_SALES_ANALYSIS
+      table: FCT_SALES
     dimensions:
       - name: SALES_DATE
         description: Date of sales activity

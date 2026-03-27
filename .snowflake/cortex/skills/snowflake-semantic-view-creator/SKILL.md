@@ -55,11 +55,12 @@ Start from a `fct_*` or `dim_*` model in `models/marts/`. Read its SQL and schem
 | DATE (boundary) | `first_*`, `last_*`, `min_*`, `max_*` | MIN / MAX |
 
 ### 3. Generate dbt Semantic Model
-Create `models/semantic/sem_<analysis_name>.sql`:
-- Materialized as `view`
-- Joins relevant facts and dimensions
-- Includes multi-granularity time dimensions (date, month, quarter, year)
-- Lists all columns explicitly (no `SELECT *`)
+Create `models/semantic/sem_<analysis_name>.sql` as a **documentation-only** file:
+- **DISABLED from dbt build** (`+enabled: false` in dbt_project.yml)
+- Contains the original SELECT logic wrapped in a Jinja comment block (`{# ... #}`)
+- The actual executable body is just `select 1 as _placeholder`
+- Do NOT use `{{ config(materialized='view') }}` — this causes build failures
+- The DDL in `ddl/semantic/` references the mart model (`fct_*`) directly
 
 ### 4. Generate schema.yml Metadata
 Add `meta.snowflake_semantic_view` block with:
@@ -69,16 +70,18 @@ Add `meta.snowflake_semantic_view` block with:
 - `metrics[]`: Each with `name`, `type` (SUM/COUNT/AVG/MIN/MAX), `expression`, and `description`
 
 ### 5. Generate DDL
-Use the `generate_semantic_view_ddl` macro:
+Use the `generate_semantic_view_ddl` macro with `base_model` parameter:
 ```bash
-dbt run-operation generate_semantic_view_ddl --args '{"model_name": "sem_<name>"}'
+dbt run-operation generate_semantic_view_ddl --args '{"model_name": "sem_<name>", "base_model": "fct_<entity>"}'
 ```
 
 Or use the `generate_semantic_view` MCP tool.
 
 ### 6. Execute and Validate
-- Build the base model: `dbt build --select sem_<name>`
+- The semantic model is NOT built during `dbt build` (it is disabled)
+- Build the upstream mart model: `dbt build --select fct_<entity>`
 - Execute DDL in Snowflake (via Snowsight or `run_sql` MCP tool)
+- DDL references the mart model directly — no intermediate sem_* view needed
 - Verify: `SHOW SEMANTIC VIEWS IN SCHEMA <db>.<schema>`
 - Test with Cortex Analyst: `CORTEX_ANALYST_MESSAGE('<sv_name>', '<question>')`
 

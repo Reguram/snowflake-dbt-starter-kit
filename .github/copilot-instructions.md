@@ -49,12 +49,19 @@ You are an expert Snowflake and dbt developer working in a production dbt projec
 - Custom tests in `tests/` should return rows that FAIL the assertion
 
 ## Semantic Views
+Semantic models are **disabled from `dbt build`** (`+enabled: false` in dbt_project.yml). They exist as documentation only — the actual Snowflake Semantic View DDL is in `ddl/semantic/` and executed directly in Snowflake.
+
 When creating Snowflake Semantic Views:
-1. Build the base dbt model in `models/semantic/` as a view joining facts + dimensions
+1. Define the semantic model SQL in `models/semantic/sem_*.sql` as a documentation comment block (not executable)
 2. Define metrics (SUM, COUNT, AVG) and dimensions in `schema.yml` under `meta.snowflake_semantic_view`
-3. Generate DDL using the `generate_semantic_view_ddl` macro or MCP tool
-4. Dimensions should be columns users filter/group by
-5. Metrics should be aggregatable measures
+3. Generate DDL using `generate_semantic_view_ddl` macro with `base_model` parameter pointing to the mart model:
+   ```bash
+   dbt run-operation generate_semantic_view_ddl --args '{"model_name": "sem_revenue_analysis", "base_model": "fct_sales"}'
+   ```
+4. Save DDL to `ddl/semantic/` and execute directly in Snowflake
+5. DDL references mart models (`fct_*`) directly — no intermediate sem_* view needed
+6. Dimensions should be columns users filter/group by
+7. Metrics should be aggregatable measures
 
 ## Code Review Checklist
 - [ ] No `SELECT *` in marts/semantic
@@ -101,7 +108,8 @@ This project includes the full [dbt-agent-skills](https://github.com/dbt-labs/db
 ### Custom Skills (project-specific)
 | Skill | Location | What It Does |
 |-------|----------|-------------|
-| Snowflake Semantic View Creator | `.cortex/skills/snowflake-semantic-view-creator/` | Create Snowflake-native `CREATE SEMANTIC VIEW` DDL (distinct from MetricFlow) |
+| Snowflake Semantic View Creator | `.agents/skills/snowflake-semantic-view-creator/` | Create Snowflake-native `CREATE SEMANTIC VIEW` DDL (distinct from MetricFlow) |
+| Project Quality Audit | `.agents/skills/project-quality-audit/` | Full-project scan for missing tests, empty descriptions, SELECT * violations, semantic materialization issues |
 
 ### Two Semantic Approaches
 This project supports both semantic approaches — they coexist:
@@ -115,6 +123,7 @@ Skills in `.github/skills/` auto-activate when editing matching files:
 | `dbt-model-generation` | `models/**/*.sql`, `models/**/*.yml` |
 | `code-review` | `models/**/*.sql` |
 | `data-quality` | `models/**/schema.yml`, `tests/**` |
+| `project-quality-gate` | `models/**/*.sql`, `models/**/*.yml`, `models/**/_sources.yml` |
 | `semantic-view-design` | `models/semantic/**`, `models/marts/**/*.sql`, `models/marts/**/schema.yml` |
 | `natural-language-queries` | `models/semantic/**`, `models/marts/**/schema.yml` |
 | `running-dbt-commands` | `dbt_project.yml`, `profiles.yml*`, `packages.yml` |
@@ -129,6 +138,7 @@ Click these in Copilot Chat for common workflows:
 - `suggest-tests` — Analyze a model and suggest comprehensive dbt tests
 - `validate-and-build` — Compile, build, and validate a dbt model
 - `review-model` — Full code review against project conventions
+- `audit-project` — Run full project quality audit (missing tests, empty descriptions, semantic issues)
 
 ## Custom Agent
 - `@dbt-semantic-advisor` — Expert in Snowflake Semantic Views. Analyzes marts, classifies dimensions/metrics, generates DDL.

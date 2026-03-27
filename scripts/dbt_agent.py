@@ -460,6 +460,40 @@ _REVIEW_RULES = [
 ]
 
 
+def _enforce_review(sql_content, file_path=""):
+    """Run review rules and return structured result with gate decision.
+
+    Returns dict with can_proceed (True when no severity=error issues),
+    errors, warnings, info lists, and all_issues.
+    """
+    issues = []
+    lines = sql_content.split("\n")
+    for rule in _REVIEW_RULES:
+        if rule.get("applies_to") and not any(l in file_path for l in rule["applies_to"]):
+            continue
+        if not rule["pattern"]:
+            continue
+        for i, line_text in enumerate(lines, 1):
+            stripped = line_text.strip()
+            if stripped.startswith("--") or stripped.startswith("{#"):
+                continue
+            if re.search(rule["pattern"], line_text, re.IGNORECASE):
+                issues.append({"rule": rule["id"], "severity": rule["severity"],
+                               "message": rule["message"], "line": i, "content": stripped[:120]})
+
+    # Naming check
+    if "staging" in file_path:
+        stem = Path(file_path).stem
+        if not stem.startswith("stg_"):
+            issues.append({"rule": "NAMING_STG", "severity": "warning",
+                           "message": "Staging model should follow stg_<source>__<table> naming", "line": 0})
+
+    errors = [i for i in issues if i["severity"] == "error"]
+    warnings = [i for i in issues if i["severity"] == "warning"]
+    info = [i for i in issues if i["severity"] == "info"]
+    return {"can_proceed": len(errors) == 0, "errors": errors, "warnings": warnings, "info": info, "all_issues": issues}
+
+
 # =============================================================================
 # TOOL IMPLEMENTATIONS — each is context-aware
 # =============================================================================
@@ -634,24 +668,39 @@ def tool_discover_source(conn, source_database, source_schema, source_name=None,
     (staging_dir / "schema.yml").write_text(schema_yml)
     files_created.append(f"models/staging/{source_name}/schema.yml")
 
-    # Marts
+    # Marts — review before writing (fct_* and summary_* are not template-trusted)
+    mart_review_issues = []
     fct_name, fct_sql = generate_overview_mart(source_name, tables)
     if fct_name:
-        (marts_dir / f"{fct_name}.sql").write_text(fct_sql)
-        files_created.append(f"models/marts/{source_name}/{fct_name}.sql")
+        fct_path = f"models/marts/{source_name}/{fct_name}.sql"
+        review = _enforce_review(fct_sql, fct_path)
+        if not review["can_proceed"]:
+            mart_review_issues.append({"model": fct_name, "issues": review["all_issues"]})
+        else:
+            (marts_dir / f"{fct_name}.sql").write_text(fct_sql)
+            files_created.append(fct_path)
+            if review["warnings"] or review["info"]:
+                mart_review_issues.append({"model": fct_name, "issues": review["warnings"] + review["info"]})
 
     # Summary marts
     mart_schema_models = []
-    if fct_name:
+    if fct_name and f"models/marts/{source_name}/{fct_name}.sql" in files_created:
         mart_schema_models.append({"name": fct_name, "description": f"Detail fact table from {source_name}"})
     for table in tables:
         profile = table_profiles.get(table["name"], {})
         classified = classify_columns(table["columns"], table["name"], profile)
         s_name, s_sql = generate_summary_mart(source_name, table, classified)
         if s_name and s_sql:
-            (marts_dir / f"{s_name}.sql").write_text(s_sql)
-            files_created.append(f"models/marts/{source_name}/{s_name}.sql")
-            mart_schema_models.append({"name": s_name, "description": f"Summary from {table['name']}"})
+            s_path = f"models/marts/{source_name}/{s_name}.sql"
+            review = _enforce_review(s_sql, s_path)
+            if not review["can_proceed"]:
+                mart_review_issues.append({"model": s_name, "issues": review["all_issues"]})
+            else:
+                (marts_dir / f"{s_name}.sql").write_text(s_sql)
+                files_created.append(s_path)
+                mart_schema_models.append({"name": s_name, "description": f"Summary from {table['name']}"})
+                if review["warnings"] or review["info"]:
+                    mart_review_issues.append({"model": s_name, "issues": review["warnings"] + review["info"]})
 
     mart_schema = generate_mart_schema_yml(source_name, mart_schema_models)
     if mart_schema:
@@ -660,7 +709,7 @@ def tool_discover_source(conn, source_database, source_schema, source_name=None,
 
     ctx.invalidate()
 
-    return {
+    result = {
         "source": f"{source_database}.{source_schema}",
         "source_name": source_name,
         "tables_discovered": len(tables),
@@ -669,6 +718,9 @@ def tool_discover_source(conn, source_database, source_schema, source_name=None,
         "new_tables": [t["name"] for t in new_tables],
         "already_existed": [t["name"] for t in skipped],
     }
+    if mart_review_issues:
+        result["mart_review_issues"] = mart_review_issues
+    return result
 
 
 def tool_list_sources(conn, source_name=None):
@@ -868,12 +920,27 @@ def tool_run_query(conn, sql):
         return {"error": str(e)}
 
 
-def tool_generate_model(conn, layer, source_name, model_name, sql, description=""):
+def tool_generate_model(conn, layer, source_name, model_name, sql, description="", force=False):
     """Write a new dbt model (any layer) with context awareness.
 
-    Before writing, checks existing models to avoid conflicts and
-    updates schema.yml alongside the SQL.
+    Before writing, runs _enforce_review() to gate on severity=error issues.
+    If errors found and force=False, returns REVIEW_BLOCKED with issue details.
+    Checks existing models to avoid conflicts and updates schema.yml alongside the SQL.
     """
+    # Enforce code review before writing
+    file_path = str(MODELS_DIR / layer / source_name / f"{model_name}.sql")
+    review = _enforce_review(sql, file_path)
+    if not review["can_proceed"] and not force:
+        return {
+            "error": "REVIEW_BLOCKED",
+            "message": "Code review found error-severity issues that must be fixed before writing.",
+            "errors": review["errors"],
+            "warnings": review["warnings"],
+            "info": review["info"],
+            "model_name": model_name,
+            "hint": "Fix the errors and retry, or pass force=True to bypass.",
+        }
+
     # Check if model already exists
     existing = ctx.read_model_sql(model_name)
     action = "updated" if "sql" in existing else "created"
@@ -904,13 +971,21 @@ def tool_generate_model(conn, layer, source_name, model_name, sql, description="
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
     ctx.invalidate()
-    return {
+    result = {
         "action": action,
         "created": str(sql_path.relative_to(PROJECT_ROOT)),
         "schema": str(schema_path.relative_to(PROJECT_ROOT)),
         "model_name": model_name,
         "layer": layer,
     }
+    # Include review warnings/info even when write succeeds
+    if review["warnings"] or review["info"] or (force and review["errors"]):
+        result["review"] = {
+            "errors": review["errors"],
+            "warnings": review["warnings"],
+            "info": review["info"],
+        }
+    return result
 
 
 def tool_generate_semantic_view(conn, model_name, analysis_name=None):
@@ -1208,10 +1283,11 @@ TOOLS = {
     },
     "generate_model": {
         "fn": tool_generate_model,
-        "description": "Create or update a dbt model (any layer). Writes SQL + updates schema.yml. Context-aware: checks for conflicts.",
+        "description": "Create or update a dbt model (any layer). Auto-reviews SQL before writing — blocks on error-severity issues unless force=True. Writes SQL + updates schema.yml.",
         "params": {"layer": "string (staging/intermediate/marts/semantic)",
                    "source_name": "string", "model_name": "string",
-                   "sql": "string — full dbt SQL", "description": "string (optional)"},
+                   "sql": "string — full dbt SQL", "description": "string (optional)",
+                   "force": "bool (optional, default false) — bypass review errors"},
     },
     "generate_semantic_view": {
         "fn": tool_generate_semantic_view,
@@ -1407,7 +1483,7 @@ def execute_tool(conn, tool_name, params):
 
 
 def _auto_build(conn, executed_calls):
-    """Auto-build any models that were just generated."""
+    """Auto-build any models that were just generated, then auto-review each."""
     generated = []
     for tool_name, result in executed_calls:
         if tool_name == "generate_model" and isinstance(result, dict) and "model_name" in result:
@@ -1420,7 +1496,20 @@ def _auto_build(conn, executed_calls):
     build_result = tool_run_dbt(conn, command="build", select=selector)
     status = "PASSED" if build_result.get("success") else "FAILED"
     print(f"  [Build {status}]")
-    return [f"Auto-build [{selector}]: {json.dumps(build_result, indent=2, default=str)}"]
+    feedback = [f"Auto-build [{selector}]: {json.dumps(build_result, indent=2, default=str)}"]
+
+    # Post-build review for each generated model
+    for name in generated:
+        print(f"  [Auto-reviewing {name}...]")
+        review_result = tool_review_sql(conn, model_name=name)
+        feedback.append(f"Auto-review [{name}]: {json.dumps(review_result, indent=2, default=str)}")
+        issue_count = review_result.get("issue_count", 0)
+        if issue_count > 0:
+            print(f"  [Review: {issue_count} issue(s) found in {name}]")
+        else:
+            print(f"  [Review: {name} is clean]")
+
+    return feedback
 
 
 # =============================================================================
@@ -1663,6 +1752,10 @@ def run_mcp_server():
             if name == "generate_model" and isinstance(result, dict) and "model_name" in result:
                 build_result = tool_run_dbt(None, command="build", select=result["model_name"])
                 formatted += f"\n\n## Auto-Build Result\n```json\n{json.dumps(build_result, indent=2, default=str)}\n```"
+
+                # Auto-review after build
+                review_result = tool_review_sql(None, model_name=result["model_name"])
+                formatted += f"\n\n## Auto-Review Result\n```json\n{json.dumps(review_result, indent=2, default=str)}\n```"
 
             return [TextContent(type="text", text=f"## {name}\n\n```json\n{formatted}\n```")]
         except Exception as e:

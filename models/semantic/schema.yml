@@ -63,25 +63,26 @@ models:
     description: Transaction count for the row grain
 - name: sem_sales_analysis
   description: Semantic view base model for sales analysis. Auto-generated.
-  meta:
-    snowflake_semantic_view:
-      name: SEM_SALES_ANALYSIS
-      description: Sales Analysis semantic view
-      dimensions:
-      - name: sales_date
-        description: Sales date
-      - name: item_category
-        description: Item category
-      metrics:
-      - name: total_sales
-        type: SUM
-        expression: total_sales
-        description: Total sales
-      - name: total_average_price
-        type: SUM
-        expression: average_price
-        description: Average price
-      - name: total_transaction_count
-        type: SUM
-        expression: transaction_count
-        description: Transaction count
+  config:
+    meta:
+      snowflake_semantic_view:
+        name: SEM_SALES_ANALYSIS
+        description: Sales Analysis semantic view
+        dimensions:
+        - name: sales_date
+          description: Sales date
+        - name: item_category
+          description: Item category
+        metrics:
+        - name: total_sales
+          type: SUM
+          expression: total_sales
+          description: Total sales
+        - name: total_average_price
+          type: SUM
+          expression: average_price
+          description: Average price
+        - name: total_transaction_count
+          type: SUM
+          expression: transaction_count
+          description: Transaction count
