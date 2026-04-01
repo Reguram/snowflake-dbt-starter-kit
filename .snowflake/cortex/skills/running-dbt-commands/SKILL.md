@@ -155,20 +155,6 @@ dbt run --static-analysis=off
 dbt run --static-analysis=unsafe
 ```
 
-## Validate and Build Workflow
-
-When asked to "build this model", "compile and run", "validate my model", or "test and build":
-
-```bash
-dbt compile --select <model>
-dbt build --select <model> --quiet --warn-error-options '{"error": ["NoNodesForSelectionCriteria"]}'
-dbt show --select <model> --limit 5
-```
-
-If build fails, check `target/run_results.json` for details, diagnose root cause (SQL error, test failure, permission issue), and suggest a fix.
-
-If build succeeds, report pass/fail counts and preview results with `dbt show`.
-
 ## Common Mistakes
 
 | Mistake | Fix |
