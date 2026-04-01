@@ -28,3 +28,6 @@ Thumbs.db
 # Evaluation outputs (large files)
 evaluation/results/*.json
 evaluation/results/*.log
+
+#folder
+bundled_skills/
