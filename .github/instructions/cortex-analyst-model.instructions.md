@@ -38,7 +38,10 @@ When a user wants to create a Cortex Analyst semantic model, follow these phases
 1. **Read the model SQL** — understand CTEs, joins, grain, `{{ ref() }}` dependencies
 2. **Read schema.yml** — get column descriptions, tests (PK, FK, accepted_values)
 3. **Check existing Semantic Views** — bridge from `ddl/semantic/sem_*.yaml` if present
-4. **Identify Snowflake coordinates** — database (`DBT_DEV`), schema (`DBT_MARTS`), table name
+4. **Identify Snowflake coordinates** — two schemas are involved:
+   - **Data schema**: `DBT_MARTS` — where mart tables live. Use in `base_table.schema` and verified query SQL.
+   - **Semantic schema**: `SEMANTIC` — where YAML files are uploaded. Stage: `@DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS`.
+   - Do NOT confuse them: `base_table.schema` = `DBT_MARTS`, upload stage = `SEMANTIC`.
 
 ### Phase 2: Profile (Data Exploration via MCP)
 Run SQL via MCP to understand the actual data:
@@ -68,10 +71,11 @@ Create 3-5 **verified queries** covering common patterns:
 
 ### Phase 6: Assemble (Write YAML)
 Write the complete YAML to `cortex-analyst-models/semantic_<name>.yaml` following the spec.
-Include: `custom_instructions` with domain rules for text-to-SQL accuracy.
+- `base_table.schema` must be `DBT_MARTS` (where data lives), NOT `SEMANTIC`
+- Include: `custom_instructions` with domain rules for text-to-SQL accuracy
 
 ### Phase 7: Upload + Test
-- Upload to `@DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS` stage
+- Upload to `@DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS` stage (SEMANTIC schema, not DBT_MARTS)
 - Test with `CORTEX_ANALYST_MESSAGE()` using a verified query question
 
 ## Deterministic Fallback

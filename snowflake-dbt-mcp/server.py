@@ -945,7 +945,7 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
                     "### Next Steps\n"
                     "1. Review the YAML file in `cortex-analyst-models/`\n"
                     "2. Upload to stage: `python scripts/upload_semantic_model_to_stage.py --all`\n"
-                    "3. Test: `SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE('@<stage>/<file>.yaml', ...)`\n"
+                    f"3. Test: `SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE('@{database}.SEMANTIC.CORTEX_ANALYST_MODELS/semantic_{sem_name}.yaml', ...)`\n"
                 )
             return [TextContent(type="text", text=response)]
         except subprocess.TimeoutExpired:
