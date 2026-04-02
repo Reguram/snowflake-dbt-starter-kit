@@ -1,0 +1,94 @@
+name: SEM_SALES_ANALYSIS
+tables:
+  - name: FCT_SALES
+    description: |-
+      Sales analysis data for Japan e-commerce transactions showing sales amounts, average prices, and transaction counts by date, maker, and item category.
+      
+      This dataset provides a view of e-commerce sales activity in Japan, enabling analysis of revenue, pricing trends, and transaction volumes. Data is at the daily grain with category and manufacturer dimensions.
+      
+      Key features:
+      - Daily sales data with month, quarter, and year aggregation support
+      - Item category classification (e.g., Smartphone, Other)
+      - Maker/manufacturer dimension for brand-level analysis
+      - Revenue totals, average pricing, and transaction count metrics
+      - Useful for trend analysis, category comparison, and maker performance tracking
+    base_table:
+      database: DBT_DEV
+      schema: DBT_MARTS
+      table: FCT_SALES
+    dimensions:
+      - name: SALES_DATE
+        synonyms:
+          - date
+          - transaction date
+          - order date
+        description: Date of sales activity
+        expr: SALES_DATE
+        data_type: DATE
+        sample_values:
+          - '2023-01-15'
+          - '2023-06-01'
+          - '2024-03-10'
+      - name: ITEM_CATEGORY
+        synonyms:
+          - category
+          - product category
+          - product type
+        description: Product category (e.g., Smartphone or Other)
+        expr: ITEM_CATEGORY
+        data_type: VARCHAR
+        sample_values:
+          - 'Smartphone'
+          - 'Other'
+      - name: MAKER
+        synonyms:
+          - manufacturer
+          - brand
+          - maker name
+        description: Manufacturer or brand name
+        expr: MAKER
+        data_type: VARCHAR
+        sample_values:
+          - 'Apple'
+          - 'Samsung'
+          - 'Sony'
+    facts:
+      - name: TOTAL_SALES
+        synonyms:
+          - revenue
+          - sales amount
+          - total revenue
+        description: Total sales amount
+        expr: TOTAL_SALES
+        data_type: NUMBER(18,2)
+        default_aggregation: sum
+        sample_values:
+          - '15000.00'
+          - '85000.50'
+          - '250000.00'
+      - name: AVERAGE_PRICE
+        synonyms:
+          - avg price
+          - mean price
+          - unit price
+        description: Average price across groupings
+        expr: AVERAGE_PRICE
+        data_type: NUMBER(18,2)
+        default_aggregation: avg
+        sample_values:
+          - '45000.00'
+          - '82000.50'
+          - '15000.00'
+      - name: TRANSACTION_COUNT
+        synonyms:
+          - number of transactions
+          - order count
+          - total transactions
+        description: Total number of transactions
+        expr: TRANSACTION_COUNT
+        data_type: NUMBER(18,0)
+        default_aggregation: sum
+        sample_values:
+          - '150'
+          - '500'
+          - '1200'
