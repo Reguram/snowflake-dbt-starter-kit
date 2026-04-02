@@ -28,7 +28,8 @@ Production-ready dbt project for Snowflake with a **Snowflake Managed MCP Server
    - [dbt Agent Skills (Upstream)](#dbt-agent-skills-upstream)
    - [VS Code Active Skills (Auto-Activation)](#vs-code-active-skills-auto-activation)
    - [Snowflake Semantic View Creator (Custom Skill)](#snowflake-semantic-view-creator-custom-skill)
-   - [Two Semantic Approaches](#two-semantic-approaches)
+   - [Three Semantic Approaches](#three-semantic-approaches)
+   - [Cortex Analyst Semantic Model Generator (Agentic)](#cortex-analyst-semantic-model-generator-agentic)
    - [Reusable Copilot Prompts](#reusable-copilot-prompts)
    - [Custom Copilot Agent](#custom-copilot-agent)
    - [Semantic View Generator Script](#semantic-view-generator-script)
@@ -723,30 +724,117 @@ A custom skill at `.cortex/skills/snowflake-semantic-view-creator/` for creating
 | `*_count`, `*_qty`, `*_quantity` | Metric (SUM) | Additive count measures |
 | `*_rate`, `*_ratio`, `*_pct`, `*_percent` | Metric (AVG) | Non-additive rate measures |
 
-### Two Semantic Approaches
+### Three Semantic Approaches
 
-This project supports **both** semantic approaches — they coexist without conflict:
+This project supports **three** semantic approaches — they coexist without conflict:
 
-| Aspect | dbt Semantic Layer (MetricFlow) | Snowflake Semantic Views |
-|--------|-------------------------------|-------------------------|
-| **Definition** | YAML semantic models in `schema.yml` | `CREATE SEMANTIC VIEW` DDL |
-| **Query tool** | `dbt sl query`, MetricFlow | Cortex Analyst (natural language) |
-| **Skill** | `.agents/skills/building-dbt-semantic-layer/` | `.cortex/skills/snowflake-semantic-view-creator/` |
-| **VS Code skill** | (uses upstream agent skill) | `.github/skills/semantic-view-design.md` |
-| **Best for** | Cross-platform BI tools, dbt Cloud | Snowflake-native NL querying, Cortex Analyst |
+| Aspect | dbt Semantic Layer (MetricFlow) | Snowflake Semantic Views | Cortex Analyst YAML Models |
+|--------|-------------------------------|-------------------------|----------------------------|
+| **Definition** | YAML semantic models in `schema.yml` | `CREATE SEMANTIC VIEW` DDL | YAML files uploaded to stage |
+| **Query tool** | `dbt sl query`, MetricFlow | Cortex Analyst (NL) | `CORTEX_ANALYST_MESSAGE()` API |
+| **Skill** | `building-dbt-semantic-layer` | `snowflake-semantic-view-creator` | `cortex-analyst-semantic-model` |
+| **Generation** | Manual YAML | Script / skill | **Agentic** (AI explores data) |
+| **Rich metadata** | Measures + Entities | Dimensions + Metrics | Synonyms, verified queries, custom instructions |
+| **Project path** | `models/semantic/` | `ddl/semantic/` | `cortex-analyst-models/` |
+| **Best for** | Cross-platform BI tools, dbt Cloud | Simple Snowflake-native NL | Rich NL understanding, multi-table |
 
 **When to use which:**
 - Use **MetricFlow** if you need metrics consumed by BI tools (Tableau, Looker) via dbt Cloud Semantic Layer
-- Use **Snowflake Semantic Views** if you want Cortex Analyst natural language querying inside Snowflake/Snowsight
-- Use **both** if you want maximum coverage — they define metrics differently and don't conflict
+- Use **Snowflake Semantic Views** if you want simple Cortex Analyst NL querying with dimension/metric classification
+- Use **Cortex Analyst YAML Models** if you want the richest NL experience — with synonyms, sample values, verified queries, and custom instructions for maximum text-to-SQL accuracy
+- Use **all three** if you want maximum coverage — they define metrics differently and don't conflict
+
+### Cortex Analyst Semantic Model Generator (Agentic)
+
+An **agentic skill** that enables AI agents (GitHub Copilot, Cortex Code) to autonomously generate Cortex Analyst YAML semantic models by exploring Snowflake data through MCP tools — not just running a deterministic script.
+
+**What makes it agentic:**
+- The AI agent queries Snowflake via MCP to profile columns, cardinality, and sample values
+- It uses AI reasoning (not regex) to classify columns as dimensions, time dimensions, or facts
+- It generates contextually relevant synonyms based on domain understanding
+- It writes and **tests** SQL verified queries against Snowflake, fixing failures automatically
+- It creates rich custom instructions for text-to-SQL accuracy
+
+**Agentic workflow (8 phases):**
+
+```
+User: "Generate a Cortex Analyst model for fct_sales"
+      │
+      ▼
+┌─────────────────────────────────────────────────────────┐
+│  Phase 1: Context Gathering                             │
+│  ─ Read model SQL, schema.yml, existing Semantic Views  │
+├─────────────────────────────────────────────────────────┤
+│  Phase 2: Data Exploration (MCP)                        │
+│  ─ Query column types, cardinality, sample values       │
+│  ─ Analyze table relationships and join patterns        │
+├─────────────────────────────────────────────────────────┤
+│  Phase 3: Intelligent Classification (AI Reasoning)     │
+│  ─ Classify as dimensions / time_dimensions / facts     │
+│  ─ Assign default_aggregation (SUM, AVG, COUNT, MAX)    │
+├─────────────────────────────────────────────────────────┤
+│  Phase 4: Synonym Generation                            │
+│  ─ 2-5 business-friendly synonyms per column            │
+├─────────────────────────────────────────────────────────┤
+│  Phase 5: Verified Query Generation + Testing           │
+│  ─ Write 3-5 SQL queries for common business questions  │
+│  ─ Test each via MCP, fix failures, record working SQL  │
+├─────────────────────────────────────────────────────────┤
+│  Phase 6: Custom Instructions                           │
+│  ─ Domain rules for text-to-SQL accuracy                │
+├─────────────────────────────────────────────────────────┤
+│  Phase 7: Assemble YAML                                 │
+│  ─ Write to cortex-analyst-models/semantic_<name>.yaml  │
+├─────────────────────────────────────────────────────────┤
+│  Phase 8: Upload + Test                                 │
+│  ─ PUT to @stage, test with CORTEX_ANALYST_MESSAGE()    │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Skill location:** `.agents/skills/cortex-analyst-semantic-model/SKILL.md`
+
+**Output directory:** `cortex-analyst-models/`
+
+**Deterministic fallback** (batch mode / no MCP):
+```bash
+# Single model
+python scripts/generate_cortex_analyst_model.py --model fct_sales
+
+# Batch all marts
+python scripts/generate_cortex_analyst_model.py --batch
+
+# Upload to Snowflake stage
+python scripts/upload_semantic_model_to_stage.py --all
+```
+
+**Test with Cortex Analyst:**
+```sql
+SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE(
+  '@DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS/semantic_sales.yaml',
+  [{'role': 'user', 'content': 'What were total sales by category last month?'}]
+);
+```
+
+**Key files:**
+
+| File | Purpose |
+|------|---------|
+| `.agents/skills/cortex-analyst-semantic-model/SKILL.md` | Agentic skill (guides AI agent through 8 phases) |
+| `.github/instructions/cortex-analyst-model.instructions.md` | Auto-activates on mart model / YAML edits |
+| `.github/prompts/suggest-cortex-analyst-model.prompt.md` | Clickable Copilot prompt |
+| `scripts/generate_cortex_analyst_model.py` | Deterministic fallback generator |
+| `scripts/upload_semantic_model_to_stage.py` | Upload YAML to Snowflake stage |
+| `cortex-analyst-models/` | Generated YAML output directory |
+| `Sample-semantic-view-cortex-analyst/` | Reference YAML examples |
 
 ### Reusable Copilot Prompts
 
-4 clickable prompts in `.github/prompts/` for common workflows. In VS Code Copilot Chat, click the prompt icon or type `/` to see them:
+5 clickable prompts in `.github/prompts/` for common workflows. In VS Code Copilot Chat, click the prompt icon or type `/` to see them:
 
 | Prompt | File | What It Does |
 |--------|------|-------------|
 | **Suggest Semantic View** | `suggest-semantic-view.prompt.md` | Analyzes a mart model, classifies columns, generates `sem_*.sql` + `schema.yml` + DDL |
+| **Suggest Cortex Analyst Model** | `suggest-cortex-analyst-model.prompt.md` | Agentically explores Snowflake data, classifies columns, generates YAML with synonyms + verified queries |
 | **Suggest Tests** | `suggest-tests.prompt.md` | Analyzes a model and suggests schema tests, unit tests, and custom singular tests |
 | **Validate and Build** | `validate-and-build.prompt.md` | Compiles, builds, runs tests, diagnoses errors, previews results with `dbt show` |
 | **Review Model** | `review-model.prompt.md` | Full code review against project conventions (critical/warning/info) |

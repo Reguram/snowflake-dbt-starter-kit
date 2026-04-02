@@ -667,6 +667,30 @@ async def list_tools() -> list[Tool]:
                 "required": ["layer", "source_name", "model_name", "sql"],
             },
         ),
+        Tool(
+            name="generate_cortex_analyst_model",
+            description="Generate a Cortex Analyst YAML semantic model from a dbt mart model. Auto-classifies columns as dimensions/time_dimensions/facts with synonyms and sample_values.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "model_name": {
+                        "type": "string",
+                        "description": "Name of the dbt mart model (e.g., 'fct_sales', 'summary_jhu_covid_19')",
+                    },
+                    "database": {
+                        "type": "string",
+                        "description": "Snowflake database containing the mart table",
+                        "default": "DBT_DEV",
+                    },
+                    "schema": {
+                        "type": "string",
+                        "description": "Snowflake schema containing the mart table",
+                        "default": "DBT_MARTS",
+                    },
+                },
+                "required": ["model_name"],
+            },
+        ),
     ]
 
 
@@ -881,6 +905,53 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
             type="text",
             text=f"## Model Written\n\n- SQL: `{result['created']}`\n- Schema: `{result['schema']}`\n\nRun `dbt build --select {model_name}` to materialize.{review_note}",
         )]
+
+    elif name == "generate_cortex_analyst_model":
+        model_name = arguments["model_name"]
+        database = arguments.get("database", "DBT_DEV")
+        schema = arguments.get("schema", "DBT_MARTS")
+
+        try:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(PROJECT_ROOT / "scripts" / "generate_cortex_analyst_model.py"),
+                    "--model", model_name,
+                    "--database", database,
+                    "--schema", schema,
+                    "--skip-verify",
+                ],
+                cwd=str(PROJECT_ROOT),
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            output = result.stdout + ("\n" + result.stderr if result.stderr else "")
+
+            # Try to read the generated file
+            sem_name = model_name.replace("fct_", "").replace("summary_", "").replace("dim_", "")
+            yaml_path = PROJECT_ROOT / "cortex-analyst-models" / f"semantic_{sem_name}.yaml"
+            yaml_content = ""
+            if yaml_path.exists():
+                yaml_content = yaml_path.read_text()
+
+            status = "SUCCESS" if result.returncode == 0 else "FAILED"
+            response = f"## Cortex Analyst Model — {status}\n\n"
+            if yaml_content:
+                response += f"### Generated YAML (`cortex-analyst-models/semantic_{sem_name}.yaml`)\n\n```yaml\n{yaml_content}\n```\n\n"
+            response += f"### Generator Output\n```\n{output[:3000]}\n```\n\n"
+            if result.returncode == 0:
+                response += (
+                    "### Next Steps\n"
+                    "1. Review the YAML file in `cortex-analyst-models/`\n"
+                    "2. Upload to stage: `python scripts/upload_semantic_model_to_stage.py --all`\n"
+                    "3. Test: `SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE('@<stage>/<file>.yaml', ...)`\n"
+                )
+            return [TextContent(type="text", text=response)]
+        except subprocess.TimeoutExpired:
+            return [TextContent(type="text", text="## Cortex Analyst Model — TIMEOUT\n\nGeneration exceeded 120s limit")]
+        except FileNotFoundError:
+            return [TextContent(type="text", text="## Error\n\nGenerator script not found at scripts/generate_cortex_analyst_model.py")]
 
     return [TextContent(type="text", text=f"Unknown tool: {name}")]
 

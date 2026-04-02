@@ -112,13 +112,22 @@ This project includes the full [dbt-agent-skills](https://github.com/dbt-labs/db
 | Semantic View Coverage Audit | `.agents/skills/semantic-view-coverage-audit/` | Audit semantic view coverage across all marts — find missing views, orphans, column drift, DDL/YAML mismatches |
 | Semantic View Batch Sync | `.agents/skills/semantic-view-batch-sync/` | Batch create/update semantic views for all uncovered marts — auto-classify dimensions/metrics, generate DDL |
 | Project Quality Audit | `.agents/skills/project-quality-audit/` | Full-project scan for missing tests, empty descriptions, SELECT * violations, semantic materialization issues |
+| Snowflake OpenFlow Pipeline | `.agents/skills/snowflake-openflow-pipeline/` | Create Snowflake-native Task DAGs, Streams (CDC), error handling, notification integrations, and monitoring for dbt layer orchestration |
+| Cortex Analyst Semantic Model | `.agents/skills/cortex-analyst-semantic-model/` | **Agentic** — AI agent explores Snowflake via MCP, classifies columns using AI reasoning, generates Cortex Analyst YAML with synonyms, verified_queries, custom_instructions. Upload to stage for NL querying via `CORTEX_ANALYST_MESSAGE()` |
 
-### Two Semantic Approaches
-This project supports both semantic approaches — they coexist:
+### Three Semantic Approaches
+This project supports all three semantic approaches — they coexist:
 1. **dbt Semantic Layer (MetricFlow)** — `building-dbt-semantic-layer` skill → YAML semantic models, `dbt sl query`
 2. **Snowflake Semantic Views** — `snowflake-semantic-view-creator` skill + `semantic-view-design.md` → `CREATE SEMANTIC VIEW` DDL, Cortex Analyst NL querying
    - Use `semantic-view-coverage-audit` to find marts missing semantic views
    - Use `semantic-view-batch-sync` to batch create/update views for all uncovered marts
+3. **Cortex Analyst YAML Semantic Models** — `cortex-analyst-semantic-model` skill → **Agentic workflow** where the AI agent explores Snowflake data via MCP, reasons about column classification, and generates rich YAML files with synonyms, sample_values, verified_queries, custom_instructions. Uploaded to Snowflake stage for `CORTEX_ANALYST_MESSAGE()` API.
+   - Richer NL metadata than Semantic Views (synonyms, verified queries, custom instructions)
+   - **Agentic**: Agent explores data via MCP → classifies → generates → tests → uploads
+   - Deterministic fallback: `scripts/generate_cortex_analyst_model.py` (single model or batch)
+   - Upload: `scripts/upload_semantic_model_to_stage.py` (to Snowflake internal stage)
+   - Output: `cortex-analyst-models/` directory
+   - Bridges existing Semantic View metadata for consistency
 
 ## Active Skills (VS Code Auto-Activation)
 Skills in `.github/skills/` auto-activate when editing matching files:
@@ -137,10 +146,13 @@ Skills in `.github/skills/` auto-activate when editing matching files:
 | `dbt-docs` | `models/**/schema.yml`, `models/**/_sources.yml` |
 | `project-setup` | `scripts/bootstrap.sh`, `dbt_project.yml`, `profiles.yml` |
 | `streamlit-generation` | `streamlit/**/*.py` |
+| `openflow-pipeline` | `ddl/openflow/**`, `scripts/snowflake_setup.sql` |
+| `cortex-analyst-model` | `cortex-analyst-models/**`, `Sample-semantic-view-cortex-analyst/**`, `models/marts/**/*.sql` |
 
 ## Reusable Prompts
 Click these in Copilot Chat for common workflows:
 - `suggest-semantic-view` — Analyze a mart model and generate a Snowflake Semantic View
+- `suggest-cortex-analyst-model` — Analyze a mart model and generate a Cortex Analyst YAML semantic model
 - `suggest-tests` — Analyze a model and suggest comprehensive dbt tests
 - `validate-and-build` — Compile, build, and validate a dbt model
 - `review-model` — Full code review against project conventions
@@ -153,6 +165,7 @@ Click these in Copilot Chat for common workflows:
 - `scripts/medallion_agent.py` — CLI agent for interactive model design (Cortex-powered)
 - `streamlit/medallion_advisor_app.py` — Streamlit-in-Snowflake advisor UI
 - The agent reads bronze data, profiles columns, and generates silver/gold models via natural language
+- `generate_cortex_analyst_model` — Generate Cortex Analyst YAML semantic model from a mart model
 - Also supports semantic view generation via `generate_semantic_view` tool
 
 ## Bootstrap & Setup
