@@ -18,6 +18,34 @@ CREATE STAGE IF NOT EXISTS DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS
   ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
   COMMENT = 'Internal stage for Cortex Analyst YAML semantic models — upload via scripts/upload_semantic_model_to_stage.py';
 
+-- Stored procedure for uploading YAML files to stage from Snowflake worksheets / Cortex Code
+-- (PUT command only works from local clients, not from within Snowflake)
+CREATE OR REPLACE PROCEDURE DBT_DEV.SEMANTIC.UPLOAD_YAML_TO_STAGE(
+    STAGE_PATH VARCHAR,
+    FILE_NAME VARCHAR,
+    YAML_CONTENT VARCHAR
+)
+RETURNS VARCHAR
+LANGUAGE PYTHON
+RUNTIME_VERSION = '3.11'
+PACKAGES = ('snowflake-snowpark-python')
+HANDLER = 'main'
+COMMENT = 'Upload a YAML file to an internal stage. Use when PUT is unavailable (e.g. Snowflake worksheets, Cortex Code).'
+AS
+$$
+import io
+
+def main(session, stage_path, file_name, yaml_content):
+    input_stream = io.BytesIO(yaml_content.encode('utf-8'))
+    session.file.put_stream(
+        input_stream,
+        f'{stage_path}/{file_name}',
+        auto_compress=False,
+        overwrite=True
+    )
+    return f'Successfully uploaded {file_name} to {stage_path}'
+$$;
+
 -- Warehouse
 CREATE WAREHOUSE IF NOT EXISTS DBT_AGENT_WH
   WAREHOUSE_SIZE = 'X-SMALL'
