@@ -19,9 +19,9 @@ custom_instructions: <string> # Optional. Text-to-SQL instructions.
 - name: <string>              # Required. Logical table name.
   description: <string>       # Optional. Multi-line description.
   base_table:                 # Required. Physical Snowflake table reference.
-    database: <string>
-    schema: <string>
-    table: <string>
+    database: <string>        # e.g., DBT_DEV
+    schema: <string>          # Where the TABLE lives (e.g., DBT_MARTS), NOT the stage schema
+    table: <string>           # e.g., FCT_SALES
   dimensions: [<dim>]         # Optional. Categorical/entity columns.
   time_dimensions: [<td>]     # Optional. Date/timestamp columns.
   facts: [<fact>]             # Optional. Numeric/aggregatable columns.

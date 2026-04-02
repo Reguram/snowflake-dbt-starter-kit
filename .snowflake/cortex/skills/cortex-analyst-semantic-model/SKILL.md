@@ -86,10 +86,14 @@ Also check for existing Semantic View metadata:
 
 #### Step 1.3: Determine Snowflake Context
 
-Extract the Snowflake coordinates:
+Extract the Snowflake coordinates. **IMPORTANT — two schemas are involved:**
 - **Database**: from `dbt_project.yml` vars (`source_database`) or default `DBT_DEV`
-- **Schema**: `DBT_MARTS` (configured in `dbt_project.yml` under `+schema: DBT_MARTS`)
+- **Data schema** (`base_table`): `DBT_MARTS` — where mart tables physically live. Used in `base_table.schema` and verified query SQL.
+- **Semantic schema** (stage): `SEMANTIC` — where YAML files are uploaded. The stage `CORTEX_ANALYST_MODELS` lives here.
 - **Table name**: the mart model name in UPPERCASE (e.g., `fct_sales` → `FCT_SALES`)
+
+> **Do NOT confuse these two schemas.** The YAML `base_table.schema` must be `DBT_MARTS`
+> (where the data is). The upload stage must be `@<DB>.SEMANTIC.CORTEX_ANALYST_MODELS`.
 
 ### Phase 2: Data Exploration via MCP
 
@@ -256,8 +260,8 @@ tables:
     description: |
       <Multi-line description including grain, key features, business context>
     base_table:
-      database: <DATABASE>
-      schema: <SCHEMA>
+      database: DBT_DEV                # Snowflake database
+      schema: DBT_MARTS                # Where the mart TABLE lives (NOT SEMANTIC)
       table: <TABLE>
     dimensions:
       - name: <COLUMN>
@@ -305,9 +309,12 @@ custom_instructions: |
 
 ### Phase 8: Upload and Test
 
+> **IMPORTANT:** The upload stage is in the `SEMANTIC` schema — NOT `DBT_MARTS`.
+> `base_table.schema` = `DBT_MARTS` (data), stage = `SEMANTIC` (YAML files).
+
 1. Upload to Snowflake stage via MCP:
 ```sql
-CREATE STAGE IF NOT EXISTS <DB>.SEMANTIC.CORTEX_ANALYST_MODELS
+CREATE STAGE IF NOT EXISTS DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS
   ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE');
 ```
 
@@ -319,14 +326,14 @@ python scripts/upload_semantic_model_to_stage.py --file semantic_<name>.yaml
 Or instruct the user to run the PUT command in Snowsight:
 ```sql
 PUT file://cortex-analyst-models/<filename>.yaml
-  @<DB>.SEMANTIC.CORTEX_ANALYST_MODELS
+  @DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS
   AUTO_COMPRESS = FALSE OVERWRITE = TRUE;
 ```
 
 2. Test with a natural language question via MCP:
 ```sql
 SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE(
-  '@<DB>.SEMANTIC.CORTEX_ANALYST_MODELS/<filename>.yaml',
+  '@DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS/<filename>.yaml',
   [{'role': 'user', 'content': '<test question from verified_queries>'}]
 );
 ```

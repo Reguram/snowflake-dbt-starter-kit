@@ -853,11 +853,11 @@ def main():
         print(f"  Output:    {OUTPUT_DIR.relative_to(PROJECT_ROOT)}/")
         print(f"\n  Next steps:")
         print(f"    1. Review generated YAML files in cortex-analyst-models/")
-        print(f"    2. Upload to Snowflake stage:")
+        print(f"    2. Upload to Snowflake stage (SEMANTIC schema):")
         print(f"       python scripts/upload_semantic_model_to_stage.py --all")
         print(f"    3. Test with Cortex Analyst:")
         print(f"       SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE(")
-        print(f"         '@<db>.<schema>.CORTEX_ANALYST_MODELS/<file>.yaml',")
+        print(f"         '@{args.database}.SEMANTIC.CORTEX_ANALYST_MODELS/<file>.yaml',")
         print(f"         'What is the summary?'")
         print(f"       );")
 
