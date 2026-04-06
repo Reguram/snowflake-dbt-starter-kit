@@ -87,7 +87,7 @@ Also check for existing Semantic View metadata:
 #### Step 1.3: Determine Snowflake Context
 
 Extract the Snowflake coordinates. **IMPORTANT — two schemas are involved:**
-- **Database**: from `dbt_project.yml` vars (`source_database`) or default `DBT_DEV`
+- **Database**: from `profiles.yml` → target `database` (e.g., `DBT_DEV`). Do **NOT** use `dbt_project.yml` vars `source_database` — that is the raw source database (e.g., `COVID19_EPIDEMIOLOGICAL_DATA`), not where dbt materializes models.
 - **Data schema** (`base_table`): `DBT_MARTS` — where mart tables physically live. Used in `base_table.schema` and verified query SQL.
 - **Semantic schema** (stage): `SEMANTIC` — where YAML files are uploaded. The stage `CORTEX_ANALYST_MODELS` lives here.
 - **Table name**: the mart model name in UPPERCASE (e.g., `fct_sales` → `FCT_SALES`)
@@ -390,7 +390,7 @@ and extract these variables automatically:
 
 | Variable | How to Derive |
 |----------|---------------|
-| `DATABASE` | From `dbt_project.yml` → `vars.source_database` (e.g., `DBT_DEV`) |
+| `DATABASE` | From `profiles.yml` → target `database` (e.g., `DBT_DEV`). Do NOT use `dbt_project.yml` `vars.source_database` — that is the raw source DB, not the dbt target. |
 | `SCHEMA` | The schema where agents and stage live — typically `SEMANTIC` |
 | `STAGE` | Stage name — typically `CORTEX_ANALYST_MODELS` (from `snowflake_setup.sql`) |
 | `YAML_FILENAME` | Name of the YAML file from Phase 7 output (e.g., `semantic_sales_analysis.yaml`) |
