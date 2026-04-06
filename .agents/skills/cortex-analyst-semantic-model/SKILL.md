@@ -312,36 +312,194 @@ custom_instructions: |
 > **IMPORTANT:** The upload stage is in the `SEMANTIC` schema — NOT `DBT_MARTS`.
 > `base_table.schema` = `DBT_MARTS` (data), stage = `SEMANTIC` (YAML files).
 
-1. Upload to Snowflake stage via MCP:
+#### Step 8.1: Ensure Stage Exists
+
 ```sql
-CREATE STAGE IF NOT EXISTS DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS
-  ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE');
+CREATE STAGE IF NOT EXISTS <DATABASE>.SEMANTIC.CORTEX_ANALYST_MODELS
+  ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+  COMMENT = 'Internal stage for Cortex Analyst YAML semantic models';
 ```
 
-Then use the upload script for the PUT command:
-```bash
-python scripts/upload_semantic_model_to_stage.py --file semantic_<name>.yaml
-```
+#### Step 8.2: Upload YAML to Stage (Pure SQL — Cortex Code Compatible)
 
-Or instruct the user to run the PUT command in Snowsight:
+Use the **TEMP TABLE → COPY INTO** pattern. This is pure SQL with zero dependencies —
+works in Cortex Code, Snowsight, or any SQL client. No Python, no PUT, no local filesystem.
+
+Generate the upload SQL by embedding the entire YAML from Phase 7 into a `$$` dollar-quoted
+string inside a temporary table, then COPY INTO the stage:
+
 ```sql
-PUT file://cortex-analyst-models/<filename>.yaml
-  @DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS
-  AUTO_COMPRESS = FALSE OVERWRITE = TRUE;
+-- Create temp table with the YAML content as a single row
+CREATE OR REPLACE TEMPORARY TABLE <DATABASE>.SEMANTIC.TEMP_YAML_CONTENT (LINE_CONTENT VARCHAR)
+AS SELECT $$
+<ENTIRE YAML CONTENT FROM PHASE 7>
+$$;
+
+-- Copy to stage as a single uncompressed file
+COPY INTO @<DATABASE>.SEMANTIC.CORTEX_ANALYST_MODELS/<filename>.yaml
+  FROM (SELECT LINE_CONTENT FROM <DATABASE>.SEMANTIC.TEMP_YAML_CONTENT)
+  FILE_FORMAT = (TYPE = 'CSV' COMPRESSION = 'NONE' FIELD_DELIMITER = 'NONE' RECORD_DELIMITER = 'NONE')
+  SINGLE = TRUE
+  OVERWRITE = TRUE
+  HEADER = FALSE;
+
+-- Clean up
+DROP TABLE IF EXISTS <DATABASE>.SEMANTIC.TEMP_YAML_CONTENT;
 ```
 
-2. Test with a natural language question via MCP:
+**Key settings explained:**
+- `COMPRESSION = 'NONE'` — YAML must be uncompressed for Cortex Analyst to read it
+- `FIELD_DELIMITER = 'NONE'` / `RECORD_DELIMITER = 'NONE'` — preserves YAML formatting
+- `SINGLE = TRUE` — writes one file (not partitioned)
+- `OVERWRITE = TRUE` — replaces existing file on re-upload
+
+Verify the upload:
+```sql
+LIST @<DATABASE>.SEMANTIC.CORTEX_ANALYST_MODELS PATTERN = '.*<filename>.*';
+```
+
+#### Step 8.3: Test with Cortex Analyst
+
 ```sql
 SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE(
-  '@DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS/<filename>.yaml',
+  '@<DATABASE>.SEMANTIC.CORTEX_ANALYST_MODELS/<filename>.yaml',
   [{'role': 'user', 'content': '<test question from verified_queries>'}]
 );
 ```
 
-3. If the response is incorrect, refine the model:
-   - Add more synonyms for misunderstood terms
-   - Add more verified queries covering the failing pattern
-   - Update custom_instructions with explicit rules
+#### Step 8.4: Iterate if Needed
+
+If the response is incorrect, refine the model:
+- Add more synonyms for misunderstood terms
+- Add more verified queries covering the failing pattern
+- Update custom_instructions with explicit rules
+- Re-upload using Step 8.2 (OVERWRITE = TRUE replaces the file)
+
+### Phase 9: Deploy to Snowflake Intelligence (Agentic Workflow)
+
+> **This phase makes the semantic model visible in the Snowflake Intelligence UI.**
+> Without it, the YAML works only via `CORTEX_ANALYST_MESSAGE()` API — the SI UI
+> shows nothing. This is all SQL — executable in Cortex Code or a Snowflake Worksheet.
+>
+> **The agent dynamically generates all SQL from context — no hardcoded files needed.**
+
+#### Step 9.1: Derive Variables from Context
+
+Read the YAML file produced in Phase 7 (or the existing file in `cortex-analyst-models/`)
+and extract these variables automatically:
+
+| Variable | How to Derive |
+|----------|---------------|
+| `DATABASE` | From `dbt_project.yml` → `vars.source_database` (e.g., `DBT_DEV`) |
+| `SCHEMA` | The schema where agents and stage live — typically `SEMANTIC` |
+| `STAGE` | Stage name — typically `CORTEX_ANALYST_MODELS` (from `snowflake_setup.sql`) |
+| `YAML_FILENAME` | Name of the YAML file from Phase 7 output (e.g., `semantic_sales_analysis.yaml`) |
+| `AGENT_NAME` | Derive from YAML `name` field: `AGENT_` + uppercase domain (e.g., `AGENT_SALES_ANALYSIS`) |
+| `AGENT_DESC` | From YAML `description` field — first sentence or a summary |
+| `TOOL_DESC` | Compose from YAML tables: list table names, what data they contain, example questions |
+| `WAREHOUSE` | From `dbt_project.yml` or `profiles.yml` — the execution warehouse (e.g., `DBT_AGENT_WH`) |
+| `ROLE` | From `snowflake_setup.sql` — typically `DBT_ROLE` |
+| `MARTS_SCHEMA` | From `dbt_project.yml` → marts custom_schema (e.g., `DBT_MARTS`) |
+
+**Do NOT ask the user for these values.** Derive them from existing project files.
+
+#### Step 9.2: Check for Existing Agent
+
+Before creating, check whether an agent already exists for this domain:
+
+```sql
+SHOW AGENTS IN SCHEMA <DATABASE>.<SCHEMA>;
+```
+
+- If agent exists with the same name → use `CREATE OR REPLACE` (update)
+- If a different agent covers the same tables → warn user about overlap
+- If no agent exists → proceed with creation
+
+#### Step 9.3: Generate and Present CREATE AGENT SQL
+
+Generate the concrete SQL with all placeholders resolved:
+
+```sql
+CREATE OR REPLACE AGENT <DATABASE>.<SCHEMA>.<AGENT_NAME>
+  COMMENT = '<AGENT_DESC>'
+  FROM SPECIFICATION $$
+  {
+    "models": {"orchestration": "auto"},
+    "tools": [
+      {
+        "tool_spec": {
+          "type": "cortex_analyst_text_to_sql",
+          "name": "analyst",
+          "description": "<TOOL_DESC>"
+        }
+      }
+    ],
+    "tool_resources": {
+      "analyst": {
+        "semantic_model_file": "@<DATABASE>.<SCHEMA>.<STAGE>/<YAML_FILENAME>",
+        "execution_environment": {
+          "type": "warehouse",
+          "warehouse": "<WAREHOUSE>"
+        }
+      }
+    }
+  }
+  $$;
+```
+
+**Multi-model agents:** If the domain has multiple YAML files on stage, add one tool per YAML:
+```json
+"tools": [
+  {"tool_spec": {"type": "cortex_analyst_text_to_sql", "name": "sales_data", "description": "..."}},
+  {"tool_spec": {"type": "cortex_analyst_text_to_sql", "name": "market_data", "description": "..."}}
+],
+"tool_resources": {
+  "sales_data": {"semantic_model_file": "@stage/sales.yaml", "execution_environment": {...}},
+  "market_data": {"semantic_model_file": "@stage/market.yaml", "execution_environment": {...}}
+}
+```
+Best practice: 5-10 tools per agent max. Create separate agents for unrelated domains.
+
+#### Step 9.4: Generate SI Registration SQL
+
+```sql
+-- Ensure Snowflake Intelligence object exists (account-level singleton)
+SHOW SNOWFLAKE INTELLIGENCES;
+-- If empty: CREATE SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT;
+
+-- Register the agent
+ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
+  ADD AGENT <DATABASE>.<SCHEMA>.<AGENT_NAME>;
+```
+
+#### Step 9.5: Generate Permission Grants
+
+```sql
+GRANT USAGE ON DATABASE <DATABASE> TO ROLE <ROLE>;
+GRANT USAGE ON SCHEMA <DATABASE>.<SCHEMA> TO ROLE <ROLE>;
+GRANT USAGE ON AGENT <DATABASE>.<SCHEMA>.<AGENT_NAME> TO ROLE <ROLE>;
+GRANT USAGE ON WAREHOUSE <WAREHOUSE> TO ROLE <ROLE>;
+GRANT READ ON STAGE <DATABASE>.<SCHEMA>.<STAGE> TO ROLE <ROLE>;
+GRANT SELECT ON ALL TABLES IN SCHEMA <DATABASE>.<MARTS_SCHEMA> TO ROLE <ROLE>;
+GRANT USAGE ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT TO ROLE <ROLE>;
+```
+
+#### Step 9.6: Present Complete Deployment Script
+
+Combine Steps 9.3–9.5 into a single executable SQL script and present it to the user.
+The user copies this script into Cortex Code or a Snowflake Worksheet and executes it.
+
+Include a verification section at the end:
+```sql
+-- Verify deployment
+SHOW AGENTS IN SCHEMA <DATABASE>.<SCHEMA>;
+DESCRIBE AGENT <DATABASE>.<SCHEMA>.<AGENT_NAME>;
+SHOW SNOWFLAKE INTELLIGENCES;
+-- Test: Snowsight → AI & ML → Snowflake Intelligence → select agent → ask a question
+```
+
+> **Reference template:** `ddl/cortex-analyst/deploy_agent_to_intelligence.sql`
+> contains the generic placeholder version of this SQL for manual use.
 
 ---
 

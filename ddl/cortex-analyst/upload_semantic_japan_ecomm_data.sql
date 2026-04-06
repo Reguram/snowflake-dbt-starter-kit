@@ -904,3 +904,17 @@ SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_VALIDATE(
 --     '@DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS/semantic_japan_ecomm_data.yaml',
 --     [{'role': 'user', 'content': 'What are the total daily sales?'}]
 -- );
+
+-- =============================================================================
+-- Step 7: Deploy Agent + Register in Snowflake Intelligence
+-- =============================================================================
+-- To make this semantic model visible in the Snowflake Intelligence UI,
+-- follow Phase 9 of the cortex-analyst-semantic-model skill:
+--   .agents/skills/cortex-analyst-semantic-model/SKILL.md  (Phase 9)
+--
+-- Or use the generic DDL template:
+--   ddl/cortex-analyst/deploy_agent_to_intelligence.sql
+--
+-- The skill dynamically generates CREATE AGENT + ALTER SNOWFLAKE INTELLIGENCE
+-- SQL for ANY source — no hardcoded model-specific SQL needed here.
+-- =============================================================================

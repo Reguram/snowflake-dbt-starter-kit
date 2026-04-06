@@ -67,5 +67,18 @@ GRANT SELECT ON ALL TABLES IN SCHEMA COVID19_EPIDEMIOLOGICAL_DATA.PUBLIC TO ROLE
 -- Assign role to user
 GRANT ROLE DBT_ROLE TO USER REGURAM;
 
+-- =============================================================================
+-- Snowflake Intelligence — Agent + SI object for Cortex Analyst NL querying
+-- =============================================================================
+
+-- Snowflake Intelligence object (account-level singleton for the SI UI)
+-- Safe to run even if it already exists — will no-op on duplicate.
+-- CREATE SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT;
+
+-- Agent permissions (run AFTER creating agents via ddl/cortex-analyst/deploy_agent_*.sql)
+-- GRANT USAGE ON AGENT DBT_DEV.SEMANTIC.AGENT_JAPAN_ECOMM TO ROLE DBT_ROLE;
+-- GRANT READ ON STAGE DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS TO ROLE DBT_ROLE;
+-- GRANT USAGE ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT TO ROLE DBT_ROLE;
+
 -- Verify
 SELECT 'Setup complete!' AS status;
