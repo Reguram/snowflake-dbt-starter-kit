@@ -8,9 +8,10 @@
     // =====================================================
     "snowflake-dbt-mcp": {
       "type": "streamableHttp",
-      "url": "https://IZCCFNR-HO38605.snowflakecomputing.com/api/v2/databases/DBT_DEV/schemas/MCP_TOOLS/mcp-servers/DBT_AGENT_MCP",
+      "url": "https://OVKHTQZ-ZGB06898.snowflakecomputing.com/api/v2/databases/DBT_DEV/schemas/MCP_TOOLS/mcp-servers/DBT_AGENT_MCP",
       "headers": {
-        "Authorization": "Bearer eyJraWQiOiIxODA3NzA4MDc4MTciLCJhbGciOiJFUzI1NiJ9.eyJwIjoiNzA2MTM1ODEyOjcwNjEzNTgxMiIsImlzcyI6IlNGOjEwNDkiLCJleHAiOjE3ODQxOTgwNjN9.jb1mfdUgAajHwBur7daFzuJoJWr6s4lQMQ1Db_E6q4tgCV8CwlTGzz_qI2NfVwP3uaBuD7vBLI6zUEw3DOEQ5g"
+        "Authorization": "Bearer eyJraWQiOiIxODA3NzA4MDc4MTciLCJhbGciOiJFUzI1NiJ9.eyJwIjoiNzA2MTM1ODEyOjcwNjEzNTk0MCIsImlzcyI6IlNGOjEwNDkiLCJleHAiOjE4MDgzNzM4ODl9.AfArw36h7YTqkzAa0Aa8gSjWvH3Wbv2yjU-dNPXq6e3rY74Uw7C7o9yJF3thvzE4Zvq0pdaDt1CnipXvWewrpw",
+        "X-Snowflake-Role": "DBT_ROLE"
       }
     },
 

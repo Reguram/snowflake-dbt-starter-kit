@@ -1,64 +1,40 @@
 /*
 =============================================================================
-Step 4: PAT Security Integration for MCP Server
+Step 4: PAT (Programmatic Access Token) for MCP Server
 =============================================================================
 Snowflake Managed MCP Servers authenticate via Programmatic Access Tokens
-(PATs). This script creates the security integration and generates a PAT
-for connecting from clients (VS Code, Claude Desktop, etc.).
+(PATs). PATs are generated directly on the user — no security integration
+is required.
 
 PATs are simpler than OAuth — no redirect URIs, no token refresh logic.
-Each user generates a token tied to a security integration and uses it
-as a Bearer token in Authorization headers.
+Generate a token, paste it as a Bearer token in Authorization headers.
 =============================================================================
 */
 
 USE ROLE ACCOUNTADMIN;
 
 -- ==========================================
--- 1. Create PAT Security Integration
+-- 1. Generate a PAT for your user
+-- Replace <YOUR_USERNAME> with your Snowflake username (e.g. REGURAM).
+-- ⚠️ The token is returned ONCE — copy and store it immediately.
 -- ==========================================
-CREATE OR REPLACE SECURITY INTEGRATION DBT_MCP_PAT
-    TYPE = API_AUTHENTICATION
-    AUTH_TYPE = PROGRAMMATIC_ACCESS_TOKEN
-    ENABLED = TRUE
-    COMMENT = 'PAT integration for dbt MCP Server — VS Code, Claude Desktop, etc.';
+ALTER USER <YOUR_USERNAME> ADD PROGRAMMATIC ACCESS TOKEN dbt_mcp_access
+    DAYS_TO_EXPIRY = 365
+    COMMENT = 'PAT for dbt MCP Server access — VS Code, Claude Desktop, etc.';
 
-
--- ==========================================
--- 2. Grant the integration to the MCP role
--- ==========================================
-GRANT USAGE ON INTEGRATION DBT_MCP_PAT TO ROLE DBT_MCP_ROLE;
+-- Use the returned token as: Authorization: Bearer <TOKEN>
 
 
 -- ==========================================
--- 3. Generate a PAT for your user
--- Replace <YOUR_USERNAME> with your Snowflake username.
--- The token is returned ONCE — store it securely.
+-- 2. (Optional) List PATs for a user
 -- ==========================================
--- Switch to the user's role to generate the PAT
--- USE ROLE DBT_MCP_ROLE;
-
--- ALTER USER <YOUR_USERNAME> ADD PROGRAMMATIC_ACCESS_TOKEN
---     PURPOSE = 'dbt_mcp_access'
---     SECURITY_INTEGRATION = 'DBT_MCP_PAT'
---     COMMENT = 'PAT for dbt MCP Server access';
-
--- ⚠️ IMPORTANT:
--- The above command returns the PAT token in the result.
--- Copy and save it immediately — it cannot be retrieved again.
--- Use the token as: Authorization: Bearer <YOUR_PAT_TOKEN>
+-- SHOW PROGRAMMATIC ACCESS TOKENS FOR USER <YOUR_USERNAME>;
 
 
 -- ==========================================
--- 4. (Optional) List / Revoke PATs for a user
+-- 3. (Optional) Revoke a PAT
 -- ==========================================
--- List all PATs:
--- ALTER USER <YOUR_USERNAME> LIST PROGRAMMATIC_ACCESS_TOKENS;
-
--- Revoke a specific PAT:
--- ALTER USER <YOUR_USERNAME> REMOVE PROGRAMMATIC_ACCESS_TOKEN
---     PURPOSE = 'dbt_mcp_access'
---     SECURITY_INTEGRATION = 'DBT_MCP_PAT';
+-- ALTER USER <YOUR_USERNAME> REMOVE PROGRAMMATIC ACCESS TOKEN dbt_mcp_access;
 
 
 -- ==========================================
@@ -74,9 +50,3 @@ GRANT USAGE ON INTEGRATION DBT_MCP_PAT TO ROLE DBT_MCP_ROLE;
 --     OAUTH_REFRESH_TOKEN_VALIDITY = 86400
 --     ENABLED = TRUE
 --     COMMENT = 'OAuth integration for dbt MCP Server — Snowflake-native clients';
-
-
--- ==========================================
--- Verify
--- ==========================================
-DESCRIBE SECURITY INTEGRATION DBT_MCP_PAT;
