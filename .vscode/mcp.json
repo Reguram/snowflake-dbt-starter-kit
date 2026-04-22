@@ -10,7 +10,7 @@
       "type": "streamableHttp",
       "url": "https://IZCCFNR-HO38605.snowflakecomputing.com/api/v2/databases/DBT_DEV/schemas/MCP_TOOLS/mcp-servers/DBT_AGENT_MCP",
       "headers": {
-        "Authorization": "Bearer eyJraWQiOiI4ODQxNzY4MTQxNyIsImFsZyI6IkVTMjU2In0.eyJwIjoiMzQ1MzgxMzgwOjM0NTM4MTM4MCIsImlzcyI6IlNGOjEwMTIiLCJleHAiOjE4MDU2MTE1NTN9.mRMuuLRtHSm3C2xxL6OVlUoRsx-Q_klfJ7Bklc0EMQ7nx6gEn_7VzGclFOD6-_k2JkePLZogJvuxqH4Pd4hkLg"
+        "Authorization": "Bearer eyJraWQiOiIxODA3NzA4MDc4MTciLCJhbGciOiJFUzI1NiJ9.eyJwIjoiNzA2MTM1ODEyOjcwNjEzNTgxMiIsImlzcyI6IlNGOjEwNDkiLCJleHAiOjE3ODQxOTgwNjN9.jb1mfdUgAajHwBur7daFzuJoJWr6s4lQMQ1Db_E6q4tgCV8CwlTGzz_qI2NfVwP3uaBuD7vBLI6zUEw3DOEQ5g"
       }
     },
 
