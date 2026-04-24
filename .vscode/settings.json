@@ -1,3 +1,6 @@
 {
-  "github.copilot.chat.codeGeneration.useInstructionFiles": true
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "airun.settings": {
+    "workspaceId": "8bc6715e-5077-4403-8905-d62d10f65f79"
+  }
 }

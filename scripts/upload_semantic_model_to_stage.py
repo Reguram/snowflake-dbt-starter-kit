@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
+# ==============================================================================
+# DEPRECATED — This script is archived. Use Snowflake Semantic Views instead.
+# The project now uses the dbt_semantic_view package with publish_verified_queries()
+# post-hook. No staging/PUT is needed.
+# ==============================================================================
 """
-Upload Cortex Analyst YAML Semantic Models to Snowflake Stage
-=============================================================
+Upload Cortex Analyst YAML Semantic Models to Snowflake Stage (DEPRECATED)
+==========================================================================
 Creates a Snowflake internal stage (if not exists) and uploads
 generated YAML semantic model files for use with Cortex Analyst.
+
+DEPRECATED: Use Snowflake Semantic Views (models/semantic/) instead.
 
 Usage:
   # Upload all YAML files from cortex-analyst-models/

@@ -1,36 +1,48 @@
 ---
 name: snowflake-semantic-view-creator
 description: >
-  Create Snowflake-native Semantic Views (CREATE SEMANTIC VIEW DDL) from dbt mart models.
-  Distinct from dbt Semantic Layer / MetricFlow — this generates Snowflake DDL for Cortex Analyst
-  natural language querying. Auto-detects dimensions and metrics from column types and naming
-  patterns, generates sem_*.sql models, schema.yml metadata, and CREATE SEMANTIC VIEW DDL.
+  Create Snowflake-native Semantic Views from dbt mart models using the dbt_semantic_view package.
+  Uses DDL-like SQL syntax (TABLES/DIMENSIONS/METRICS) materialized via `dbt build`.
+  Verified queries are appended via a publish_verified_queries() post-hook macro.
+  Distinct from dbt Semantic Layer / MetricFlow.
   Use when creating Snowflake semantic views, defining dimensions/metrics for Cortex Analyst,
-  or generating CREATE SEMANTIC VIEW DDL.
+  or enabling natural language querying.
 user-invocable: true
 metadata:
   author: snowflake-dbt-starter-kit
-  version: "1.0"
+  version: "2.0"
 ---
 
 # Snowflake Semantic View Creator
 
-> **This skill creates Snowflake-native Semantic Views** (`CREATE SEMANTIC VIEW` DDL). This is **NOT** the dbt Semantic Layer (MetricFlow). For MetricFlow semantics, use the `building-dbt-semantic-layer` skill.
+> **This skill creates Snowflake-native Semantic Views** via `dbt build` using the [`Snowflake-Labs/dbt_semantic_view`](https://github.com/Snowflake-Labs/dbt_semantic_view) package. This is **NOT** the dbt Semantic Layer (MetricFlow). For MetricFlow semantics, use the `building-dbt-semantic-layer` skill.
 
 ## What is a Snowflake Semantic View?
-A database object that defines **dimensions** (filter/group-by columns) and **metrics** (aggregatable measures) over a base SQL query. Once created, Cortex Analyst can answer natural language questions by generating SQL from the semantic view's definition.
+A database object that defines **dimensions** (filter/group-by columns) and **metrics** (aggregatable measures) over base tables. Once created, Cortex Analyst can answer natural language questions by generating SQL from the semantic view's definition. **Verified queries** improve text-to-SQL accuracy by providing known-good SQL examples.
 
 ## When to Invoke This Skill
 - User asks to "create a semantic view" for a mart model
 - User wants to enable natural language querying on their data
 - User is working with Cortex Analyst
 - User edits a mart model and wants analytics metadata defined
-- User runs `generate_semantic_view_ddl` macro
+- User wants to add verified queries to a semantic view
+
+## How It Works (Architecture)
+
+```
+dbt_project.yml                   dbt_packages/dbt_semantic_view/
+  semantic:                         macros/materializations/semantic_view.sql
+    +materialized: semantic_view      → CREATE OR REPLACE SEMANTIC VIEW
+    +post_hook: publish_verified_queries()
+                                    macros/publish_verified_queries.sql
+                                      → SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML
+                                      → Appends verified_queries from .yml meta
+```
 
 ## End-to-End Workflow
 
 ### 1. Identify the Base Mart Model
-Start from a `fct_*` or `dim_*` model in `models/marts/`. Read its SQL and schema.yml to understand:
+Start from a `fct_*`, `dim_*`, or `summary_*` model in `models/marts/`. Read its SQL and schema.yml to understand:
 - **Grain**: What one row represents
 - **Columns**: Available for dimension/metric classification
 - **Joins**: What entities are involved
@@ -54,54 +66,104 @@ Start from a `fct_*` or `dim_*` model in `models/marts/`. Read its SQL and schem
 | Any unique key | `*_key`, `*_id` (when counting) | COUNT |
 | DATE (boundary) | `first_*`, `last_*`, `min_*`, `max_*` | MIN / MAX |
 
-### 3. Generate dbt Semantic Model
-Create `models/semantic/sem_<analysis_name>.sql` as a **documentation-only** file:
-- **DISABLED from dbt build** (`+enabled: false` in dbt_project.yml)
-- Contains the original SELECT logic wrapped in a Jinja comment block (`{# ... #}`)
-- The actual executable body is just `select 1 as _placeholder`
-- Do NOT use `{{ config(materialized='view') }}` — this causes build failures
-- The DDL in `ddl/semantic/` references the mart model (`fct_*`) directly
-
-### 4. Generate schema.yml Metadata
-Add `meta.snowflake_semantic_view` block with:
-- `name`: Uppercase semantic view name
-- `description`: What this view analyzes
-- `dimensions[]`: Each with `name` and `description`
-- `metrics[]`: Each with `name`, `type` (SUM/COUNT/AVG/MIN/MAX), `expression`, and `description`
-
-### 5. Generate DDL
-Use the `generate_semantic_view_ddl` macro with `base_model` parameter:
-```bash
-dbt run-operation generate_semantic_view_ddl --args '{"model_name": "sem_<name>", "base_model": "fct_<entity>"}'
-```
-
-Or use the `generate_semantic_view` MCP tool.
-
-### 6. Execute and Validate
-- The semantic model is NOT built during `dbt build` (it is disabled)
-- Build the upstream mart model: `dbt build --select fct_<entity>`
-- Execute DDL in Snowflake (via Snowsight or `run_sql` MCP tool)
-- DDL references the mart model directly — no intermediate sem_* view needed
-- Verify: `SHOW SEMANTIC VIEWS IN SCHEMA <db>.<schema>`
-- Test with Cortex Analyst: `CORTEX_ANALYST_MESSAGE('<sv_name>', '<question>')`
-
-## DDL Syntax Reference
+### 3. Create Semantic View Model (subfolder)
+Create `models/semantic/sem_<name>/sem_<name>.sql` with DDL-like syntax:
 
 ```sql
-CREATE OR REPLACE SEMANTIC VIEW <database>.<schema>.<name>
-  COMMENT = '<description for Cortex Analyst>'
-AS SELECT * FROM <base_table_or_view>
-COLUMNS (
-    <column_name> AS DIMENSION COMMENT '<what this dimension represents>',
-    ...
+{{
+  config(
+    materialized = 'semantic_view',
+    schema = 'SEMANTIC',
+    tags = ['semantic', 'sem_<name>'],
+    post_hook = [
+      "{{ publish_verified_queries() }}"
+    ]
+  )
+}}
+
+TABLES (
+  t AS {{ ref('fct_<name>') }}
+)
+DIMENSIONS (
+  t.column1 AS column1 COMMENT = 'Description of dimension',
+  t.date_col AS date_col COMMENT = 'Date dimension'
 )
 METRICS (
-    <metric_name> AS <AGG_TYPE>(<expression>) COMMENT '<what this metric measures>',
-    ...
-);
+  SUM(t.amount) AS total_amount COMMENT = 'Total amount',
+  AVG(t.rate) AS avg_rate COMMENT = 'Average rate'
+)
+COMMENT = 'Description for Cortex Analyst'
+
+-- AI_SQL_GENERATION
+-- Instructions for Cortex Analyst text-to-SQL accuracy
+-- Describe what questions this view answers and how to interpret metrics
 ```
 
-**Supported aggregation types**: `SUM`, `COUNT`, `AVG`, `MIN`, `MAX`
+**Key rules:**
+- Use `TABLES()` with an alias and `{{ ref() }}` — the alias is used in DIMENSIONS/METRICS
+- Every dimension and metric MUST have a `COMMENT`
+- The `COMMENT = '...'` at the end is the view-level description
+- AI_SQL_GENERATION comments guide Cortex Analyst behavior (not parsed by dbt)
+
+### 4. Add Verified Queries (.yml)
+Create `models/semantic/sem_<name>/sem_<name>.yml`:
+
+```yaml
+version: 2
+models:
+  - name: sem_<name>
+    description: "Semantic view for ... Grain: one row per (...)."
+    config:
+      meta:
+        verified_queries:
+          - name: descriptive_query_name
+            question: "Natural language business question?"
+            verified_at: 1745452800
+            verified_by: author
+            sql: >
+              SELECT dimension, SUM(metric) AS total
+              FROM t
+              GROUP BY dimension
+              ORDER BY total DESC
+```
+
+**Verified query rules:**
+- `sql` uses the **table alias** from TABLES(), not the physical table name
+- `verified_at` is a Unix timestamp (seconds since epoch)
+- Write 3-5 queries covering the most common business questions
+- Test SQL against the actual data before adding
+
+### 5. Build and Validate
+
+```bash
+# Compile first to check for Jinja errors
+dbt compile --select sem_<name>
+
+# Build — creates the semantic view + appends verified queries
+dbt build --select sem_<name>
+```
+
+### 6. Verify in Snowflake
+
+```sql
+-- Check the semantic view exists
+SHOW SEMANTIC VIEWS IN SCHEMA DBT_DEV.SEMANTIC;
+
+-- Read the full YAML (should include verified_queries block)
+SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('DBT_DEV.SEMANTIC.SEM_<NAME>');
+
+-- Test with Cortex Analyst
+-- (via Snowsight or programmatically)
+```
+
+## File Structure
+
+```
+models/semantic/sem_<name>/
+├── sem_<name>.sql    # DDL-like syntax (TABLES/DIMENSIONS/METRICS)
+├── sem_<name>.yml    # Verified queries + model description
+└── sem_<name>.md     # Optional: additional documentation
+```
 
 ## Dimension/Metric Design Best Practices
 - **COMMENT everything** — Cortex Analyst uses comments to understand semantics
@@ -109,18 +171,23 @@ METRICS (
 - **Unambiguous metric names** — `total_revenue` not `revenue`, `avg_order_value` not `avg`
 - **One view per domain** — revenue analysis, customer analysis, supply chain analysis
 - **Test base model first** — ensure data quality before exposing via Semantic View
+- **AI_SQL_GENERATION comments** — add instructions for text-to-SQL accuracy after METRICS
 
 ## Project-Specific Paths
-- Semantic models: `models/semantic/sem_*.sql`
-- Schema metadata: `models/semantic/schema.yml`
-- DDL macro: `macros/generate_semantic_view_ddl.sql`
-- MCP tool: `generate_semantic_view` (local or Snowflake-managed)
-- Scaffold script: `scripts/generate_semantic_view.py`
+- Semantic models: `models/semantic/<name>/sem_<name>.sql` (subfolder per view)
+- Verified queries: `models/semantic/<name>/sem_<name>.yml`
+- Package: `dbt_packages/dbt_semantic_view/` (Snowflake-Labs materialization)
+- Post-hook macro: `macros/publish_verified_queries.sql`
+- Column classifier: `scripts/generate_semantic_view.py` (helper for dimension/metric detection)
+- Project config: `dbt_project.yml` → `semantic:` block
 
 ## Distinction from building-dbt-semantic-layer
 | Aspect | This Skill (Snowflake SV) | building-dbt-semantic-layer (MetricFlow) |
 |--------|--------------------------|------------------------------------------|
-| Output | `CREATE SEMANTIC VIEW` DDL | YAML semantic model definitions |
+| Output | Snowflake Semantic View object | YAML semantic model definitions |
+| SQL syntax | DDL-like (TABLES/DIMS/METRICS) | N/A (YAML-only) |
+| Built via | `dbt build` (semantic_view materialization) | N/A (metadata only) |
+| Verified queries | Yes (publish_verified_queries post-hook) | No |
 | Query via | Cortex Analyst (NL) | `dbt sl query` / `mf` |
 | Runs on | Snowflake-native | dbt Cloud / MetricFlow engine |
 | Best for | Self-service NL analytics | Governed enterprise metrics |

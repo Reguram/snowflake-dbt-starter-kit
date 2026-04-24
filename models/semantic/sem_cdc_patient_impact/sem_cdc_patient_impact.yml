@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: sem_cdc_patient_impact
+    description: >
+      Semantic view for CDC hospital patient impact data built from fct_cdc_reported_patient_impact.
+      Grain: one row per (state, date).
+      Enables Cortex Analyst natural language querying over hospital capacity and COVID admissions.
+    config:
+      meta:
+        verified_queries:
+          - name: total_beds_by_state
+            question: "What is the total number of inpatient beds by state?"
+            verified_at: 1745452800
+            verified_by: author
+            sql: >
+              SELECT state, SUM(inpatient_beds) AS total_inpatient_beds
+              FROM cdc
+              GROUP BY state
+              ORDER BY total_inpatient_beds DESC
+          - name: covid_hospitalization_trend
+            question: "Show the monthly COVID hospitalization trend"
+            verified_at: 1745452800
+            verified_by: author
+            sql: >
+              SELECT report_month,
+                     SUM(inpatient_beds_used_covid) AS total_covid_beds,
+                     SUM(total_adult_patients_hospitalized_confirmed_covid) AS total_adult_covid
+              FROM cdc
+              GROUP BY report_month
+              ORDER BY report_month DESC
+          - name: icu_utilization_by_state
+            question: "What is the average ICU bed COVID utilization by state?"
+            verified_at: 1745452800
+            verified_by: author
+            sql: >
+              SELECT state,
+                     AVG(adult_icu_bed_covid_utilization) AS avg_icu_covid_utilization
+              FROM cdc
+              GROUP BY state
+              ORDER BY avg_icu_covid_utilization DESC

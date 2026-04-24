@@ -1,3 +1,4 @@
+{{ config(enabled=false) }}
 {#
   ======================================================================
   Semantic View: SEM_NYT_US_COVID19

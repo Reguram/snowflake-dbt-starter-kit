@@ -1,3 +1,4 @@
+{{ config(enabled=false) }}
 {#
   ======================================================================
   Semantic View: SEM_ECDC_GLOBAL

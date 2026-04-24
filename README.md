@@ -29,7 +29,7 @@ Production-ready dbt project for Snowflake with a **Snowflake Managed MCP Server
    - [VS Code Active Skills (Auto-Activation)](#vs-code-active-skills-auto-activation)
    - [Snowflake Semantic View Creator (Custom Skill)](#snowflake-semantic-view-creator-custom-skill)
    - [Three Semantic Approaches](#three-semantic-approaches)
-   - [Cortex Analyst Semantic Model Generator (Agentic)](#cortex-analyst-semantic-model-generator-agentic)
+   - [Snowflake Semantic Views (Primary Approach)](#snowflake-semantic-views-primary-approach)
    - [Reusable Copilot Prompts](#reusable-copilot-prompts)
    - [Custom Copilot Agent](#custom-copilot-agent)
    - [Semantic View Generator Script](#semantic-view-generator-script)
@@ -726,106 +726,162 @@ A custom skill at `.cortex/skills/snowflake-semantic-view-creator/` for creating
 
 ### Three Semantic Approaches
 
-This project supports **three** semantic approaches — they coexist without conflict:
+This project supports **two active** semantic approaches, plus one deprecated:
 
-| Aspect | dbt Semantic Layer (MetricFlow) | Snowflake Semantic Views | Cortex Analyst YAML Models |
-|--------|-------------------------------|-------------------------|----------------------------|
-| **Definition** | YAML semantic models in `schema.yml` | `CREATE SEMANTIC VIEW` DDL | YAML files uploaded to stage |
-| **Query tool** | `dbt sl query`, MetricFlow | Cortex Analyst (NL) | `CORTEX_ANALYST_MESSAGE()` API |
-| **Skill** | `building-dbt-semantic-layer` | `snowflake-semantic-view-creator` | `cortex-analyst-semantic-model` |
-| **Generation** | Manual YAML | Script / skill | **Agentic** (AI explores data) |
-| **Rich metadata** | Measures + Entities | Dimensions + Metrics | Synonyms, verified queries, custom instructions |
-| **Project path** | `models/semantic/` | `ddl/semantic/` | `cortex-analyst-models/` |
-| **Best for** | Cross-platform BI tools, dbt Cloud | Simple Snowflake-native NL | Rich NL understanding, multi-table |
+| Aspect | dbt Semantic Layer (MetricFlow) | Snowflake Semantic Views (Primary) |
+|--------|-------------------------------|--------------------------------------|
+| **Definition** | YAML semantic models in `schema.yml` | DDL-like SQL via `dbt_semantic_view` package |
+| **Query tool** | `dbt sl query`, MetricFlow | Cortex Analyst (natural language) |
+| **Skill** | `building-dbt-semantic-layer` | `snowflake-semantic-view-creator` |
+| **Materialization** | N/A (YAML-only) | `semantic_view` (creates Snowflake Semantic View) |
+| **Verified queries** | N/A | Appended via `publish_verified_queries()` post-hook |
+| **Project path** | `models/semantic/` (YAML in schema.yml) | `models/semantic/<name>/` (subfolder per view) |
+| **Best for** | Cross-platform BI tools (Tableau, Looker) via dbt Cloud | Snowflake-native Cortex Analyst NL querying |
+
+> **Deprecated:** Cortex Analyst YAML Models (uploading `.yaml` to Snowflake stages via PUT/COPY INTO) have been replaced by Snowflake Semantic Views. Archived files remain in `cortex-analyst-models/` and `scripts/generate_cortex_analyst_model.py` for reference.
 
 **When to use which:**
-- Use **MetricFlow** if you need metrics consumed by BI tools (Tableau, Looker) via dbt Cloud Semantic Layer
-- Use **Snowflake Semantic Views** if you want simple Cortex Analyst NL querying with dimension/metric classification
-- Use **Cortex Analyst YAML Models** if you want the richest NL experience — with synonyms, sample values, verified queries, and custom instructions for maximum text-to-SQL accuracy
-- Use **all three** if you want maximum coverage — they define metrics differently and don't conflict
+- Use **MetricFlow** if you need metrics consumed by BI tools via dbt Cloud Semantic Layer
+- Use **Snowflake Semantic Views** (recommended) for Cortex Analyst natural language querying — no staging needed, verified queries built-in
 
-### Cortex Analyst Semantic Model Generator (Agentic)
+### Snowflake Semantic Views (Primary Approach)
 
-An **agentic skill** that enables AI agents (GitHub Copilot, Cortex Code) to autonomously generate Cortex Analyst YAML semantic models by exploring Snowflake data through MCP tools — not just running a deterministic script.
+This project uses the [`Snowflake-Labs/dbt_semantic_view`](https://github.com/Snowflake-Labs/dbt_semantic_view) package to materialize Snowflake Semantic Views directly via `dbt build`. Verified queries are appended via a `publish_verified_queries()` post-hook macro.
 
-**What makes it agentic:**
-- The AI agent queries Snowflake via MCP to profile columns, cardinality, and sample values
-- It uses AI reasoning (not regex) to classify columns as dimensions, time dimensions, or facts
-- It generates contextually relevant synonyms based on domain understanding
-- It writes and **tests** SQL verified queries against Snowflake, fixing failures automatically
-- It creates rich custom instructions for text-to-SQL accuracy
-
-**Agentic workflow (8 phases):**
+#### End-to-End Flow
 
 ```
-User: "Generate a Cortex Analyst model for fct_sales"
-      │
-      ▼
-┌─────────────────────────────────────────────────────────┐
-│  Phase 1: Context Gathering                             │
-│  ─ Read model SQL, schema.yml, existing Semantic Views  │
-├─────────────────────────────────────────────────────────┤
-│  Phase 2: Data Exploration (MCP)                        │
-│  ─ Query column types, cardinality, sample values       │
-│  ─ Analyze table relationships and join patterns        │
-├─────────────────────────────────────────────────────────┤
-│  Phase 3: Intelligent Classification (AI Reasoning)     │
-│  ─ Classify as dimensions / time_dimensions / facts     │
-│  ─ Assign default_aggregation (SUM, AVG, COUNT, MAX)    │
-├─────────────────────────────────────────────────────────┤
-│  Phase 4: Synonym Generation                            │
-│  ─ 2-5 business-friendly synonyms per column            │
-├─────────────────────────────────────────────────────────┤
-│  Phase 5: Verified Query Generation + Testing           │
-│  ─ Write 3-5 SQL queries for common business questions  │
-│  ─ Test each via MCP, fix failures, record working SQL  │
-├─────────────────────────────────────────────────────────┤
-│  Phase 6: Custom Instructions                           │
-│  ─ Domain rules for text-to-SQL accuracy                │
-├─────────────────────────────────────────────────────────┤
-│  Phase 7: Assemble YAML                                 │
-│  ─ Write to cortex-analyst-models/semantic_<name>.yaml  │
-├─────────────────────────────────────────────────────────┤
-│  Phase 8: Upload + Test                                 │
-│  ─ PUT to @stage, test with CORTEX_ANALYST_MESSAGE()    │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  1. MART MODEL EXISTS                                           │
+│     models/marts/<source>/fct_<name>.sql                        │
+│     (table in DBT_MARTS schema — your analytics-ready data)     │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  2. CREATE SEMANTIC VIEW MODEL                                   │
+│     models/semantic/<name>/sem_<name>.sql                        │
+│                                                                  │
+│     {{ config(materialized='semantic_view') }}                   │
+│     TABLES(t AS {{ ref('fct_<name>') }})                        │
+│     DIMENSIONS(t.col AS col COMMENT = '...')                    │
+│     METRICS(SUM(t.col) AS metric COMMENT = '...')               │
+│     COMMENT = '...'                                              │
+│                                                                  │
+│     -- AI_SQL_GENERATION                                         │
+│     -- Instructions for Cortex Analyst text-to-SQL               │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  3. ADD VERIFIED QUERIES                                         │
+│     models/semantic/<name>/sem_<name>.yml                        │
+│                                                                  │
+│     config:                                                      │
+│       meta:                                                      │
+│         verified_queries:                                        │
+│           - name: total_by_category                              │
+│             question: "What are total sales by category?"        │
+│             sql: "SELECT ... FROM ... GROUP BY ..."              │
+│             verified_by: author                                  │
+│             verified_at: 1745452800                               │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  4. dbt build --select sem_<name>                                │
+│                                                                  │
+│     Step 4a: Materialization creates the semantic view           │
+│              CREATE OR REPLACE SEMANTIC VIEW                     │
+│              DBT_DEV.SEMANTIC.SEM_<NAME>                         │
+│              TABLES(...) DIMENSIONS(...) METRICS(...)             │
+│                                                                  │
+│     Step 4b: Post-hook fires publish_verified_queries()           │
+│              Reads VQs from .yml meta config                     │
+│              Reads existing YAML from semantic view              │
+│              Appends verified_queries YAML block                 │
+│              Recreates semantic view with VQs included           │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  5. CORTEX ANALYST QUERIES THE SEMANTIC VIEW                     │
+│     Users ask natural language questions                         │
+│     Cortex Analyst reads dimensions, metrics, and verified       │
+│     queries from the semantic view to generate accurate SQL      │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Skill location:** `.agents/skills/cortex-analyst-semantic-model/SKILL.md`
+#### File Structure (per semantic view)
 
-**Output directory:** `cortex-analyst-models/`
-
-**Deterministic fallback** (batch mode / no MCP):
-```bash
-# Single model
-python scripts/generate_cortex_analyst_model.py --model fct_sales
-
-# Batch all marts
-python scripts/generate_cortex_analyst_model.py --batch
-
-# Upload to Snowflake stage
-python scripts/upload_semantic_model_to_stage.py --all
+```
+models/semantic/sem_revenue_analysis/
+├── sem_revenue_analysis.sql    # DDL-like syntax (TABLES/DIMENSIONS/METRICS)
+├── sem_revenue_analysis.yml    # Verified queries + model description
+└── sem_revenue_analysis.md     # Optional: documentation
 ```
 
-**Test with Cortex Analyst:**
-```sql
-SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE(
-  '@DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS/semantic_sales.yaml',
-  [{'role': 'user', 'content': 'What were total sales by category last month?'}]
-);
-```
+#### Key Components
 
-**Key files:**
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| Package | `dbt_packages/dbt_semantic_view/` | `semantic_view` materialization (Snowflake-Labs) |
+| Post-hook macro | `macros/publish_verified_queries.sql` | Appends verified queries to semantic view |
+| Semantic models | `models/semantic/<name>/` | DDL-like SQL + YAML with verified queries |
+| AI instructions | Inside `.sql` as comments | Guide Cortex Analyst text-to-SQL |
+| Schema config | `dbt_project.yml` | `+materialized: semantic_view` + `+post_hook` |
 
-| File | Purpose |
-|------|---------|
-| `.agents/skills/cortex-analyst-semantic-model/SKILL.md` | Agentic skill (guides AI agent through 8 phases) |
-| `.github/instructions/cortex-analyst-model.instructions.md` | Auto-activates on mart model / YAML edits |
-| `.github/prompts/suggest-cortex-analyst-model.prompt.md` | Clickable Copilot prompt |
-| `scripts/generate_cortex_analyst_model.py` | Deterministic fallback generator |
-| `scripts/upload_semantic_model_to_stage.py` | Upload YAML to Snowflake stage |
-| `cortex-analyst-models/` | Generated YAML output directory |
-| `Sample-semantic-view-cortex-analyst/` | Reference YAML examples |
+#### How to Add a Semantic View for a New Mart
+
+1. **Ensure the mart model exists** and has been built (`dbt build --select fct_<name>`)
+
+2. **Create subfolder** `models/semantic/sem_<name>/`
+
+3. **Write the SQL model** (`sem_<name>.sql`) with DDL-like syntax:
+   ```sql
+   {{ config(materialized='semantic_view', schema='SEMANTIC') }}
+
+   TABLES (
+     t AS {{ ref('fct_<name>') }}
+   )
+   DIMENSIONS (
+     t.column AS column COMMENT = 'Description'
+   )
+   METRICS (
+     SUM(t.amount) AS total_amount COMMENT = 'Total amount'
+   )
+   COMMENT = 'Description for Cortex Analyst'
+
+   -- AI_SQL_GENERATION
+   -- Instructions for text-to-SQL accuracy
+   ```
+
+4. **Add verified queries** (`sem_<name>.yml`):
+   ```yaml
+   version: 2
+   models:
+     - name: sem_<name>
+       description: "Semantic view for ..."
+       config:
+         meta:
+           verified_queries:
+             - name: query_name
+               question: "Business question?"
+               verified_at: 1745452800
+               verified_by: author
+               sql: "SELECT ... FROM t GROUP BY ..."
+   ```
+
+5. **Build and validate**:
+   ```bash
+   dbt build --select sem_<name>
+   ```
+
+6. **Verify in Snowflake**:
+   ```sql
+   SHOW SEMANTIC VIEWS IN SCHEMA DBT_DEV.SEMANTIC;
+   SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('DBT_DEV.SEMANTIC.SEM_<NAME>');
+   ```
 
 ### Reusable Copilot Prompts
 
@@ -867,7 +923,7 @@ A custom agent `@dbt-semantic-advisor` defined in `.github/agents/dbt-semantic-a
 
 ### Semantic View Generator Script
 
-A Python script at `scripts/generate_semantic_view.py` that automates semantic view scaffolding by connecting to Snowflake, profiling column data, and auto-classifying columns.
+A Python helper script at `scripts/generate_semantic_view.py` that connects to Snowflake, profiles column data, and auto-classifies columns as dimensions or metrics. Use this to understand column types before writing your DDL-like semantic view model.
 
 #### Prerequisites
 
@@ -880,86 +936,14 @@ Ensure your Snowflake env vars are set (same as dbt — `SNOWFLAKE_ACCOUNT`, `SN
 #### Usage
 
 ```bash
-# Generate semantic view artifacts for a mart model
+# Profile columns and get dimension/metric classification
 python scripts/generate_semantic_view.py --model fct_orders
 
 # Preview without writing files (dry run)
 python scripts/generate_semantic_view.py --model fct_orders --dry-run
 
-# Custom analysis name (default: derived from model name)
-python scripts/generate_semantic_view.py --model fct_orders --analysis-name revenue_analysis
-
 # Skip Snowflake profiling (uses schema.yml metadata only)
 python scripts/generate_semantic_view.py --model fct_orders --skip-profile
-```
-
-#### What It Generates
-
-For `--model fct_orders`, the script creates:
-
-**1. `models/semantic/sem_orders_analysis.sql`** — dbt view model:
-```sql
-{{ config(materialized='view', schema='SEMANTIC') }}
-
-with source as (
-    select * from {{ ref('fct_orders') }}
-)
-
-select
-    -- Dimensions
-    order_status,
-    customer_segment,
-    order_date,
-    order_month,
-    order_year,
-    -- Metrics
-    order_amount,
-    discount_amount,
-    quantity
-from source
-```
-
-**2. `models/semantic/schema.yml`** — metadata block:
-```yaml
-models:
-  - name: sem_orders_analysis
-    description: "Semantic view for orders analysis"
-    meta:
-      snowflake_semantic_view:
-        target_database: DBT_DEV
-        target_schema: SEMANTIC
-        dimensions:
-          - name: order_status
-            synonyms: ["status", "order state"]
-            data_type: VARCHAR
-          - name: order_date
-            synonyms: ["date", "when"]
-            data_type: DATE
-        metrics:
-          - name: total_revenue
-            expression: "SUM(order_amount)"
-            description: "Total order revenue"
-          - name: avg_order_value
-            expression: "AVG(order_amount)"
-            description: "Average order value"
-```
-
-**3. `CREATE SEMANTIC VIEW` DDL** (printed to stdout or written to file):
-```sql
-CREATE OR REPLACE SEMANTIC VIEW DBT_DEV.SEMANTIC.SEM_ORDERS_ANALYSIS
-  AS SELECT * FROM DBT_DEV.SEMANTIC.SEM_ORDERS_ANALYSIS
-  COMMENT = 'Semantic view for orders analysis'
-  COLUMNS (
-    order_status DIMENSION SYNONYMS ('status', 'order state'),
-    customer_segment DIMENSION,
-    order_date DIMENSION SYNONYMS ('date', 'when'),
-    order_amount METRIC SUM SYNONYMS ('revenue', 'sales'),
-    quantity METRIC SUM
-  )
-  METRICS (
-    total_revenue AS SUM(order_amount),
-    avg_order_value AS AVG(order_amount)
-  );
 ```
 
 #### How Classification Works
@@ -974,6 +958,8 @@ Then applies heuristic rules:
 - **Metric**: Numeric columns that aren't keys (no `_id`, `_key` suffix)
 - **Time dimension**: DATE/TIMESTAMP columns
 - **Skip**: High-cardinality strings (names, URLs), key columns
+
+Use the classification output to write your `sem_*.sql` model with the correct DIMENSIONS/METRICS blocks.
 
 ## Medallion Architecture Agent
 

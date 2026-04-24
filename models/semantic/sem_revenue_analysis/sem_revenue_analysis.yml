@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: sem_revenue_analysis
+    description: >
+      Semantic view for sales analytics built from fct_sales.
+      Grain: one row per (sales_date, maker, item_category).
+      Enables Cortex Analyst natural language querying over revenue data.
+    config:
+      meta:
+        verified_queries:
+          - name: total_revenue_by_maker
+            question: "What is the total revenue by maker?"
+            verified_at: 1745452800
+            verified_by: author
+            sql: >
+              SELECT maker, SUM(total_sales) AS total_revenue
+              FROM sales
+              GROUP BY maker
+              ORDER BY total_revenue DESC
+          - name: daily_sales_trend
+            question: "Show the daily sales trend"
+            verified_at: 1745452800
+            verified_by: author
+            sql: >
+              SELECT sales_date, SUM(total_sales) AS total_revenue
+              FROM sales
+              GROUP BY sales_date
+              ORDER BY sales_date DESC
+              LIMIT 30
+          - name: revenue_by_category
+            question: "What is the revenue breakdown by item category?"
+            verified_at: 1745452800
+            verified_by: author
+            sql: >
+              SELECT item_category,
+                     SUM(total_sales) AS total_revenue,
+                     SUM(transaction_count) AS total_transactions
+              FROM sales
+              GROUP BY item_category
+              ORDER BY total_revenue DESC

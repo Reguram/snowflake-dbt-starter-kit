@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
+# ==============================================================================
+# DEPRECATED — This script is archived. Use Snowflake Semantic Views instead.
+# The project now uses the dbt_semantic_view package with publish_verified_queries()
+# post-hook. See models/semantic/ for the new approach.
+# ==============================================================================
 """
-Cortex Analyst Semantic Model Generator
-========================================
+Cortex Analyst Semantic Model Generator (DEPRECATED)
+=====================================================
 Generates Cortex Analyst YAML semantic model files from dbt mart models.
 Connects to Snowflake to profile columns, auto-classifies dimensions/facts,
 generates synonyms, sample_values, verified_queries, and custom_instructions.
+
+DEPRECATED: Use Snowflake Semantic Views (models/semantic/) instead.
 
 Output YAML follows the Snowflake Cortex Analyst Semantic Model Specification:
   https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst/semantic-model-spec

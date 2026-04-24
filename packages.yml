@@ -4,3 +4,5 @@ packages:
 
   - package: metaplane/dbt_expectations
     version: "0.10.4"
+
+  - local: dbt_packages/dbt_semantic_view

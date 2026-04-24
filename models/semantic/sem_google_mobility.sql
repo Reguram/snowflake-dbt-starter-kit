@@ -1,3 +1,4 @@
+{{ config(enabled=false) }}
 {#
   ======================================================================
   Semantic View: SEM_GOOGLE_MOBILITY
