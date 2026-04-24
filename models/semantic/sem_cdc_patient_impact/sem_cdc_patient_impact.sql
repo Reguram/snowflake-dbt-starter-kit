@@ -19,11 +19,11 @@ DIMENSIONS (
     COMMENT = 'ISO 3166-1 country code',
   cdc.iso3166_2 AS iso3166_2
     COMMENT = 'ISO 3166-2 state/region code',
-  cdc."DATE" AS report_date
+  cdc.report_date AS "DATE"
     COMMENT = 'Date of the report',
-  cdc.date_month AS report_month
+  cdc.report_month AS date_month
     COMMENT = 'Report month derived from date',
-  cdc.date_year AS report_year
+  cdc.report_year AS date_year
     COMMENT = 'Report year derived from date'
 )
 METRICS (
