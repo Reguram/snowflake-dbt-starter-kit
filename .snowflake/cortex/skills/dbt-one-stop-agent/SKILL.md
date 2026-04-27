@@ -546,24 +546,295 @@ USE ROLE CORTEX_ANALYST_ROLE;
 
 ## End-to-End Pipeline
 
-> One-command pipeline: **Discover → Stage → Marts → Validate → Semantic Views → Agent**
+> Full pipeline: **Discover → Stage → Marts → Validate → Snowflake Semantic Views → Cortex Analyst YAML → Agent**
+>
+> **IMPORTANT**: When operating as a GitHub Copilot agent (not via MCP/CLI tools), you MUST
+> follow the inline step-by-step instructions below to create semantic views by reading/writing
+> files directly. Do NOT just reference tool names like `generate_domain_semantic_views()` — those
+> only work via the MCP server (`dbt_agent.py`). Instead, follow the manual file creation steps below.
+
+---
+
+### Pipeline Overview
+
+| Step | What Happens | Output |
+|------|-------------|--------|
+| 1. Discover & Profile | Connect to Snowflake, discover tables, profile columns | Source metadata |
+| 2. Generate Staging | Create `stg_<source>__<table>.sql` + `_sources.yml` + `schema.yml` | `models/staging/<source>/` |
+| 3. Generate Marts | Create `fct_<entity>.sql` / `dim_<entity>.sql` + `schema.yml` | `models/marts/<source>/` |
+| 4. dbt Build & Validate | `dbt build --select "source:<source>+"` | Materialized models + test results |
+| 5. Create Snowflake Semantic Views | Create `sem_<name>.sql` + `sem_<name>.yml` for each mart | `models/semantic/sem_<name>/` |
+| 6. Build Semantic Views | `dbt build --select tag:semantic` | Semantic views in Snowflake + verified queries attached |
+| 7. (Optional) Cortex Analyst YAML | Generate YAML for richer NL metadata (synonyms, sample_values) | `cortex-analyst-models/` |
+| 8. (Optional) Deploy Agent | CREATE AGENT SQL bundling semantic views | `ddl/cortex-analyst/deploy_agent_<domain>.sql` |
+
+---
+
+### Step 5 — Create Snowflake Semantic Views (DETAILED — follow these steps exactly)
+
+> **This is the step that was previously missing inline instructions.** When working as a
+> Copilot agent, you MUST create these files manually — do NOT skip to Cortex Analyst YAML.
+> Snowflake Semantic Views are the primary mechanism for Cortex Analyst NL querying.
+
+For EACH mart model (`fct_*`, `dim_*`, `summary_*`) in `models/marts/<domain>/`:
+
+#### 5.1 — Read the mart model and its schema.yml
+
+```
+1. Read models/marts/<domain>/schema.yml → get column names, descriptions, tests
+2. Read models/marts/<domain>/fct_<entity>.sql → understand the SQL, grain, joins
+3. Identify: table alias to use in TABLES(), all columns for classification
+```
+
+#### 5.2 — Classify columns into dimensions and metrics
+
+Apply these rules to EACH column:
+
+| Column Pattern | Classification | Semantic View Section |
+|---------------|---------------|----------------------|
+| `*_date`, `*_at`, `*_timestamp`, `date`, `month`, `year` | Time dimension | `DIMENSIONS` |
+| `*_status`, `*_type`, `*_category`, `*_segment`, `*_flag`, `is_*`, `has_*` | Categorical dimension | `DIMENSIONS` |
+| `*_name`, `*_region`, `*_country`, `*_city`, `*_code`, `maker`, `brand` | Entity dimension | `DIMENSIONS` |
+| `*_amount`, `*_revenue`, `*_sales`, `*_cost`, `*_total`, `*_quantity`, `*_count` | Metric (SUM) | `METRICS` with `SUM()` |
+| `*_rate`, `*_pct`, `*_ratio`, `*_avg`, `average_*` | Metric (AVG) | `METRICS` with `AVG()` |
+| `*_key`, `*_id`, `*_sk` | Key — **SKIP** | Do not include |
+| `*_loaded_at`, `*_etl_*` | ETL — **SKIP** | Do not include |
+
+**Use the column descriptions from schema.yml + actual SQL context to resolve ambiguous cases.**
+
+#### 5.3 — Create the semantic view SQL file
+
+Create directory and file: `models/semantic/sem_<name>/sem_<name>.sql`
+
+**Template** (copy and adapt — do NOT deviate from this structure):
+
+```sql
+{{
+  config(
+    materialized = 'semantic_view',
+    schema = 'SEMANTIC',
+    tags = ['semantic', 'sem_<name>'],
+    post_hook = [
+      "{{ publish_verified_queries() }}"
+    ]
+  )
+}}
+
+TABLES (
+  t AS {{ ref('fct_<entity>') }}
+)
+DIMENSIONS (
+  t.<dim_col_1> AS <dim_col_1>
+    COMMENT = '<description from schema.yml or inferred>',
+  t.<dim_col_2> AS <dim_col_2>
+    COMMENT = '<description>'
+)
+METRICS (
+  t.<metric_alias> AS SUM(<metric_col>)
+    COMMENT = '<description>',
+  t.<metric_alias_2> AS AVG(<metric_col_2>)
+    COMMENT = '<description>'
+)
+COMMENT = '<One-line description of what this semantic view enables for Cortex Analyst>'
+
+- AI_SQL_GENERATION $$
+- <Instruction 1: map business terms to columns>
+- <Instruction 2: how to handle time queries>
+- <Instruction 3: default aggregations and orderings>
+$$
+```
+
+**Rules:**
+- The `config()` block uses `materialized = 'semantic_view'` — this is provided by `dbt_packages/dbt_semantic_view`
+- `schema = 'SEMANTIC'` is already set in `dbt_project.yml` for the semantic folder but include it explicitly
+- The `post_hook` calls `publish_verified_queries()` which reads verified queries from the `.yml` and attaches them
+- Use `{{ ref('fct_<entity>') }}` in `TABLES()` — NEVER hard-code database/schema names
+- The table alias (e.g., `t` or `sales`) is used in `DIMENSIONS()` and `METRICS()`
+- Every dimension and metric MUST have a `COMMENT`
+- `AI_SQL_GENERATION` block guides Cortex Analyst text-to-SQL behavior
+
+#### 5.4 — Create the semantic view YAML file
+
+Create: `models/semantic/sem_<name>/sem_<name>.yml`
+
+**Template:**
+
+```yaml
+version: 2
+
+models:
+  - name: sem_<name>
+    description: >
+      Semantic view for <domain> analytics built from <mart_model>.
+      Grain: one row per (<grain columns>).
+      Enables Cortex Analyst natural language querying over <domain> data.
+    config:
+      meta:
+        verified_queries:
+          - name: <descriptive_query_name_1>
+            question: "<Natural language business question>"
+            verified_at: <unix_timestamp_seconds>
+            verified_by: copilot_agent
+            sql: >
+              SELECT <dimension>, SUM(<metric>) AS total
+              FROM t
+              GROUP BY <dimension>
+              ORDER BY total DESC
+          - name: <descriptive_query_name_2>
+            question: "<Time-trend question>"
+            verified_at: <unix_timestamp_seconds>
+            verified_by: copilot_agent
+            sql: >
+              SELECT <date_dim>, SUM(<metric>) AS total
+              FROM t
+              GROUP BY <date_dim>
+              ORDER BY <date_dim> DESC
+              LIMIT 30
+          - name: <descriptive_query_name_3>
+            question: "<Dimensional breakdown question>"
+            verified_at: <unix_timestamp_seconds>
+            verified_by: copilot_agent
+            sql: >
+              SELECT <dim1>, <dim2>, SUM(<metric>) AS total
+              FROM t
+              GROUP BY <dim1>, <dim2>
+              ORDER BY total DESC
+```
+
+**Verified query rules:**
+- `sql` uses the **table alias** from `TABLES()` (e.g., `t` or `sales`), NOT the physical table name
+- `verified_at` is a Unix timestamp in seconds (use current epoch, e.g., `1745452800`)
+- Write 3–5 queries covering: summary, time trend, top-N, dimensional breakdown, filtered
+- If you have MCP access, test each query via `run_query()` first — only include passing queries
+
+#### 5.5 — Example: Complete semantic view for `fct_sales`
+
+**File: `models/semantic/sem_revenue_analysis/sem_revenue_analysis.sql`**
+```sql
+{{
+  config(
+    materialized = 'semantic_view',
+    schema = 'SEMANTIC',
+    tags = ['semantic', 'sem_revenue_analysis'],
+    post_hook = [
+      "{{ publish_verified_queries() }}"
+    ]
+  )
+}}
+
+TABLES (
+  sales AS {{ ref('fct_sales') }}
+)
+DIMENSIONS (
+  sales.sales_date AS sales_date
+    COMMENT = 'Date of sales activity',
+  sales.maker AS maker
+    COMMENT = 'Manufacturer or brand of the item sold',
+  sales.item_category AS item_category
+    COMMENT = 'Product category (Smartphone or Other)'
+)
+METRICS (
+  sales.total_revenue AS SUM(total_sales)
+    COMMENT = 'Total sales revenue',
+  sales.total_transactions AS SUM(transaction_count)
+    COMMENT = 'Total number of transactions',
+  sales.avg_price AS AVG(average_price)
+    COMMENT = 'Average item price'
+)
+COMMENT = 'Revenue analysis by maker, category, and time for Cortex Analyst'
+
+- AI_SQL_GENERATION $$
+- When users ask about "revenue", "sales", or "transactions", query this semantic view.
+- total_sales is the primary revenue metric — always use SUM aggregation.
+- For time-based queries, group by sales_date.
+- maker represents the manufacturer or brand.
+- item_category is either "Smartphone" or "Other".
+$$
+```
+
+**File: `models/semantic/sem_revenue_analysis/sem_revenue_analysis.yml`**
+```yaml
+version: 2
+
+models:
+  - name: sem_revenue_analysis
+    description: >
+      Semantic view for sales analytics built from fct_sales.
+      Grain: one row per (sales_date, maker, item_category).
+      Enables Cortex Analyst natural language querying over revenue data.
+    config:
+      meta:
+        verified_queries:
+          - name: total_revenue_by_maker
+            question: "What is the total revenue by maker?"
+            verified_at: 1745452800
+            verified_by: copilot_agent
+            sql: >
+              SELECT maker, SUM(total_sales) AS total_revenue
+              FROM sales
+              GROUP BY maker
+              ORDER BY total_revenue DESC
+          - name: daily_sales_trend
+            question: "Show the daily sales trend"
+            verified_at: 1745452800
+            verified_by: copilot_agent
+            sql: >
+              SELECT sales_date, SUM(total_sales) AS total_revenue
+              FROM sales
+              GROUP BY sales_date
+              ORDER BY sales_date DESC
+              LIMIT 30
+          - name: revenue_by_category
+            question: "What is the revenue breakdown by item category?"
+            verified_at: 1745452800
+            verified_by: copilot_agent
+            sql: >
+              SELECT item_category,
+                     SUM(total_sales) AS total_revenue,
+                     SUM(transaction_count) AS total_transactions
+              FROM sales
+              GROUP BY item_category
+              ORDER BY total_revenue DESC
+```
+
+#### 5.6 — Build the semantic views
+
+```bash
+# Compile first to catch Jinja errors
+dbt compile --select tag:semantic
+
+# Build — creates semantic views in Snowflake + attaches verified queries via post-hook
+dbt build --select tag:semantic
+```
+
+#### 5.7 — Verify in Snowflake (if MCP access available)
+
+```sql
+-- Check semantic views exist
+SHOW SEMANTIC VIEWS IN SCHEMA <DATABASE>.SEMANTIC;
+
+-- Read the full definition including verified queries
+SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('<DATABASE>.SEMANTIC.SEM_<NAME>');
+```
+
+---
 
 ### For an existing domain (marts already built):
 
 ```
 User: "Create semantic views and an agent for japan_ecomm_data"
 Agent:
-  1. Calls generate_domain_semantic_views(domain="japan_ecomm_data")
-     → Creates sem_*.sql + sem_*.yml for each mart model
-     → Auto-classifies dimensions vs metrics
-     → Generates 3-5 verified queries per semantic view
-  2. Calls run_dbt(command="build", select="tag:semantic")
+  1. Read models/marts/japan_ecomm_data/schema.yml → list all mart models and columns
+  2. For EACH mart model (fct_*, dim_*, summary_*):
+     a. Classify columns into dimensions vs metrics (Step 5.2 rules)
+     b. Create models/semantic/sem_<name>/sem_<name>.sql (Step 5.3 template)
+     c. Create models/semantic/sem_<name>/sem_<name>.yml (Step 5.4 template)
+  3. Run: dbt build --select tag:semantic
      → Materializes semantic views in Snowflake
      → publish_verified_queries() post-hook attaches verified queries
-  3. Calls create_domain_agent(domain="japan_ecomm_data", register_si=True)
-     → Generates CREATE AGENT SQL with all semantic views as tools
+  4. (Optional) Generate Cortex Agent SQL with all semantic views as tools
      → Output: ddl/cortex-analyst/deploy_agent_japan_ecomm_data.sql
-  4. Reports: agent SQL location, next steps (execute in Snowflake as DBT_ROLE)
+  5. Report: semantic views created, build results, next steps
 ```
 
 ### For a brand-new source:
@@ -571,26 +842,24 @@ Agent:
 ```
 User: "Onboard MY_DATABASE.MY_SCHEMA and create an agent"
 Agent:
-  1. Calls run_end_to_end_pipeline(
-       domain="my_source",
-       skip_discover=False,
-       source_database="MY_DATABASE",
-       source_schema="MY_SCHEMA",
-       register_si=True
-     )
-  2. Pipeline executes:
-     a. Discover → profile tables → generate staging + mart models
-     b. dbt build → compile, materialize, test all models
-     c. Generate semantic views for all marts
-     d. dbt build semantic → materialize + attach verified queries
-     e. Generate Cortex Agent SQL → ddl/cortex-analyst/deploy_agent_<domain>.sql
-  3. Reports: full pipeline output, agent SQL location, RBAC instructions
+  1. Profile source table (Step 1 from onboard-new-source)
+  2. Generate staging models: stg_<source>__<table>.sql + _sources.yml + schema.yml
+  3. Generate mart models: fct_<entity>.sql + schema.yml
+  4. Run: dbt build --select "source:<source>+"
+  5. For EACH mart model created in step 3:
+     a. Classify columns into dimensions vs metrics (Step 5.2 rules)
+     b. Create models/semantic/sem_<name>/sem_<name>.sql (Step 5.3 template)
+     c. Create models/semantic/sem_<name>/sem_<name>.yml (Step 5.4 template)
+  6. Run: dbt build --select tag:semantic
+  7. (Optional) Generate Cortex Analyst YAML for richer NL metadata
+  8. (Optional) Generate Cortex Agent SQL
+  9. Report: full pipeline output, agent SQL location, RBAC instructions
 ```
 
-### CLI Shortcuts
+### CLI Shortcuts (when using scripts directly)
 
 ```bash
-# Existing domain
+# Existing domain — via scripts
 python scripts/generate_semantic_views_for_domain.py --domain japan_ecomm_data
 dbt build --select tag:semantic
 python scripts/create_domain_agent.py --domain japan_ecomm_data --register-si
@@ -619,4 +888,5 @@ python scripts/end_to_end_pipeline.py --domain japan_ecomm_data --skip-discover 
 | Skill | Invoke with | When to use |
 |-------|------------|-------------|
 | `$onboard-new-source` | `$onboard-new-source` | Full pipeline: source → staging → marts → semantic model |
+| `$snowflake-semantic-view-creator` | `$snowflake-semantic-view-creator` | Detailed Snowflake Semantic View creation (dbt_semantic_view package) |
 | `$cortex-analyst-semantic-model` | `$cortex-analyst-semantic-model` | Standalone YAML generation for existing marts (full spec reference) |

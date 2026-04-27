@@ -244,16 +244,147 @@ Report:
 
 ---
 
-## Step 6 — Cortex Analyst Semantic Model (YAML)
+## Step 6 — Create Snowflake Semantic Views (REQUIRED)
+
+> **This step creates Snowflake-native Semantic Views** via the `dbt_semantic_view` package.
+> These are the PRIMARY mechanism for Cortex Analyst NL querying. Do NOT skip this step.
+> Step 7 (Cortex Analyst YAML) is OPTIONAL and provides richer NL metadata.
+
+For EACH mart model generated in Step 4, create a Snowflake Semantic View:
+
+### 6.1 — Classify columns from Step 1 profiling
+
+| Column Pattern | Classification | Section |
+|---------------|---------------|---------|
+| DATE/TIMESTAMP types, `*_date`, `*_at` | Time dimension | `DIMENSIONS` |
+| VARCHAR low-cardinality, `*_status`, `*_type`, `*_category` | Categorical dimension | `DIMENSIONS` |
+| VARCHAR entity, `*_name`, `*_region`, `*_country` | Entity dimension | `DIMENSIONS` |
+| NUMBER `*_amount`, `*_sales`, `*_total`, `*_count` | Metric (SUM) | `METRICS` |
+| NUMBER `*_rate`, `*_pct`, `*_ratio` | Metric (AVG) | `METRICS` |
+| `*_key`, `*_id`, `*_sk` | Key — SKIP | Exclude |
+| `*_loaded_at`, `*_etl_*` | ETL — SKIP | Exclude |
+
+### 6.2 — Create semantic view SQL
+
+Create: `models/semantic/sem_<entity>/sem_<entity>.sql`
+
+```sql
+{{
+  config(
+    materialized = 'semantic_view',
+    schema = 'SEMANTIC',
+    tags = ['semantic', 'sem_<entity>'],
+    post_hook = [
+      "{{ publish_verified_queries() }}"
+    ]
+  )
+}}
+
+TABLES (
+  t AS {{ ref('fct_<entity>') }}
+)
+DIMENSIONS (
+  t.<dim_col_1> AS <dim_col_1>
+    COMMENT = '<description from schema.yml or profiling>',
+  t.<dim_col_2> AS <dim_col_2>
+    COMMENT = '<description>'
+)
+METRICS (
+  t.<metric_alias> AS SUM(<metric_col>)
+    COMMENT = '<description>',
+  t.<metric_alias_2> AS AVG(<metric_col_2>)
+    COMMENT = '<description>'
+)
+COMMENT = '<What this semantic view enables for Cortex Analyst>'
+
+- AI_SQL_GENERATION $$
+- <Map business terms to columns>
+- <Default aggregations and orderings>
+- <How to handle time-based queries>
+$$
+```
+
+**Rules:**
+- Use `{{ ref('fct_<entity>') }}` in `TABLES()` — NEVER hard-code database/schema
+- Every dimension and metric MUST have a `COMMENT`
+- The table alias (e.g., `t`) is used in `DIMENSIONS()` and `METRICS()`
+- `AI_SQL_GENERATION` block guides Cortex Analyst text-to-SQL behavior
+
+### 6.3 — Create semantic view YAML with verified queries
+
+Create: `models/semantic/sem_<entity>/sem_<entity>.yml`
+
+```yaml
+version: 2
+
+models:
+  - name: sem_<entity>
+    description: >
+      Semantic view for <SOURCE_NAME> analytics built from fct_<entity>.
+      Grain: one row per (<grain columns>).
+      Enables Cortex Analyst natural language querying.
+    config:
+      meta:
+        verified_queries:
+          - name: summary_metric
+            question: "What is the total <metric>?"
+            verified_at: <unix_timestamp>
+            verified_by: copilot_agent
+            sql: >
+              SELECT SUM(<metric>) AS total
+              FROM t
+          - name: trend_by_date
+            question: "Show <metric> trend over time"
+            verified_at: <unix_timestamp>
+            verified_by: copilot_agent
+            sql: >
+              SELECT <date_dim>, SUM(<metric>) AS total
+              FROM t
+              GROUP BY <date_dim>
+              ORDER BY <date_dim> DESC
+          - name: breakdown_by_dimension
+            question: "<Metric> by <dimension>?"
+            verified_at: <unix_timestamp>
+            verified_by: copilot_agent
+            sql: >
+              SELECT <dim>, SUM(<metric>) AS total
+              FROM t
+              GROUP BY <dim>
+              ORDER BY total DESC
+```
+
+**Rules:**
+- `sql` uses the **table alias** from `TABLES()`, NOT the physical table name
+- Write 3–5 queries covering: summary, time trend, top-N, dimensional breakdown
+- If MCP access is available, test each query via `run_query()` first
+
+### 6.4 — Build semantic views
+
+```bash
+dbt build --select tag:semantic
+```
+
+This creates the semantic views in Snowflake AND attaches verified queries via the `publish_verified_queries()` post-hook.
+
+### 6.5 — Verify (if MCP access available)
+
+```sql
+SHOW SEMANTIC VIEWS IN SCHEMA <DATABASE>.SEMANTIC;
+SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('<DATABASE>.SEMANTIC.SEM_<ENTITY>');
+```
+
+---
+
+## Step 7 — (OPTIONAL) Cortex Analyst Semantic Model (YAML)
 
 > **This step uses the `$cortex-analyst-semantic-model` skill workflow.**
-> We generate a Cortex Analyst YAML semantic model (NOT a Snowflake Semantic View DDL).
-> The YAML is richer — it includes synonyms, sample_values, verified_queries, and
-> custom_instructions for accurate natural language querying via `CORTEX_ANALYST_MESSAGE()`.
+> This is OPTIONAL — it generates a richer YAML with synonyms, sample_values, verified_queries,
+> and custom_instructions for even more accurate NL querying via `CORTEX_ANALYST_MESSAGE()`.
+> The Snowflake Semantic View from Step 6 is sufficient for most use cases.
 
 For each mart model generated in Step 4, follow these sub-steps:
 
-### 6.1 — Classify columns using Step 1 profile + AI reasoning
+### 7.1 — Classify columns using Step 1 profile + AI reasoning
 
 | Column Pattern | Classify As | YAML Section |
 |---------------|-------------|--------------|
@@ -270,14 +401,14 @@ For each mart model generated in Step 4, follow these sub-steps:
 **Do NOT just apply regex.** Consider the column's actual sample values, cardinality, description
 from schema.yml, and how business users would phrase questions about this data.
 
-### 6.2 — Generate synonyms for each column
+### 7.2 — Generate synonyms for each column
 
 For every dimension, time_dimension, and fact, generate 2–5 natural language synonyms:
 - Column name variations: `ITEM_CATEGORY` → `["category", "product type", "product category"]`
 - Domain-specific terms: `MAKER` → `["brand", "manufacturer", "vendor"]`
 - Business shorthand: `TOTAL_VIEWS` → `["views", "page views", "impressions"]`
 
-### 6.3 — Get sample values via MCP
+### 7.3 — Get sample values via MCP
 
 For each dimension and time_dimension, query Snowflake:
 ```sql
@@ -288,7 +419,7 @@ ORDER BY 1
 LIMIT 5;
 ```
 
-### 6.4 — Generate and TEST verified queries
+### 7.4 — Generate and TEST verified queries
 
 Create 3–5 verified queries covering common business question patterns:
 
@@ -303,7 +434,7 @@ Create 3–5 verified queries covering common business question patterns:
 **CRITICAL:** Run each query via MCP `run_query` / `run_sql` to verify it executes.
 If it fails, fix the SQL (double-quote column names in Snowflake). Only include passing queries.
 
-### 6.5 — Write custom_instructions
+### 7.5 — Write custom_instructions
 
 Write free-text instructions that help Cortex Analyst map natural language to SQL:
 - Which column maps to common business terms
@@ -311,7 +442,7 @@ Write free-text instructions that help Cortex Analyst map natural language to SQ
 - Default ordering for trend queries
 - Any gotchas (case sensitivity, null handling)
 
-### 6.6 — Assemble and write the YAML
+### 7.6 — Assemble and write the YAML
 
 Write the file to: `cortex-analyst-models/semantic_<SOURCE_NAME>_<entity>.yaml`
 
@@ -364,7 +495,7 @@ custom_instructions: |
 - `base_table.schema` = `DBT_MARTS` (where data lives)
 - Upload stage = `SEMANTIC` schema (where YAML files go)
 
-### 6.7 — Upload YAML to Snowflake stage
+### 7.7 — Upload YAML to Snowflake stage
 
 Use the pure-SQL TEMP TABLE → COPY INTO pattern (works in Cortex Code, no local filesystem needed):
 
@@ -394,7 +525,7 @@ LIST @<TARGET_DB>.SEMANTIC.CORTEX_ANALYST_MODELS PATTERN = '.*semantic_<SOURCE_N
 DROP TABLE IF EXISTS <TARGET_DB>.SEMANTIC.TEMP_YAML_CONTENT;
 ```
 
-### 6.8 — Test with Cortex Analyst
+### 7.8 — Test with Cortex Analyst
 
 ```sql
 SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE(
@@ -405,7 +536,7 @@ SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE(
 
 If the response is incorrect, refine synonyms, verified_queries, or custom_instructions and re-upload.
 
-### 6.9 — (Optional) Deploy to Snowflake Intelligence
+### 7.9 — (Optional) Deploy to Snowflake Intelligence
 
 To make the semantic model visible in the Snowflake Intelligence UI:
 
@@ -440,7 +571,7 @@ ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
 
 ---
 
-## Step 7 — Final Checklist
+## Step 8 — Final Checklist
 
 Verify ALL of these before finishing:
 
