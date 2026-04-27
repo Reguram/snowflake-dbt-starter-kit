@@ -768,8 +768,9 @@ This project uses the [`Snowflake-Labs/dbt_semantic_view`](https://github.com/Sn
 │     METRICS(SUM(t.col) AS metric COMMENT = '...')               │
 │     COMMENT = '...'                                              │
 │                                                                  │
-│     -- AI_SQL_GENERATION                                         │
-│     -- Instructions for Cortex Analyst text-to-SQL               │
+│     - AI_SQL_GENERATION $$                                       │
+│     - Instructions for Cortex Analyst text-to-SQL                │
+│     $$                                                           │
 └────────────────────┬────────────────────────────────────────────┘
                      │
                      ▼
@@ -852,8 +853,9 @@ models/semantic/sem_revenue_analysis/
    )
    COMMENT = 'Description for Cortex Analyst'
 
-   -- AI_SQL_GENERATION
-   -- Instructions for text-to-SQL accuracy
+   - AI_SQL_GENERATION $$
+   - Instructions for text-to-SQL accuracy
+   $$
    ```
 
 4. **Add verified queries** (`sem_<name>.yml`):

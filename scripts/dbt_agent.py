@@ -1212,6 +1212,139 @@ st.dataframe(filtered_df.head(1000), use_container_width=True)
 
 
 # =============================================================================
+# END-TO-END PIPELINE TOOLS
+# =============================================================================
+
+def tool_generate_domain_semantic_views(conn, domain, overwrite=False, dry_run=False):
+    """Auto-generate Snowflake Semantic Views for ALL mart models in a domain.
+
+    Scans models/marts/<domain>/ for fct_*, dim_*, summary_* models, reads their
+    schema.yml, auto-classifies columns as dimensions vs metrics, and generates:
+      - models/semantic/sem_<name>/sem_<name>.sql  (DDL-like semantic view)
+      - models/semantic/sem_<name>/sem_<name>.yml  (verified queries + description)
+
+    Generated .sql includes publish_verified_queries() post-hook, so dbt build
+    will automatically attach verified queries to each semantic view.
+    """
+    script_path = SCRIPTS_DIR / "generate_semantic_views_for_domain.py"
+    if not script_path.exists():
+        return {"error": "generate_semantic_views_for_domain.py not found in scripts/"}
+
+    cmd = [sys.executable, str(script_path), "--domain", domain]
+    if overwrite:
+        cmd.append("--overwrite")
+    if dry_run:
+        cmd.append("--dry-run")
+
+    try:
+        result = subprocess.run(cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, timeout=120)
+        output = result.stdout + result.stderr
+        ctx.invalidate()
+        return {
+            "command": " ".join(cmd),
+            "success": result.returncode == 0,
+            "domain": domain,
+            "output": output[:4000],
+        }
+    except subprocess.TimeoutExpired:
+        return {"error": "Semantic view generation timed out"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def tool_create_domain_agent(conn, domain, database="DBT_DEV", register_si=False, dry_run=False):
+    """Create a Cortex Agent SQL that bundles ALL semantic views for a domain.
+
+    Scans models/semantic/ for semantic views that reference mart models in the
+    specified domain. Generates a CREATE AGENT SQL with all semantic views as
+    cortex_analyst_text_to_sql tools. Optionally includes Snowflake Intelligence
+    registration (ALTER SNOWFLAKE INTELLIGENCE ... ADD AGENT).
+
+    Output: ddl/cortex-analyst/deploy_agent_<domain>.sql
+    """
+    script_path = SCRIPTS_DIR / "create_domain_agent.py"
+    if not script_path.exists():
+        return {"error": "create_domain_agent.py not found in scripts/"}
+
+    cmd = [sys.executable, str(script_path), "--domain", domain, "--database", database]
+    if register_si:
+        cmd.append("--register-si")
+    if dry_run:
+        cmd.append("--dry-run")
+
+    try:
+        result = subprocess.run(cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, timeout=60)
+        output = result.stdout + result.stderr
+        return {
+            "command": " ".join(cmd),
+            "success": result.returncode == 0,
+            "domain": domain,
+            "agent_name": f"AGENT_{domain.upper()}",
+            "output_file": f"ddl/cortex-analyst/deploy_agent_{domain}.sql",
+            "output": output[:4000],
+        }
+    except subprocess.TimeoutExpired:
+        return {"error": "Agent creation timed out"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def tool_run_end_to_end_pipeline(conn, domain, skip_discover=True, register_si=False,
+                                 source_database="", source_schema="", source_name="",
+                                 overwrite=False, dry_run=False):
+    """Run the complete end-to-end pipeline for a domain.
+
+    Pipeline: Discover → Stage → Marts → dbt build → Semantic Views → dbt build semantic → Agent
+
+    If skip_discover=True (default), uses existing models in models/marts/<domain>/.
+    If skip_discover=False, requires source_database + source_schema to discover first.
+
+    Steps:
+      1. [Optional] Discover source tables → generate staging + mart models
+      2. [Optional] dbt build (staging + marts)
+      3. Generate semantic views with verified queries for all marts in domain
+      4. dbt build semantic views (post-hook attaches verified queries)
+      5. Generate Cortex Agent SQL bundling all semantic views
+      6. Report: agent SQL ready for execution in Snowflake
+    """
+    script_path = SCRIPTS_DIR / "end_to_end_pipeline.py"
+    if not script_path.exists():
+        return {"error": "end_to_end_pipeline.py not found in scripts/"}
+
+    cmd = [sys.executable, str(script_path), "--domain", domain]
+    if skip_discover:
+        cmd.append("--skip-discover")
+    if register_si:
+        cmd.append("--register-si")
+    if overwrite:
+        cmd.append("--overwrite")
+    if dry_run:
+        cmd.append("--dry-run")
+    if source_database:
+        cmd.extend(["--source-database", source_database])
+    if source_schema:
+        cmd.extend(["--source-schema", source_schema])
+    if source_name:
+        cmd.extend(["--source-name", source_name])
+
+    try:
+        result = subprocess.run(cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True, timeout=600)
+        output = result.stdout + result.stderr
+        ctx.invalidate()
+        return {
+            "command": " ".join(cmd),
+            "success": result.returncode == 0,
+            "domain": domain,
+            "agent_name": f"AGENT_{domain.upper()}",
+            "output": output[:6000],
+        }
+    except subprocess.TimeoutExpired:
+        return {"error": "End-to-end pipeline timed out (600s)"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# =============================================================================
 # TOOL REGISTRY
 # =============================================================================
 
@@ -1219,12 +1352,14 @@ st.dataframe(filtered_df.head(1000), use_container_width=True)
 _FILE_ONLY_TOOLS = {
     "project_context", "list_sources", "list_models", "read_model",
     "review_sql", "generate_model", "generate_streamlit_app",
+    "generate_domain_semantic_views", "create_domain_agent",
 }
 
 # Tools that require a live Snowflake connection for SQL execution
 _SQL_TOOLS = {
     "discover_source", "sample_data", "describe_table", "profile_data",
     "run_query", "generate_semantic_view", "check_data_quality", "run_dbt",
+    "run_end_to_end_pipeline",
 }
 
 
@@ -1314,6 +1449,41 @@ TOOLS = {
         "description": "Scaffold a Streamlit-in-Snowflake dashboard from a mart model.",
         "params": {"model_name": "string", "app_title": "string (optional)"},
     },
+    "generate_domain_semantic_views": {
+        "fn": tool_generate_domain_semantic_views,
+        "description": "Auto-generate Snowflake Semantic Views for ALL mart models in a domain. "
+                       "Scans models/marts/<domain>/, classifies dims/metrics, creates sem_*.sql + sem_*.yml "
+                       "with verified queries and publish_verified_queries() post-hook. "
+                       "Run dbt build --select tag:semantic after to materialize.",
+        "params": {"domain": "string — domain name (subfolder under models/marts/)",
+                   "overwrite": "bool (optional, default false) — overwrite existing semantic views",
+                   "dry_run": "bool (optional, default false) — preview without writing files"},
+    },
+    "create_domain_agent": {
+        "fn": tool_create_domain_agent,
+        "description": "Create a Cortex Agent SQL that bundles ALL semantic views for a domain. "
+                       "Generates CREATE AGENT with cortex_analyst_text_to_sql tools for each semantic view. "
+                       "Output: ddl/cortex-analyst/deploy_agent_<domain>.sql — execute in Snowflake to deploy.",
+        "params": {"domain": "string — domain name",
+                   "database": "string (default: 'DBT_DEV')",
+                   "register_si": "bool (optional) — include Snowflake Intelligence registration",
+                   "dry_run": "bool (optional)"},
+    },
+    "run_end_to_end_pipeline": {
+        "fn": tool_run_end_to_end_pipeline,
+        "description": "Run the COMPLETE end-to-end pipeline: Discover → Stage → Marts → dbt build → "
+                       "Semantic Views → dbt build semantic → Agent SQL. "
+                       "Use skip_discover=True (default) if staging/marts already exist. "
+                       "For NEW sources, set skip_discover=False and provide source_database + source_schema.",
+        "params": {"domain": "string — domain name (subfolder under models/marts/)",
+                   "skip_discover": "bool (default: True) — skip source discovery, use existing models",
+                   "register_si": "bool (optional) — include Snowflake Intelligence registration",
+                   "source_database": "string (optional) — required if skip_discover=False",
+                   "source_schema": "string (optional) — required if skip_discover=False",
+                   "source_name": "string (optional) — dbt source name",
+                   "overwrite": "bool (optional) — overwrite existing files",
+                   "dry_run": "bool (optional) — preview without executing"},
+    },
 }
 
 
@@ -1351,10 +1521,20 @@ Available tools:
 1. **Source Discovery**: Discover new Snowflake data sources and auto-generate staging models
 2. **Model Generation**: Create intermediate (silver) and marts (gold) models with proper naming
 3. **Semantic Views**: Auto-classify dimensions/metrics and generate CREATE SEMANTIC VIEW DDL
-4. **Code Review**: Check models against project conventions (naming, ref usage, tests)
-5. **Data Quality**: Run dbt tests, profile data for nulls/cardinality
-6. **dbt Operations**: Run, build, test, compile models
-7. **Streamlit Apps**: Generate data dashboards from mart models
+4. **Domain Semantic Views**: Batch-generate semantic views for ALL marts in a domain with verified queries
+5. **Cortex Agent Creation**: Generate Cortex Agent SQL bundling all semantic views for a domain
+6. **End-to-End Pipeline**: Run the full pipeline: Discover → Stage → Marts → Validate → Semantic → Agent
+7. **Code Review**: Check models against project conventions (naming, ref usage, tests)
+8. **Data Quality**: Run dbt tests, profile data for nulls/cardinality
+9. **dbt Operations**: Run, build, test, compile models
+10. **Streamlit Apps**: Generate data dashboards from mart models
+
+## RBAC / SECURITY
+
+- Use CORTEX_ANALYST_ROLE (least-privilege, read-only) for Cortex Copilot / Analyst / Intelligence
+- NEVER use ACCOUNTADMIN for Cortex sessions
+- Role hierarchy: ACCOUNTADMIN → DBT_ROLE (build) → CORTEX_ANALYST_ROLE (query)
+- Agent deployment uses DBT_ROLE; runtime querying uses CORTEX_ANALYST_ROLE
 
 ## CONVENTIONS
 
@@ -1375,6 +1555,28 @@ Available tools:
 4. Generate: create models using `generate_model()`
 5. Build: auto-run `run_dbt(command="build", select="model_name")` after generating
 6. Validate: check build output, report results
+
+## END-TO-END PIPELINE
+
+For a complete domain pipeline (Discover → Semantic → Agent), use these tools in sequence:
+
+### Existing domain (marts already exist):
+1. `generate_domain_semantic_views(domain="<name>")` — creates sem_*.sql + sem_*.yml for ALL marts
+2. `run_dbt(command="build", select="tag:semantic")` — materializes semantic views + attaches verified queries
+3. `create_domain_agent(domain="<name>", register_si=True)` — generates agent SQL bundling all semantic views
+4. Report: tell user to execute the generated SQL in Snowflake as DBT_ROLE (NOT ACCOUNTADMIN)
+
+### New source (discover from scratch):
+1. `run_end_to_end_pipeline(domain="<name>", skip_discover=False, source_database="...", source_schema="...", register_si=True)`
+2. This runs the FULL pipeline: discover → stage → marts → build → semantic → agent
+3. Report: agent SQL location and next steps
+
+### Or step-by-step for new source:
+1. `discover_source(source_database="...", source_schema="...", source_name="...")` — staging + marts
+2. `run_dbt(command="build", select="source:<name>+")` — build all layers
+3. `generate_domain_semantic_views(domain="<name>")` — semantic views
+4. `run_dbt(command="build", select="tag:semantic")` — materialize semantic views
+5. `create_domain_agent(domain="<name>", register_si=True)` — agent SQL
 
 ## SOURCE NAMING
 

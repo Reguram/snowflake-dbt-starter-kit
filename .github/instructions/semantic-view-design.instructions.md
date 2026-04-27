@@ -81,8 +81,9 @@ METRICS (
 )
 COMMENT = 'Description for Cortex Analyst'
 
--- AI_SQL_GENERATION
--- Instructions for Cortex Analyst text-to-SQL accuracy
+- AI_SQL_GENERATION $$
+- Instructions for Cortex Analyst text-to-SQL accuracy
+$$
 ```
 
 **Key rules:**

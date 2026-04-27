@@ -10,11 +10,12 @@ description: >
   Use when: building any dbt model, discovering new data sources, creating semantic models,
   deploying agents, enabling Snowflake Intelligence, reviewing code, checking data quality,
   or asking questions about the project.
-  Triggers: onboard, discover, build, generate, semantic model, cortex analyst, agent, intelligence.
+  Triggers: onboard, discover, build, generate, semantic model, cortex analyst, agent, intelligence,
+  pipeline, end-to-end, rbac, cortex role, semantic views for domain.
 user-invocable: true
 metadata:
   author: snowflake-dbt-starter-kit
-  version: "3.0"
+  version: "4.0"
 ---
 
 # dbt One-Stop Agent
@@ -29,8 +30,12 @@ metadata:
 | **Source Discovery** | Connects to any Snowflake database/schema, discovers tables, auto-generates staging models with proper naming, tests, and documentation |
 | **Model Generation** | Creates intermediate (silver) and marts (gold) models with context-aware SQL — reads existing models before generating |
 | **Cortex Analyst Semantic Models** | Generates YAML semantic models with synonyms, sample_values, verified_queries, and custom_instructions — uploaded to Snowflake stage for `CORTEX_ANALYST_MESSAGE()` NL querying |
+| **Domain Semantic Views** | Batch-generate semantic views for ALL marts in a domain with auto-classified dims/metrics and verified queries |
+| **Cortex Agent Creation** | Generate Cortex Agent SQL bundling all semantic views for a domain as `cortex_analyst_text_to_sql` tools |
+| **End-to-End Pipeline** | Full pipeline: Discover → Stage → Marts → Validate → Semantic Views → Agent — one command |
 | **Snowflake Agent Deployment** | Creates Cortex Agents (`CREATE AGENT`) wired to semantic models for text-to-SQL |
 | **Snowflake Intelligence** | Registers agents with Snowflake Intelligence for org-wide natural language querying in the Snowsight UI |
+| **RBAC / Security** | Least-privilege `CORTEX_ANALYST_ROLE` for Copilot/Analyst — never ACCOUNTADMIN |
 | **Code Review** | Static analysis against project conventions: naming, `ref()` usage, hard-coded schemas, missing tests |
 | **Data Quality** | Runs dbt tests, profiles columns for null rates and cardinality, validates data pipelines |
 | **Medallion Advising** | Suggests silver/gold models based on existing bronze data using Cortex LLM |
@@ -49,6 +54,10 @@ metadata:
 - User wants to run dbt commands
 - User asks about medallion architecture or layer design
 - User wants a Streamlit dashboard
+- User wants to run the full end-to-end pipeline (discover → semantic → agent)
+- User asks about semantic views for all marts in a domain
+- User asks about RBAC, roles, or security for Cortex Copilot
+- User wants to create a domain-level Cortex Agent
 
 ## Context-Awareness (CRITICAL)
 
@@ -99,6 +108,9 @@ python scripts/dbt_agent.py --mcp
 | `check_data_quality` | `select?` | Run dbt tests |
 | `run_dbt` | `command`, `select?`, `full_refresh?` | Execute dbt CLI commands |
 | `generate_streamlit_app` | `model_name`, `app_title?` | Scaffold Streamlit dashboard |
+| `generate_domain_semantic_views` | `domain`, `overwrite?`, `dry_run?` | Auto-generate semantic views for ALL marts in a domain |
+| `create_domain_agent` | `domain`, `database?`, `register_si?`, `dry_run?` | Create Cortex Agent SQL bundling all semantic views for a domain |
+| `run_end_to_end_pipeline` | `domain`, `skip_discover?`, `register_si?`, `source_database?`, `source_schema?`, `source_name?`, `overwrite?`, `dry_run?` | Full pipeline: Discover → Stage → Marts → Build → Semantic → Agent |
 
 ## Workflow Examples
 
@@ -477,6 +489,128 @@ SHOW SNOWFLAKE INTELLIGENCES;
 | 3. Test | `CORTEX_ANALYST_MESSAGE()` call | Validated NL → SQL response |
 | 4. Deploy Agent | `CREATE AGENT` with tool spec | Agent object in `SEMANTIC` schema |
 | 5. Register SI | `ALTER SNOWFLAKE INTELLIGENCE ADD AGENT` | Agent visible in Snowsight Intelligence UI |
+
+---
+
+## RBAC / Security for Cortex Copilot
+
+> **NEVER use ACCOUNTADMIN** for Cortex Copilot, Cortex Analyst, or Snowflake Intelligence.
+
+### Role Hierarchy
+
+```
+ACCOUNTADMIN  (one-time setup only)
+  └── DBT_ROLE  (dbt build, model deployment)
+        └── CORTEX_ANALYST_ROLE  (Cortex Copilot / Analyst / Intelligence)
+```
+
+### CORTEX_ANALYST_ROLE Permissions
+
+| Can | Cannot |
+|-----|--------|
+| SELECT from mart tables | Create/alter/drop ANY objects |
+| Read semantic views | Access staging or intermediate schemas |
+| Read staged YAML files | Modify source data |
+| Use the warehouse | Manage roles, users, or warehouses |
+| Invoke Cortex Agents | Access ACCOUNT_USAGE or ORGANIZATION_USAGE |
+| Query via Snowflake Intelligence | — |
+
+### Setup SQL
+
+Run `scripts/snowflake_cortex_rbac_setup.sql` as ACCOUNTADMIN (one-time):
+
+```sql
+USE ROLE ACCOUNTADMIN;
+CREATE ROLE IF NOT EXISTS CORTEX_ANALYST_ROLE;
+
+-- Read-only access to marts and semantic views
+GRANT USAGE ON DATABASE DBT_DEV TO ROLE CORTEX_ANALYST_ROLE;
+GRANT USAGE ON SCHEMA DBT_DEV.DBT_MARTS TO ROLE CORTEX_ANALYST_ROLE;
+GRANT SELECT ON ALL TABLES IN SCHEMA DBT_DEV.DBT_MARTS TO ROLE CORTEX_ANALYST_ROLE;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA DBT_DEV.DBT_MARTS TO ROLE CORTEX_ANALYST_ROLE;
+GRANT USAGE ON SCHEMA DBT_DEV.SEMANTIC TO ROLE CORTEX_ANALYST_ROLE;
+GRANT READ ON STAGE DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS TO ROLE CORTEX_ANALYST_ROLE;
+GRANT USAGE ON WAREHOUSE DBT_AGENT_WH TO ROLE CORTEX_ANALYST_ROLE;
+
+-- Hierarchy: DBT_ROLE inherits CORTEX_ANALYST_ROLE
+GRANT ROLE CORTEX_ANALYST_ROLE TO ROLE DBT_ROLE;
+```
+
+For Copilot users, set the session role:
+```sql
+USE ROLE CORTEX_ANALYST_ROLE;
+-- Or set as default: ALTER USER <user> SET DEFAULT_ROLE = 'CORTEX_ANALYST_ROLE';
+```
+
+---
+
+## End-to-End Pipeline
+
+> One-command pipeline: **Discover → Stage → Marts → Validate → Semantic Views → Agent**
+
+### For an existing domain (marts already built):
+
+```
+User: "Create semantic views and an agent for japan_ecomm_data"
+Agent:
+  1. Calls generate_domain_semantic_views(domain="japan_ecomm_data")
+     → Creates sem_*.sql + sem_*.yml for each mart model
+     → Auto-classifies dimensions vs metrics
+     → Generates 3-5 verified queries per semantic view
+  2. Calls run_dbt(command="build", select="tag:semantic")
+     → Materializes semantic views in Snowflake
+     → publish_verified_queries() post-hook attaches verified queries
+  3. Calls create_domain_agent(domain="japan_ecomm_data", register_si=True)
+     → Generates CREATE AGENT SQL with all semantic views as tools
+     → Output: ddl/cortex-analyst/deploy_agent_japan_ecomm_data.sql
+  4. Reports: agent SQL location, next steps (execute in Snowflake as DBT_ROLE)
+```
+
+### For a brand-new source:
+
+```
+User: "Onboard MY_DATABASE.MY_SCHEMA and create an agent"
+Agent:
+  1. Calls run_end_to_end_pipeline(
+       domain="my_source",
+       skip_discover=False,
+       source_database="MY_DATABASE",
+       source_schema="MY_SCHEMA",
+       register_si=True
+     )
+  2. Pipeline executes:
+     a. Discover → profile tables → generate staging + mart models
+     b. dbt build → compile, materialize, test all models
+     c. Generate semantic views for all marts
+     d. dbt build semantic → materialize + attach verified queries
+     e. Generate Cortex Agent SQL → ddl/cortex-analyst/deploy_agent_<domain>.sql
+  3. Reports: full pipeline output, agent SQL location, RBAC instructions
+```
+
+### CLI Shortcuts
+
+```bash
+# Existing domain
+python scripts/generate_semantic_views_for_domain.py --domain japan_ecomm_data
+dbt build --select tag:semantic
+python scripts/create_domain_agent.py --domain japan_ecomm_data --register-si
+
+# New source — one command
+python scripts/end_to_end_pipeline.py \
+  --source-database MY_DB --source-schema MY_SCHEMA --register-si
+
+# Existing domain — one command
+python scripts/end_to_end_pipeline.py --domain japan_ecomm_data --skip-discover --register-si
+```
+
+### Pipeline Scripts Reference
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/generate_semantic_views_for_domain.py` | Batch-generate semantic views for all marts in a domain |
+| `scripts/create_domain_agent.py` | Create Cortex Agent SQL bundling all semantic views |
+| `scripts/end_to_end_pipeline.py` | Full orchestrator: discover → semantic → agent |
+| `scripts/snowflake_cortex_rbac_setup.sql` | CORTEX_ANALYST_ROLE setup (least-privilege) |
 
 ---
 

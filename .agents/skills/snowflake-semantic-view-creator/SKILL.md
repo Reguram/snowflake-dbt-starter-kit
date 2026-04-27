@@ -96,9 +96,10 @@ METRICS (
 )
 COMMENT = 'Description for Cortex Analyst'
 
--- AI_SQL_GENERATION
--- Instructions for Cortex Analyst text-to-SQL accuracy
--- Describe what questions this view answers and how to interpret metrics
+- AI_SQL_GENERATION $$
+- Instructions for Cortex Analyst text-to-SQL accuracy
+- Describe what questions this view answers and how to interpret metrics
+$$
 ```
 
 **Key rules:**
