@@ -44,10 +44,10 @@ METRICS (
 )
 COMMENT = 'CDC hospital patient impact — inpatient beds, ICU, staffing, and COVID admissions by US state and date'
 
-- AI_SQL_GENERATION $$
-- When users ask about "hospital capacity", "COVID hospitalizations", "ICU beds", or "patient impact", query this semantic view.
-- inpatient_beds is the total staffed inpatient bed count.
-- inpatient_beds_used_covid tracks beds occupied specifically by COVID patients.
-- For state-level analysis, group by state.
-- For time-based trends, group by report_date or report_month.
+AI_SQL_GENERATION $$
+When users ask about "hospital capacity", "COVID hospitalizations", "ICU beds", or "patient impact", query this semantic view.
+inpatient_beds is the total staffed inpatient bed count.
+inpatient_beds_used_covid tracks beds occupied specifically by COVID patients.
+For state-level analysis, group by state.
+For time-based trends, group by report_date or report_month.
 $$

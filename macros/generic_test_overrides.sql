@@ -7,9 +7,18 @@
 #}
 
 {% test accepted_values(model, column_name, values, quote=True) %}
+    {# Consume kwargs so Jinja doesn't reject unexpected keyword arguments #}
     {% set _extra = kwargs %}
-    {% set macro = adapter.dispatch('test_accepted_values', 'dbt') %}
-    {{ macro(model, column_name, values, quote) }}
+
+    select *
+    from {{ model }}
+    {% if execute %}
+    where {{ column_name }} not in (
+        {% for value in values %}
+            {% if quote %}'{{ value }}'{% else %}{{ value }}{% endif %}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    )
+    {% endif %}
 {% endtest %}
 
 {% test unique(model, column_name) %}

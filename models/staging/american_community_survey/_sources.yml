@@ -1,0 +1,74 @@
+version: 2
+
+sources:
+  - name: american_community_survey
+    description: "Tableau-ready American Community Survey (ACS) curations from Snowflake Marketplace. Contains demographic, economic, housing, and social data at city, county, state, and tract levels."
+    database: "TABLEAU_AMERICAN_COMMUNITY_SURVEY_DATASET"
+    schema: "CURATIONS"
+    tables:
+      - name: TABLEAU_ACS_CP02_US_CITIES_FUTURE
+        description: "Tableau Ready ACS CP02 for US Cities — selected social characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP02_US_COUNTIES_FUTURE
+        description: "Tableau Ready ACS CP02 for US Counties — selected social characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP02_US_STATES_FUTURE
+        description: "Tableau Ready ACS CP02 for US States — selected social characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP03_US_CITIES_FUTURE
+        description: "Tableau Ready ACS CP03 for US Cities — selected economic characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP03_US_COUNTIES_FUTURE
+        description: "Tableau Ready ACS CP03 for US Counties — selected economic characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP03_US_STATES_FUTURE
+        description: "Tableau Ready ACS CP03 for US States — selected economic characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP04_US_CITIES_FUTURE
+        description: "Tableau Ready ACS CP04 for US Cities — selected housing characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP04_US_COUNTIES_FUTURE
+        description: "Tableau Ready ACS CP04 for US Counties — selected housing characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP04_US_STATES_FUTURE
+        description: "Tableau Ready ACS CP04 for US States — selected housing characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP05_US_CITIES_FUTURE
+        description: "Tableau Ready ACS CP05 for US Cities — comparative social characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP05_US_COUNTIES_FUTURE
+        description: "Tableau Ready ACS CP05 for US Counties — comparative social characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_CP05_US_STATES_FUTURE
+        description: "Tableau Ready ACS CP05 for US States — comparative social characteristics estimates and percent estimates."
+      - name: TABLEAU_ACS_DETAIL_TABLES_US_COUNTIES_FUTURE
+        description: "Tableau Ready ACS Detail Tables for US Counties — cross-tabulations published for areas 65k and more."
+      - name: TABLEAU_ACS_DETAIL_TABLES_US_STATES_FUTURE
+        description: "Tableau Ready ACS Detail Tables for US States — cross-tabulations published for areas 65k and more."
+      - name: TABLEAU_ACS_DP02_US_CITIES_FUTURE
+        description: "Tableau Ready ACS DP02 for US Cities — selected social characteristics in the United States."
+      - name: TABLEAU_ACS_DP02_US_COUNTIES_FUTURE
+        description: "Tableau Ready ACS DP02 for US Counties — selected social characteristics in the United States."
+      - name: TABLEAU_ACS_DP02_US_STATES_FUTURE
+        description: "Tableau Ready ACS DP02 for US States — selected social characteristics in the United States."
+      - name: TABLEAU_ACS_DP03_US_CITIES_FUTURE
+        description: "Tableau Ready ACS DP03 for US Cities — selected economic characteristics."
+      - name: TABLEAU_ACS_DP03_US_COUNTIES_FUTURE
+        description: "Tableau Ready ACS DP03 for US Counties — selected economic characteristics."
+      - name: TABLEAU_ACS_DP03_US_STATES_FUTURE
+        description: "Tableau Ready ACS DP03 for US States — selected economic characteristics."
+      - name: TABLEAU_ACS_DP04_US_CITIES_FUTURE
+        description: "Tableau Ready ACS DP04 for US Cities — selected housing characteristics."
+      - name: TABLEAU_ACS_DP04_US_COUNTIES_FUTURE
+        description: "Tableau Ready ACS DP04 for US Counties — selected housing characteristics."
+      - name: TABLEAU_ACS_DP04_US_STATES_FUTURE
+        description: "Tableau Ready ACS DP04 for US States — selected housing characteristics."
+      - name: TABLEAU_ACS_DP05_US_CITIES
+        description: "Tableau Ready ACS DP05 for US Cities — ACS demographic and housing estimates."
+      - name: TABLEAU_ACS_DP05_US_CITIES_CAPITALS_LARGEST
+        description: "Tableau Ready ACS DP05 for US State Cities (Capitals and Largest) — ACS demographic and housing estimates with capital city flag."
+      - name: TABLEAU_ACS_DP05_US_CITIES_FUTURE
+        description: "Tableau Ready ACS DP05 for US Cities (Future) — ACS demographic and housing estimates."
+      - name: TABLEAU_ACS_DP05_US_COUNTIES
+        description: "Tableau Ready ACS DP05 for US Counties — ACS demographic and housing estimates."
+      - name: TABLEAU_ACS_DP05_US_COUNTIES_FUTURE
+        description: "Tableau Ready ACS DP05 for US Counties (Future) — ACS demographic and housing estimates."
+      - name: TABLEAU_ACS_DP05_US_STATES
+        description: "Tableau Ready ACS DP05 for US States — ACS demographic and housing estimates."
+      - name: TABLEAU_ACS_DP05_US_STATES_FUTURE
+        description: "Tableau Ready ACS DP05 for US States (Future) — ACS demographic and housing estimates."
+      - name: TABLEAU_ACS_DP05_US_TRACT_FUTURE
+        description: "Tableau Ready ACS DP05 for US Census Tracts — ACS demographic and housing estimates at tract level."
+      - name: TABLEAU_ACS_SUBJECT_TABLES_US_COUNTIES_FUTURE
+        description: "Tableau Ready ACS Subject Tables for US Counties — subject-level estimates and percent estimates."
+      - name: TABLEAU_ACS_SUBJECT_TABLES_US_STATES_FUTURE
+        description: "Tableau Ready ACS Subject Tables for US States — subject-level estimates and percent estimates."

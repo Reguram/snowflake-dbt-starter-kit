@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: sem_acs_capitals
+    description: >
+      Semantic view for ACS DP05 demographic estimates for US state capitals and largest cities.
+      Built from summary_acs_capitals_and_largest_cities. Grain: one row per (geo_id, year, variable_code).
+      Enables Cortex Analyst to compare population, race, age, and housing data between
+      capital cities and non-capital largest cities.
+    config:
+      meta:
+        verified_queries:
+          - name: capitals_vs_non_capitals_population
+            question: "How does total population compare between capital cities and non-capital cities?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT is_capital, SUM(estimate) AS total_estimate
+              FROM caps
+              WHERE label_value = 'Total population'
+              GROUP BY is_capital
+              ORDER BY total_estimate DESC
+
+          - name: demographics_by_capital_city
+            question: "What are the demographic estimates for each capital city?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT state, city, SUM(estimate) AS total_estimate
+              FROM caps
+              WHERE is_capital = 'Yes'
+              GROUP BY state, city
+              ORDER BY total_estimate DESC
+
+          - name: race_breakdown_capitals
+            question: "What is the racial composition of state capital cities?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT city, state, label_value, SUM(estimate) AS total_estimate
+              FROM caps
+              WHERE is_capital = 'Yes' AND label_category = 'RACE'
+              GROUP BY city, state, label_value
+              ORDER BY state, total_estimate DESC
+
+          - name: largest_cities_by_estimate
+            question: "Which are the largest non-capital cities by demographic estimate?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT state, city, SUM(estimate) AS total_estimate
+              FROM caps
+              WHERE is_capital = 'No'
+              GROUP BY state, city
+              ORDER BY total_estimate DESC
+              LIMIT 15

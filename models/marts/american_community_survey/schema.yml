@@ -1,0 +1,116 @@
+version: 2
+
+models:
+  - name: fct_acs_cities
+    description: "Fact table for ACS DP05 demographic and housing estimates at city/place level with geolocation. Materializes as a table in DBT_MARTS."
+    columns:
+      - name: acs_city_id
+        description: "Surrogate key (geo_id + year + variable_base)."
+        tests:
+          - not_null
+      - name: geo_id
+        description: "Geographic identifier for the city."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: state
+        description: "State name."
+      - name: county
+        description: "County name."
+      - name: city_or_place
+        description: "City or place name."
+      - name: estimate
+        description: "ACS estimate value."
+      - name: percent_estimate
+        description: "ACS percent estimate value."
+      - name: lat
+        description: "Latitude of the city."
+      - name: long
+        description: "Longitude of the city."
+
+  - name: fct_acs_demographics
+    description: "Fact table combining ACS DP05 demographic estimates for US counties and states — unified geography view."
+    columns:
+      - name: acs_demographics_id
+        description: "Surrogate key (geo_id + year + variable_base)."
+        tests:
+          - not_null
+      - name: geography_level
+        description: "Geographic level: 'county' or 'state'."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['county', 'state']
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: estimate
+        description: "ACS estimate value."
+      - name: percent_estimate
+        description: "ACS percent estimate value."
+
+  - name: summary_acs_capitals_and_largest_cities
+    description: "ACS DP05 estimates for US state capitals and largest cities — includes IS_CAPITAL flag."
+    columns:
+      - name: acs_capitals_id
+        description: "Surrogate key (geo_id + year + variable_base)."
+        tests:
+          - not_null
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: is_capital
+        description: "Whether the city is a state capital (Yes/No)."
+
+  - name: summary_acs_economic_by_county
+    description: "Aggregated ACS DP03 economic characteristic estimates rolled up by county, year, subject, and label category."
+    columns:
+      - name: summary_id
+        description: "Surrogate key (geo_id + year + subject + label_category)."
+        tests:
+          - not_null
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: total_estimate
+        description: "Sum of all estimate values within the grouping."
+      - name: variable_count
+        description: "Number of distinct variables in the grouping."
+
+  - name: summary_acs_housing_by_county
+    description: "Aggregated ACS DP04 housing characteristic estimates rolled up by county, year, subject, and label category."
+    columns:
+      - name: summary_id
+        description: "Surrogate key (geo_id + year + subject + label_category)."
+        tests:
+          - not_null
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: total_estimate
+        description: "Sum of all estimate values within the grouping."
+      - name: variable_count
+        description: "Number of distinct variables in the grouping."

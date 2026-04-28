@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: sem_acs_demographics
+    description: >
+      Semantic view for ACS DP05 demographic estimates combining US county and state levels.
+      Built from fct_acs_demographics. Grain: one row per (geo_id, year, variable_code, geography_level).
+      Enables Cortex Analyst to answer questions about population, race, age, and housing
+      at both county and state granularity.
+    config:
+      meta:
+        verified_queries:
+          - name: state_population_by_year
+            question: "What is the total population by state for each survey year?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT state, survey_year, SUM(estimate) AS total_population
+              FROM demo
+              WHERE geography_level = 'state' AND label_value = 'Total population'
+              GROUP BY state, survey_year
+              ORDER BY survey_year DESC, total_population DESC
+
+          - name: county_demographics_by_category
+            question: "What are the top 10 counties by total demographic estimate?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT state, county, SUM(estimate) AS total_estimate
+              FROM demo
+              WHERE geography_level = 'county'
+              GROUP BY state, county
+              ORDER BY total_estimate DESC
+              LIMIT 10
+
+          - name: race_breakdown_by_state
+            question: "What is the racial composition by state at the state level?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT state, label_value, SUM(estimate) AS total_estimate
+              FROM demo
+              WHERE geography_level = 'state' AND label_category = 'RACE'
+              GROUP BY state, label_value
+              ORDER BY state, total_estimate DESC
+
+          - name: avg_percent_estimate_by_category
+            question: "What is the average percent estimate by demographic category?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT label_category, AVG(percent_estimate) AS avg_pct_estimate
+              FROM demo
+              GROUP BY label_category
+              ORDER BY avg_pct_estimate DESC

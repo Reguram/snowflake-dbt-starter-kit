@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: sem_acs_economic_by_county
+    description: >
+      Semantic view for ACS DP03 selected economic characteristics aggregated by US county.
+      Built from summary_acs_economic_by_county. Grain: one row per (geo_id, year, subject, label_category).
+      Enables Cortex Analyst to answer questions about employment, income, commuting,
+      and poverty at the county level.
+    config:
+      meta:
+        verified_queries:
+          - name: total_economic_estimate_by_state
+            question: "What is the total economic estimate by state?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT state, SUM(total_estimate) AS total_economic_estimate
+              FROM econ
+              GROUP BY state
+              ORDER BY total_economic_estimate DESC
+
+          - name: top_counties_by_economic_estimate
+            question: "Which counties have the highest total economic estimates?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT state, county, SUM(total_estimate) AS total_economic_estimate
+              FROM econ
+              GROUP BY state, county
+              ORDER BY total_economic_estimate DESC
+              LIMIT 15
+
+          - name: economic_subject_breakdown
+            question: "What is the total estimate by economic subject area?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT subject, SUM(total_estimate) AS total_estimate
+              FROM econ
+              GROUP BY subject
+              ORDER BY total_estimate DESC
+
+          - name: avg_percent_estimate_by_category_year
+            question: "What is the average percent estimate by economic category and year?"
+            verified_at: 1745712000
+            verified_by: author
+            sql: >
+              SELECT survey_year, label_category, AVG(total_percent_estimate) AS avg_pct
+              FROM econ
+              GROUP BY survey_year, label_category
+              ORDER BY survey_year DESC, avg_pct DESC

@@ -1,0 +1,428 @@
+version: 2
+
+models:
+  - name: stg_american_community_survey__tableau_acs_cp02_us_cities_future
+    description: "Staged ACS CP02 selected social characteristics for US cities — includes geolocation (lat/long) and place identifiers."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier for the city/place."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: state
+        description: "State name or code."
+      - name: county
+        description: "County name or code."
+      - name: place
+        description: "Place name."
+      - name: value_e
+        description: "Estimate value."
+      - name: value_pe
+        description: "Percent estimate value."
+
+  - name: stg_american_community_survey__tableau_acs_cp03_us_cities_future
+    description: "Staged ACS CP03 selected economic characteristics for US cities."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_cp04_us_cities_future
+    description: "Staged ACS CP04 selected housing characteristics for US cities."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_cp05_us_cities_future
+    description: "Staged ACS CP05 comparative social characteristics for US cities."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp02_us_cities_future
+    description: "Staged ACS DP02 selected social characteristics for US cities."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp03_us_cities_future
+    description: "Staged ACS DP03 selected economic characteristics for US cities."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp04_us_cities_future
+    description: "Staged ACS DP04 selected housing characteristics for US cities."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp05_us_cities_future
+    description: "Staged ACS DP05 demographic and housing estimates for US cities (future schema)."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_cp02_us_counties_future
+    description: "Staged ACS CP02 selected social characteristics for US counties."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: state
+        description: "State name or code."
+      - name: county
+        description: "County name or code."
+
+  - name: stg_american_community_survey__tableau_acs_cp02_us_states_future
+    description: "Staged ACS CP02 selected social characteristics for US states."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_cp03_us_counties_future
+    description: "Staged ACS CP03 selected economic characteristics for US counties."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_cp03_us_states_future
+    description: "Staged ACS CP03 selected economic characteristics for US states."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_cp04_us_counties_future
+    description: "Staged ACS CP04 selected housing characteristics for US counties."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_cp04_us_states_future
+    description: "Staged ACS CP04 selected housing characteristics for US states."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_cp05_us_counties_future
+    description: "Staged ACS CP05 comparative social characteristics for US counties."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_cp05_us_states_future
+    description: "Staged ACS CP05 comparative social characteristics for US states."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_detail_tables_us_counties_future
+    description: "Staged ACS detail tables cross-tabulations for US counties."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_detail_tables_us_states_future
+    description: "Staged ACS detail tables cross-tabulations for US states."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp02_us_counties_future
+    description: "Staged ACS DP02 selected social characteristics for US counties — includes place identifier."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: place
+        description: "Place name or code."
+
+  - name: stg_american_community_survey__tableau_acs_dp02_us_states_future
+    description: "Staged ACS DP02 selected social characteristics at state level — includes county and tract geography."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: tract
+        description: "Census tract identifier."
+
+  - name: stg_american_community_survey__tableau_acs_dp03_us_counties_future
+    description: "Staged ACS DP03 selected economic characteristics for US counties."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp03_us_states_future
+    description: "Staged ACS DP03 selected economic characteristics for US states."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp04_us_counties_future
+    description: "Staged ACS DP04 selected housing characteristics for US counties."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp04_us_states_future
+    description: "Staged ACS DP04 selected housing characteristics for US states."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp05_us_counties
+    description: "Staged ACS DP05 demographic and housing estimates for US counties — includes variable-level metadata (variable_e, variable_pe, params)."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: variable_e
+        description: "Estimate variable name."
+      - name: variable_pe
+        description: "Percent estimate variable name."
+
+  - name: stg_american_community_survey__tableau_acs_dp05_us_counties_future
+    description: "Staged ACS DP05 demographic and housing estimates for US counties (future schema)."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp05_us_states
+    description: "Staged ACS DP05 demographic and housing estimates for US states — includes variable-level metadata."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: state
+        description: "State name or code."
+
+  - name: stg_american_community_survey__tableau_acs_dp05_us_states_future
+    description: "Staged ACS DP05 demographic and housing estimates for US states (future schema)."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_dp05_us_cities
+    description: "Staged ACS DP05 demographic and housing estimates for US cities — geographic dimension is CITY."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: city
+        description: "City name."
+
+  - name: stg_american_community_survey__tableau_acs_dp05_us_cities_capitals_largest
+    description: "Staged ACS DP05 for US state capital and largest cities — includes IS_CAPITAL flag."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: is_capital
+        description: "Flag indicating whether the city is a state capital."
+
+  - name: stg_american_community_survey__tableau_acs_dp05_us_tract_future
+    description: "Staged ACS DP05 demographic and housing estimates at census tract level."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+      - name: tract
+        description: "Census tract identifier."
+
+  - name: stg_american_community_survey__tableau_acs_subject_tables_us_counties_future
+    description: "Staged ACS subject tables for US counties — broad subject-level demographic summaries."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null
+
+  - name: stg_american_community_survey__tableau_acs_subject_tables_us_states_future
+    description: "Staged ACS subject tables for US states — broad subject-level demographic summaries."
+    columns:
+      - name: geo_id
+        description: "Geographic identifier."
+        tests:
+          - not_null
+      - name: year
+        description: "Survey year."
+        tests:
+          - not_null

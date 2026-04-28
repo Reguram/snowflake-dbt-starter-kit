@@ -30,10 +30,10 @@ METRICS (
 )
 COMMENT = 'Revenue analysis by maker, category, and time for Cortex Analyst'
 
-- AI_SQL_GENERATION $$
-- When users ask about "revenue", "sales", or "transactions", query this semantic view.
-- total_sales is the primary revenue metric — always use SUM aggregation.
-- For time-based queries, group by sales_date.
-- maker represents the manufacturer or brand.
-- item_category is either "Smartphone" or "Other".
+AI_SQL_GENERATION $$
+When users ask about "revenue", "sales", or "transactions", query this semantic view.
+total_sales is the primary revenue metric — always use SUM aggregation.
+For time-based queries, group by sales_date.
+maker represents the manufacturer or brand.
+item_category is either "Smartphone" or "Other".
 $$
