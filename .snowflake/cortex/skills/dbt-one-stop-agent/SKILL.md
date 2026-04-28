@@ -1,31 +1,67 @@
 ---
 name: dbt-one-stop-agent
 description: >
-  Unified, context-aware dbt orchestrator that routes to 50 specialized skills across the entire
+  Unified, context-aware dbt orchestrator that routes to 53 specialized skills across the entire
   Snowflake + dbt lifecycle: source discovery, staging/intermediate/marts model generation,
-  Cortex Analyst semantic model creation, Snowflake Agent deployment, Snowflake Intelligence
+  Snowflake Semantic View creation, Snowflake Agent deployment, Snowflake Intelligence
   registration, code review, data quality checks, medallion architecture advising, dbt CLI
   operations, Streamlit app scaffolding, Dynamic Tables, Iceberg, Snowpark, ML, data governance,
   cost analysis, security, and more.
   Always reads existing project state before generating code — produces models that fit the
   existing project rather than generic boilerplate. Delegates to specialized skills when deeper
   expertise is needed.
-  Use when: building any dbt model, discovering new data sources, creating semantic models,
+  Use when: building any dbt model, discovering new data sources, creating semantic views,
   deploying agents, enabling Snowflake Intelligence, reviewing code, checking data quality,
   or asking questions about the project — or ANY Snowflake platform task.
-  Triggers: onboard, discover, build, generate, semantic model, cortex analyst, agent, intelligence,
+  Triggers: onboard, discover, build, generate, semantic view, cortex analyst, agent, intelligence,
   pipeline, end-to-end, rbac, cortex role, semantic views for domain.
 user-invocable: true
 metadata:
   author: snowflake-dbt-starter-kit
-  version: "5.0"
+  version: "5.1"
 ---
 
 # dbt One-Stop Agent
 
-> **Unified orchestrator** that combines 50 specialized skills for the entire dbt + Snowflake
+> **Unified orchestrator** that combines 53 specialized skills for the entire dbt + Snowflake
 > lifecycle. Handles tasks directly when it can, delegates to specialized skills when deeper
 > expertise is needed. One entry point for everything.
+
+---
+
+## CRITICAL: Delegation Protocol
+
+> **This section is mandatory.** Follow it exactly whenever routing to another skill.
+
+When delegating to another skill, you **MUST**:
+
+1. **Read the skill file first** — Call `read_file` on `.agents/skills/<skill-name>/SKILL.md` BEFORE generating any output for that task. Never guess what a skill does from the routing table alone.
+2. **Follow that skill's instructions completely** — The delegated skill is authoritative for its domain. Do not override or simplify its steps.
+3. **Return here only for chaining** — If the delegated skill completes and another skill is needed for the next step (e.g., after `onboard-bronze-layer`, chain to `onboard-gold-layer`), return to this routing table to identify the next skill.
+4. **Never skip delegation** — If the routing table says "Delegate", you MUST load the skill. Do not attempt to handle it inline using general knowledge.
+5. **Report which skill was used** — In your response, briefly note which skill(s) you delegated to so the user has traceability.
+
+### Delegation command pattern
+```
+→ Matched skill: <skill-name>
+→ Action: read_file(".agents/skills/<skill-name>/SKILL.md")
+→ Follow its instructions, then return here if chaining is needed
+```
+
+---
+
+## Execution Modes: MCP Server vs Copilot Agent
+
+> **Important:** This skill operates in two distinct modes. Know which mode you are in.
+
+| Mode | How to detect | Tool availability | File creation |
+|------|--------------|-------------------|---------------|
+| **MCP Server mode** | Running via `dbt_agent.py --mcp` or MCP tools are available (e.g., `generate_model`, `discover_source`, `run_dbt`) | All tools in the "Available Tools" table below work | Use MCP tools directly |
+| **Copilot Agent mode** | Running in VS Code Copilot Chat — NO MCP tools available | Only `read_file`, `create_file`, `replace_string_in_file`, terminal commands | Create files manually using templates in this skill. Run dbt via terminal commands |
+
+**Rule:** When you reference a tool like `generate_domain_semantic_views()` or `run_dbt()`, verify the tool is actually available. If not, fall back to the inline step-by-step instructions (e.g., Step 5 for semantic views) and terminal commands (e.g., `dbt build --select tag:semantic`).
+
+---
 
 ## What This Skill Does
 
@@ -33,11 +69,11 @@ metadata:
 |-----------|-------------|
 | **Source Discovery** | Connects to any Snowflake database/schema, discovers tables, auto-generates staging models with proper naming, tests, and documentation |
 | **Model Generation** | Creates intermediate (silver) and marts (gold) models with context-aware SQL — reads existing models before generating |
-| **Cortex Analyst Semantic Models** | Generates YAML semantic models with synonyms, sample_values, verified_queries, and custom_instructions — uploaded to Snowflake stage for `CORTEX_ANALYST_MESSAGE()` NL querying |
+| **Snowflake Semantic Views** | Creates Snowflake-native Semantic Views via `dbt_semantic_view` package with auto-classified dimensions/metrics, verified queries, and AI_SQL_GENERATION instructions for Cortex Analyst NL querying |
 | **Domain Semantic Views** | Batch-generate semantic views for ALL marts in a domain with auto-classified dims/metrics and verified queries |
 | **Cortex Agent Creation** | Generate Cortex Agent SQL bundling all semantic views for a domain as `cortex_analyst_text_to_sql` tools |
 | **End-to-End Pipeline** | Full pipeline: Discover → Stage → Marts → Validate → Semantic Views → Agent — one command |
-| **Snowflake Agent Deployment** | Creates Cortex Agents (`CREATE AGENT`) wired to semantic models for text-to-SQL |
+| **Snowflake Agent Deployment** | Creates Cortex Agents (`CREATE AGENT`) wired to Snowflake Semantic Views for text-to-SQL |
 | **Snowflake Intelligence** | Registers agents with Snowflake Intelligence for org-wide natural language querying in the Snowsight UI |
 | **RBAC / Security** | Least-privilege `CORTEX_ANALYST_ROLE` for Copilot/Analyst — never ACCOUNTADMIN |
 | **Code Review** | Static analysis against project conventions: naming, `ref()` usage, hard-coded schemas, missing tests |
@@ -45,11 +81,11 @@ metadata:
 | **Medallion Advising** | Suggests silver/gold models based on existing bronze data using Cortex LLM |
 | **dbt Operations** | Run, build, test, compile, seed via dbt CLI |
 | **Streamlit Apps** | Generate Streamlit-in-Snowflake dashboards from mart models |
-| **Skill Routing** | Delegates to 50 specialized skills when tasks require deeper Snowflake platform expertise |
+| **Skill Routing** | Delegates to 53 specialized skills when tasks require deeper Snowflake platform expertise |
 
 ---
 
-## Skill Routing Table (50 Skills)
+## Skill Routing Table (53 Skills)
 
 > This agent acts as the **orchestrator**. For tasks it handles directly (model generation,
 > source discovery, semantic views, code review), it executes inline. For everything else,
@@ -62,6 +98,8 @@ metadata:
 3. **Delegate for depth** — When a task this agent handles needs deeper expertise (e.g., complex unit tests → `adding-dbt-unit-test`, advanced semantic view debugging → `semantic-view`)
 4. **Chain skills** — Multi-domain tasks may require reading multiple skills in sequence (e.g., onboard source → create semantic view → deploy agent → register with SI)
 
+> **Note on overlapping activations:** This skill's `applyTo` pattern (`models/**/*.sql`, `models/**/*.yml`) overlaps with other skills like `dbt-model-generation`, `code-review`, `data-quality`, and `semantic-view-design`. When multiple skills activate simultaneously, use **this skill as the router** — it will delegate to the specialized skill when needed. Do not follow conflicting instructions from multiple skills; let this orchestrator decide which skill applies.
+
 ### Category 1: dbt Core Workflow
 
 | Skill | Triggers | Delegation |
@@ -72,6 +110,9 @@ metadata:
 | `fetching-dbt-docs` | dbt docs, documentation, dbt features, dbt Cloud | **Delegate** — retrieves docs.getdbt.com pages in LLM-friendly format |
 | `creating-mermaid-dbt-dag` | DAG, lineage diagram, mermaid, visualize dependencies | **Delegate** — generates Mermaid flowcharts from manifest or code |
 | `onboard-new-source` | onboard, new source, discover, add source, build pipeline | **Handle directly** — core discovery workflow. Delegate for complex multi-source scenarios |
+| `onboard-bronze-layer` | bronze, staging model, new source table, profile table, stg_ model | **Delegate** — single-layer staging onboarding with column profiling and pattern inference |
+| `onboard-silver-layer` | silver, intermediate model, int_ model, join tables, business logic, enrich | **Delegate** — intermediate model generation with joins, dedup, and business logic. Advises skipping if not needed |
+| `onboard-gold-layer` | gold, marts, fact table, dimension table, fct_, dim_, surrogate key | **Delegate** — mart model generation with surrogate keys, clustering, and comprehensive tests |
 | `troubleshooting-dbt-job-errors` | job failed, dbt Cloud error, intermittent failure, logs | **Delegate** — specialized in dbt Cloud log analysis and Admin API |
 | `project-quality-audit` | audit, quality check, validate, pre-deploy, missing tests | **Handle directly** via `review_sql` + `check_data_quality`. Delegate for full-project scan |
 
@@ -81,11 +122,11 @@ metadata:
 |-------|----------|------------|
 | `building-dbt-semantic-layer` | semantic model, metric, MetricFlow, measure, dimension, `dbt sl` | **Delegate** — MetricFlow YAML is distinct from Snowflake Semantic Views |
 | `answering-natural-language-questions-with-dbt` | "What were total sales?", KPI, analytics question, NL query | **Delegate** — translates business questions to SQL via Semantic Layer |
-| `snowflake-semantic-view-creator` | semantic view, CREATE SEMANTIC VIEW, `dbt_semantic_view` package | **Handle directly** for creation. Delegate for advanced `dbt_semantic_view` package features |
+| `snowflake-semantic-view-creator` | semantic view, CREATE SEMANTIC VIEW, `dbt_semantic_view` package | **Handle directly** — primary approach for Cortex Analyst NL querying. Creates `sem_*.sql` + `sem_*.yml` via `dbt_semantic_view` package |
 | `semantic-view` | create/debug/fix/optimize semantic view, VQR, verified queries | **Delegate** — entry point for ALL semantic view operations including debugging |
 | `semantic-view-batch-sync` | batch semantic views, sync, enable Cortex Analyst for all marts | **Handle directly** via `generate_domain_semantic_views`. Delegate for complex sync scenarios |
 | `semantic-view-coverage-audit` | audit semantic views, coverage, missing views, orphaned, drift | **Handle directly** — scans marts vs semantic views. Delegate for detailed gap analysis |
-| `cortex-analyst-semantic-model` | Cortex Analyst YAML, semantic model YAML, `CORTEX_ANALYST_MESSAGE` | **Handle directly** — core YAML generation workflow. Delegate for full spec reference |
+| `cortex-analyst-semantic-model` | Cortex Analyst YAML, semantic model YAML, `CORTEX_ANALYST_MESSAGE` | **Delegate** — only if user explicitly requests standalone YAML files. Default path is Snowflake Semantic Views |
 | `cortex-agent` | create agent, debug agent, list agents, Snowflake Intelligence, SI | **Handle directly** for creation/registration. Delegate for agent debugging/evaluation |
 | `dashboard` | dashboard, KPI report, executive summary, widgets, charts | **Delegate** — specialized DashboardSpec JSON format |
 
@@ -179,8 +220,7 @@ User Request
     │
     ├── Source discovery
     ├── Model generation (stg/int/fct/dim)
-    ├── Semantic view creation
-    ├── Cortex Analyst YAML generation
+    ├── Snowflake Semantic View creation
     ├── Agent deployment + SI registration
     ├── Code review (static analysis)
     ├── dbt CLI commands
@@ -200,6 +240,9 @@ User Request
 | "Classify PII columns in my marts" | `data-governance` (→ sensitive-data-classification sub-skill) |
 | "Show me Snowflake costs by warehouse" | `cost-intelligence` |
 | "Train an ML model on my mart data" | `machine-learning` |
+| "Create a staging model for this table" | `onboard-bronze-layer` |
+| "Build an intermediate model joining orders and customers" | `onboard-silver-layer` |
+| "Create a fact table for sales" | `onboard-gold-layer` |
 | "Create an Iceberg table from my mart" | `iceberg` |
 | "Debug why my semantic view returns wrong SQL" | `semantic-view` |
 | "Migrate this project from Databricks to Snowflake" | `migrating-dbt-project-across-platforms` |
@@ -216,7 +259,7 @@ User Request
 - User asks to build, generate, or scaffold any dbt model
 - User wants to discover or onboard a new data source
 - User asks about project state ("what sources do I have?")
-- User wants a Cortex Analyst semantic model (YAML) for NL querying
+- User wants a Snowflake Semantic View for Cortex Analyst NL querying
 - User wants to create a Snowflake Agent for text-to-SQL
 - User wants to register an agent with Snowflake Intelligence
 - User asks for code review or data quality checks
@@ -269,6 +312,9 @@ User Request
 - User asks about **Cortex Code CLI** → delegate to `cortex-code-guide`
 - User wants an **interactive dashboard** (DashboardSpec) → delegate to `dashboard`
 - User wants **Snowflake integrations** (API, catalog, storage) → delegate to `integrations`
+- User wants a **bronze/staging model** for a single table → delegate to `onboard-bronze-layer`
+- User wants a **silver/intermediate model** with joins or business logic → delegate to `onboard-silver-layer`
+- User wants a **gold/marts fact or dimension table** → delegate to `onboard-gold-layer`
 
 ## Context-Awareness (CRITICAL)
 
@@ -311,9 +357,7 @@ python scripts/dbt_agent.py --mcp
 | `profile_data` | `table_or_model`, `max_columns?` | Profile: distinct counts, null rates, cardinality |
 | `run_query` | `sql` | Execute read-only SQL query |
 | `generate_model` | `layer`, `source_name`, `model_name`, `sql`, `description?` | Create/update any dbt model + schema.yml |
-| `generate_semantic_model` | `model_name`, `source_name?` | Generate Cortex Analyst YAML semantic model from a mart |
-| `upload_semantic_model` | `yaml_filename` | Upload YAML to `@<DB>.SEMANTIC.CORTEX_ANALYST_MODELS` stage |
-| `deploy_agent` | `model_name`, `agent_name?`, `warehouse?` | Create Snowflake Agent wired to semantic model YAML |
+| `deploy_agent` | `model_name`, `agent_name?`, `warehouse?` | Create Snowflake Agent wired to Snowflake Semantic Views |
 | `register_intelligence` | `agent_name` | Register agent with Snowflake Intelligence UI |
 | `review_sql` | `model_name?`, `sql_content?` | Static analysis for best practices |
 | `check_data_quality` | `select?` | Run dbt tests |
@@ -347,31 +391,29 @@ Agent:
   6. Auto-builds and reports results
 ```
 
-### Create a Cortex Analyst Semantic Model
+### Create a Snowflake Semantic View
 ```
-User: "Create a semantic model for fct_orders"
+User: "Create a semantic view for fct_orders"
 Agent:
   1. Reads fct_orders model and schema.yml
-  2. Profiles columns from Snowflake (cardinality, nulls, sample values)
-  3. Auto-classifies: time_dimensions (dates), dimensions (categories), facts (metrics)
-  4. Generates synonyms, sample_values per column
-  5. Writes 3-5 verified_queries and tests them via run_query()
-  6. Writes custom_instructions for text-to-SQL accuracy
-  7. Saves YAML to cortex-analyst-models/semantic_<name>.yaml
-  8. Uploads to @<DB>.SEMANTIC.CORTEX_ANALYST_MODELS stage
-  9. Tests with CORTEX_ANALYST_MESSAGE()
+  2. Classifies columns into dimensions vs metrics using naming patterns and types
+  3. Creates models/semantic/sem_orders/sem_orders.sql (TABLES/DIMENSIONS/METRICS DDL-like syntax)
+  4. Creates models/semantic/sem_orders/sem_orders.yml (verified queries + description)
+  5. Runs: dbt build --select sem_orders
+     → Creates Snowflake Semantic View + attaches verified queries via post-hook
+  6. Verifies: SHOW SEMANTIC VIEWS IN SCHEMA <DATABASE>.SEMANTIC
 ```
 
 ### Deploy a Snowflake Agent + Snowflake Intelligence
 ```
 User: "Deploy an agent for fct_orders and register with Snowflake Intelligence"
 Agent:
-  1. Verifies semantic model YAML exists on stage (or generates it first)
+  1. Verifies Snowflake Semantic View exists (or creates it first via snowflake-semantic-view-creator)
   2. Derives variables: DATABASE, SCHEMA, WAREHOUSE from profiles.yml/dbt_project.yml
-  3. Generates CREATE AGENT SQL with cortex_analyst_text_to_sql tool spec
+  3. Generates CREATE AGENT SQL with cortex_analyst_text_to_sql tool spec referencing the semantic view
   4. Executes CREATE AGENT via run_query()
   5. Registers with: ALTER SNOWFLAKE INTELLIGENCE ... ADD AGENT
-  6. Grants permissions: USAGE on agent, warehouse, stage, schema
+  6. Grants permissions: USAGE on agent, warehouse, semantic views, schema
   7. Verifies: DESCRIBE AGENT, test question via Snowflake Intelligence UI
 ```
 
@@ -410,7 +452,7 @@ Pass `force=True` (agent) or `force=true` (MCP) to write despite error-severity 
 - **Staging**: `stg_<source>__<table>` — 1:1 with source, rename columns to snake_case
 - **Intermediate**: `int_<description>` — joins, dedup, business logic
 - **Marts**: `fct_<entity>` (facts) or `dim_<entity>` (dimensions) — consumption-ready
-- **Semantic Models**: `cortex-analyst-models/semantic_<name>.yaml` — Cortex Analyst YAML files
+- **Semantic Views**: `models/semantic/sem_<name>/sem_<name>.sql` — Snowflake Semantic Views via `dbt_semantic_view` package
 - Always use `{{ ref() }}` and `{{ source() }}`
 - Use CTEs, not subqueries
 - Use `dbt_utils.generate_surrogate_key()` for surrogate keys
@@ -418,195 +460,63 @@ Pass `force=True` (agent) or `force=true` (MCP) to write despite error-severity 
 
 ---
 
-## Cortex Analyst Semantic Model Workflow
+## Snowflake Semantic View → Agent Workflow
 
-> This is the **agentic workflow** for creating Cortex Analyst YAML semantic models,
-> deploying Snowflake Agents, and registering with Snowflake Intelligence.
-> Reference: `$cortex-analyst-semantic-model` skill for full specification.
+> This is the workflow for creating Snowflake Semantic Views, deploying Cortex Agents
+> wired to those semantic views, and registering with Snowflake Intelligence.
+> Reference: `snowflake-semantic-view-creator` skill for detailed semantic view creation.
 
-### Phase 1: Generate YAML Semantic Model
+### Phase 1: Create Snowflake Semantic Views
 
 For a given mart model (e.g., `fct_orders`):
 
-#### 1.1 — Profile columns via MCP
+#### 1.1 — Read the mart model and its schema.yml
+
+```
+1. Read models/marts/<domain>/schema.yml → get column names, descriptions, tests
+2. Read models/marts/<domain>/fct_<entity>.sql → understand the SQL, grain, joins
+3. Identify: table alias to use in TABLES(), all columns for classification
+```
+
+#### 1.2 — Classify columns into dimensions and metrics
+
+Apply the **Column Classification Rules** (defined once in Step 5.2 below) to classify each column.
+
+#### 1.3 — Create the semantic view SQL + YAML files
+
+Follow the **templates and rules** in Steps 5.3 and 5.4 below.
+
+#### 1.4 — Build and verify
+
+```bash
+dbt compile --select tag:semantic
+dbt build --select tag:semantic
+```
 
 ```sql
--- Column metadata
-SELECT column_name, data_type, is_nullable
-FROM <DATABASE>.information_schema.columns
-WHERE table_schema = 'DBT_MARTS' AND table_name = '<TABLE>'
-ORDER BY ordinal_position;
-
--- Cardinality per column
-SELECT '<COL>' AS col, COUNT(DISTINCT "<COL>") AS distinct_count,
-       COUNT(*) - COUNT("<COL>") AS null_count
-FROM <DATABASE>.DBT_MARTS.<TABLE>;
-
--- Sample values
-SELECT DISTINCT "<COL>" FROM <DATABASE>.DBT_MARTS.<TABLE>
-WHERE "<COL>" IS NOT NULL LIMIT 5;
+SHOW SEMANTIC VIEWS IN SCHEMA <DATABASE>.SEMANTIC;
+SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('<DATABASE>.SEMANTIC.SEM_<NAME>');
 ```
 
-#### 1.2 — Classify columns
+### Phase 2: Deploy Snowflake Agent (using Semantic Views)
 
-| Column Pattern | YAML Section | default_aggregation |
-|---------------|--------------|--------------------|
-| DATE / TIMESTAMP | `time_dimensions` | — |
-| VARCHAR / BOOLEAN (low cardinality) | `dimensions` | — |
-| VARCHAR (high cardinality, e.g. names) | `dimensions` | — |
-| NUMBER / FLOAT (`*_amount`, `*_sales`, `*_total`, `*_count`) | `facts` | `sum` |
-| NUMBER / FLOAT (`*_rate`, `*_pct`, `*_ratio`, `*_avg`) | `facts` | `avg` |
-| Surrogate key (`*_id`, `*_key`) | `primary_key` | exclude from dims/facts |
-| ETL columns (`*_loaded`, `*_etl`) | skip | — |
-
-**Use AI reasoning on actual sample values** — don't rely on regex alone.
-
-#### 1.3 — Generate synonyms (2–5 per column)
-
-Examples:
-- `ITEM_CATEGORY` → `["category", "product type", "product category"]`
-- `MAKER` → `["brand", "manufacturer", "vendor"]`
-- `TOTAL_VIEWS` → `["views", "page views", "impressions"]`
-
-#### 1.4 — Generate and TEST verified queries
-
-Create 3–5 verified queries covering these patterns:
-
-| Pattern | Example |
-|---------|--------|
-| Summary | "What is the total revenue?" |
-| Time Trend | "Show sales by month" |
-| Top-N | "Top 10 brands by revenue" |
-| Dimensional | "Revenue by category and month" |
-| Filtered | "Sales for electronics in 2024" |
-
-**CRITICAL:** Execute each query via `run_query()` to verify it works. Fix syntax errors
-(double-quote column names). Only include passing queries in the YAML.
-
-#### 1.5 — Write custom_instructions
-
-Free text that maps business terms to SQL:
-```
-- "revenue" means SUM(TOTAL_SALES)
-- "last month" means DATEADD('month', -1, CURRENT_DATE())
-- Always order trend queries by date DESC
-- Column names are UPPER_CASE in Snowflake
-```
-
-#### 1.6 — Assemble YAML
-
-Write to `cortex-analyst-models/semantic_<source_name>_<entity>.yaml`:
-
-```yaml
-name: SEM_<ENTITY>
-tables:
-  - name: FCT_<ENTITY>
-    description: |
-      <Multi-line: grain, features, business context>
-    base_table:
-      database: <TARGET_DB>     # From profiles.yml (e.g., DBT_DEV)
-      schema: DBT_MARTS         # Where mart TABLE lives
-      table: FCT_<ENTITY>
-    dimensions:
-      - name: <COL>
-        synonyms: [<syn1>, <syn2>]
-        description: <desc>
-        expr: <COL>
-        data_type: <TYPE>
-        sample_values: [<val1>, <val2>]
-    time_dimensions:
-      - name: <DATE_COL>
-        synonyms: [<syn1>]
-        description: <desc>
-        expr: <DATE_COL>
-        data_type: DATE
-        sample_values: ["2024-01-01"]
-    facts:
-      - name: <METRIC>
-        synonyms: [<syn1>, <syn2>]
-        description: <desc>
-        expr: <METRIC>
-        data_type: NUMBER
-        default_aggregation: sum
-        sample_values: [100, 500]
-    primary_key:
-      columns: [<pk_col>]
-verified_queries:
-  - name: <query_name>
-    question: "<NL question>"
-    use_as_onboarding_question: true
-    sql: "<TESTED SQL>"
-    verified_by: cortex_code_agent
-    verified_at: <unix_timestamp>
-custom_instructions: |
-  <Free text for text-to-SQL accuracy>
-```
-
-**Schema distinction:**
-- `base_table.schema` = `DBT_MARTS` (where data lives)
-- Upload stage = `SEMANTIC` schema (where YAML files go)
-
-### Phase 2: Upload to Snowflake Stage
-
-Use pure-SQL TEMP TABLE → COPY INTO (works in Cortex Code, no local filesystem):
-
-```sql
--- Ensure stage exists
-CREATE STAGE IF NOT EXISTS <TARGET_DB>.SEMANTIC.CORTEX_ANALYST_MODELS
-  ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
-  COMMENT = 'Internal stage for Cortex Analyst YAML semantic models';
-
--- Upload via temp table
-CREATE OR REPLACE TEMPORARY TABLE <TARGET_DB>.SEMANTIC.TEMP_YAML_CONTENT (LINE_CONTENT VARCHAR)
-AS SELECT $$
-<ENTIRE YAML CONTENT>
-$$;
-
-COPY INTO @<TARGET_DB>.SEMANTIC.CORTEX_ANALYST_MODELS/<filename>.yaml
-  FROM (SELECT LINE_CONTENT FROM <TARGET_DB>.SEMANTIC.TEMP_YAML_CONTENT)
-  FILE_FORMAT = (TYPE = 'CSV' COMPRESSION = 'NONE' FIELD_DELIMITER = 'NONE' RECORD_DELIMITER = 'NONE')
-  SINGLE = TRUE OVERWRITE = TRUE HEADER = FALSE;
-
--- Verify
-LIST @<TARGET_DB>.SEMANTIC.CORTEX_ANALYST_MODELS PATTERN = '.*<filename>.*';
-
--- Clean up
-DROP TABLE IF EXISTS <TARGET_DB>.SEMANTIC.TEMP_YAML_CONTENT;
-```
-
-### Phase 3: Test with Cortex Analyst
-
-```sql
-SELECT SNOWFLAKE.CORTEX.CORTEX_ANALYST_MESSAGE(
-  '@<TARGET_DB>.SEMANTIC.CORTEX_ANALYST_MODELS/<filename>.yaml',
-  [{'role': 'user', 'content': '<test question from verified_queries>'}]
-);
-```
-
-If incorrect, refine synonyms / verified_queries / custom_instructions and re-upload.
-
-### Phase 4: Deploy Snowflake Agent
-
-#### 4.1 — Derive variables from project context (do NOT ask user)
+#### 2.1 — Derive variables from project context (do NOT ask user)
 
 | Variable | Source |
 |----------|--------|
 | `DATABASE` | `profiles.yml` → target `database` |
-| `SCHEMA` | `SEMANTIC` (where agents + stage live) |
+| `SCHEMA` | `SEMANTIC` (where agents + semantic views live) |
 | `WAREHOUSE` | `profiles.yml` or `dbt_project.yml` |
 | `AGENT_NAME` | `AGENT_` + uppercase entity (e.g., `AGENT_SALES_ANALYSIS`) |
-| `YAML_FILENAME` | From Phase 1 output |
+| `SEMANTIC_VIEW` | `SEM_<NAME>` from Phase 1 |
 
-#### 4.2 — Check for existing agent
+#### 2.2 — Check for existing agent
 
 ```sql
 SHOW AGENTS IN SCHEMA <DATABASE>.SEMANTIC;
 ```
 
-- If exists → use `CREATE OR REPLACE`
-- If different agent covers same tables → warn about overlap
-
-#### 4.3 — Create the agent
+#### 2.3 — Create the agent (referencing semantic views, NOT YAML files)
 
 ```sql
 CREATE OR REPLACE AGENT <DATABASE>.SEMANTIC.<AGENT_NAME>
@@ -623,7 +533,7 @@ CREATE OR REPLACE AGENT <DATABASE>.SEMANTIC.<AGENT_NAME>
     }],
     "tool_resources": {
       "analyst": {
-        "semantic_model_file": "@<DATABASE>.SEMANTIC.CORTEX_ANALYST_MODELS/<filename>.yaml",
+        "semantic_model": "<DATABASE>.SEMANTIC.SEM_<NAME>",
         "execution_environment": {
           "type": "warehouse",
           "warehouse": "<WAREHOUSE>"
@@ -634,28 +544,28 @@ CREATE OR REPLACE AGENT <DATABASE>.SEMANTIC.<AGENT_NAME>
   $$;
 ```
 
-**Multi-model agents:** If the domain has multiple YAML files, add one tool per YAML:
+**Multi-view agents:** If the domain has multiple semantic views, add one tool per view:
 ```json
 "tools": [
   {"tool_spec": {"type": "cortex_analyst_text_to_sql", "name": "sales", "description": "..."}},
   {"tool_spec": {"type": "cortex_analyst_text_to_sql", "name": "products", "description": "..."}}
 ],
 "tool_resources": {
-  "sales": {"semantic_model_file": "@stage/sales.yaml", ...},
-  "products": {"semantic_model_file": "@stage/products.yaml", ...}
+  "sales": {"semantic_model": "<DATABASE>.SEMANTIC.SEM_SALES", ...},
+  "products": {"semantic_model": "<DATABASE>.SEMANTIC.SEM_PRODUCTS", ...}
 }
 ```
 Best practice: 5–10 tools per agent max.
 
-#### 4.4 — Verify agent
+#### 2.4 — Verify agent
 
 ```sql
 DESCRIBE AGENT <DATABASE>.SEMANTIC.<AGENT_NAME>;
 ```
 
-### Phase 5: Register with Snowflake Intelligence
+### Phase 3: Register with Snowflake Intelligence
 
-#### 5.1 — Ensure SI object exists
+#### 3.1 — Ensure SI object exists
 
 ```sql
 SHOW SNOWFLAKE INTELLIGENCES;
@@ -663,14 +573,14 @@ SHOW SNOWFLAKE INTELLIGENCES;
 CREATE SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT;
 ```
 
-#### 5.2 — Register the agent
+#### 3.2 — Register the agent
 
 ```sql
 ALTER SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT
   ADD AGENT <DATABASE>.SEMANTIC.<AGENT_NAME>;
 ```
 
-#### 5.3 — Grant permissions
+#### 3.3 — Grant permissions
 
 ```sql
 -- For the consuming role (e.g., DBT_ROLE or ANALYST_ROLE)
@@ -678,12 +588,12 @@ GRANT USAGE ON DATABASE <DATABASE> TO ROLE <ROLE>;
 GRANT USAGE ON SCHEMA <DATABASE>.SEMANTIC TO ROLE <ROLE>;
 GRANT USAGE ON AGENT <DATABASE>.SEMANTIC.<AGENT_NAME> TO ROLE <ROLE>;
 GRANT USAGE ON WAREHOUSE <WAREHOUSE> TO ROLE <ROLE>;
-GRANT READ ON STAGE <DATABASE>.SEMANTIC.CORTEX_ANALYST_MODELS TO ROLE <ROLE>;
+GRANT SELECT ON ALL SEMANTIC VIEWS IN SCHEMA <DATABASE>.SEMANTIC TO ROLE <ROLE>;
 GRANT SELECT ON ALL TABLES IN SCHEMA <DATABASE>.DBT_MARTS TO ROLE <ROLE>;
 GRANT USAGE ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT TO ROLE <ROLE>;
 ```
 
-#### 5.4 — Verify end-to-end
+#### 3.4 — Verify end-to-end
 
 ```sql
 SHOW AGENTS IN SCHEMA <DATABASE>.SEMANTIC;
@@ -695,11 +605,9 @@ SHOW SNOWFLAKE INTELLIGENCES;
 
 | Phase | What Happens | Output |
 |-------|-------------|--------|
-| 1. Generate YAML | Profile data, classify columns, synonyms, verified queries | `cortex-analyst-models/semantic_<name>.yaml` |
-| 2. Upload | TEMP TABLE → COPY INTO stage | File on `@<DB>.SEMANTIC.CORTEX_ANALYST_MODELS` |
-| 3. Test | `CORTEX_ANALYST_MESSAGE()` call | Validated NL → SQL response |
-| 4. Deploy Agent | `CREATE AGENT` with tool spec | Agent object in `SEMANTIC` schema |
-| 5. Register SI | `ALTER SNOWFLAKE INTELLIGENCE ADD AGENT` | Agent visible in Snowsight Intelligence UI |
+| 1. Create Semantic Views | Classify columns, create `sem_*.sql` + `sem_*.yml`, `dbt build` | Snowflake Semantic View objects in `SEMANTIC` schema |
+| 2. Deploy Agent | `CREATE AGENT` referencing semantic views | Agent object in `SEMANTIC` schema |
+| 3. Register SI | `ALTER SNOWFLAKE INTELLIGENCE ADD AGENT` | Agent visible in Snowsight Intelligence UI |
 
 ---
 
@@ -721,7 +629,7 @@ ACCOUNTADMIN  (one-time setup only)
 |-----|--------|
 | SELECT from mart tables | Create/alter/drop ANY objects |
 | Read semantic views | Access staging or intermediate schemas |
-| Read staged YAML files | Modify source data |
+| Use Snowflake Semantic Views | Modify source data |
 | Use the warehouse | Manage roles, users, or warehouses |
 | Invoke Cortex Agents | Access ACCOUNT_USAGE or ORGANIZATION_USAGE |
 | Query via Snowflake Intelligence | — |
@@ -740,7 +648,7 @@ GRANT USAGE ON SCHEMA DBT_DEV.DBT_MARTS TO ROLE CORTEX_ANALYST_ROLE;
 GRANT SELECT ON ALL TABLES IN SCHEMA DBT_DEV.DBT_MARTS TO ROLE CORTEX_ANALYST_ROLE;
 GRANT SELECT ON FUTURE TABLES IN SCHEMA DBT_DEV.DBT_MARTS TO ROLE CORTEX_ANALYST_ROLE;
 GRANT USAGE ON SCHEMA DBT_DEV.SEMANTIC TO ROLE CORTEX_ANALYST_ROLE;
-GRANT READ ON STAGE DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS TO ROLE CORTEX_ANALYST_ROLE;
+GRANT SELECT ON ALL SEMANTIC VIEWS IN SCHEMA DBT_DEV.SEMANTIC TO ROLE CORTEX_ANALYST_ROLE;
 GRANT USAGE ON WAREHOUSE DBT_AGENT_WH TO ROLE CORTEX_ANALYST_ROLE;
 
 -- Hierarchy: DBT_ROLE inherits CORTEX_ANALYST_ROLE
@@ -757,7 +665,7 @@ USE ROLE CORTEX_ANALYST_ROLE;
 
 ## End-to-End Pipeline
 
-> Full pipeline: **Discover → Stage → Marts → Validate → Snowflake Semantic Views → Cortex Analyst YAML → Agent**
+> Full pipeline: **Discover → Stage → Marts → Validate → Snowflake Semantic Views → Agent**
 >
 > **IMPORTANT**: When operating as a GitHub Copilot agent (not via MCP/CLI tools), you MUST
 > follow the inline step-by-step instructions below to create semantic views by reading/writing
@@ -776,15 +684,14 @@ USE ROLE CORTEX_ANALYST_ROLE;
 | 4. dbt Build & Validate | `dbt build --select "source:<source>+"` | Materialized models + test results |
 | 5. Create Snowflake Semantic Views | Create `sem_<name>.sql` + `sem_<name>.yml` for each mart | `models/semantic/sem_<name>/` |
 | 6. Build Semantic Views | `dbt build --select tag:semantic` | Semantic views in Snowflake + verified queries attached |
-| 7. (Optional) Cortex Analyst YAML | Generate YAML for richer NL metadata (synonyms, sample_values) | `cortex-analyst-models/` |
-| 8. (Optional) Deploy Agent | CREATE AGENT SQL bundling semantic views | `ddl/cortex-analyst/deploy_agent_<domain>.sql` |
+| 7. (Optional) Deploy Agent | CREATE AGENT SQL bundling semantic views | `ddl/cortex-analyst/deploy_agent_<domain>.sql` |
 
 ---
 
 ### Step 5 — Create Snowflake Semantic Views (DETAILED — follow these steps exactly)
 
 > **This is the step that was previously missing inline instructions.** When working as a
-> Copilot agent, you MUST create these files manually — do NOT skip to Cortex Analyst YAML.
+> Copilot agent, you MUST create these files manually by reading/writing files directly.
 > Snowflake Semantic Views are the primary mechanism for Cortex Analyst NL querying.
 
 For EACH mart model (`fct_*`, `dim_*`, `summary_*`) in `models/marts/<domain>/`:
@@ -1062,9 +969,8 @@ Agent:
      b. Create models/semantic/sem_<name>/sem_<name>.sql (Step 5.3 template)
      c. Create models/semantic/sem_<name>/sem_<name>.yml (Step 5.4 template)
   6. Run: dbt build --select tag:semantic
-  7. (Optional) Generate Cortex Analyst YAML for richer NL metadata
-  8. (Optional) Generate Cortex Agent SQL
-  9. Report: full pipeline output, agent SQL location, RBAC instructions
+  7. (Optional) Generate Cortex Agent SQL referencing the semantic views
+  8. Report: full pipeline output, agent SQL location, RBAC instructions
 ```
 
 ### CLI Shortcuts (when using scripts directly)
@@ -1094,98 +1000,19 @@ python scripts/end_to_end_pipeline.py --domain japan_ecomm_data --skip-discover 
 
 ---
 
-## Related Skills — Complete Reference (50 Skills)
+## Related Skills — Quick Reference (53 Skills)
 
-> **All skills live in `.snowflake/cortex/skills/<skill-name>/SKILL.md`.**
-> Read the SKILL.md file before delegating to ensure you follow its specific instructions.
+> **All 53 skills live in `.agents/skills/<skill-name>/SKILL.md`.**
+> The full routing table with triggers and delegation rules is in the **Skill Routing Table** section above.
+> Always `read_file` the target SKILL.md before delegating — see **Delegation Protocol** at the top.
 
-### dbt Core Workflow (9 skills)
-
-| Skill | When to Use |
-|-------|-------------|
-| `using-dbt-for-analytics-engineering` | Building/modifying dbt models, writing SQL with `ref()`/`source()`, creating tests, validating with `dbt show` |
-| `adding-dbt-unit-test` | Creating unit test YAML definitions with mocked inputs and expected outputs, TDD for dbt |
-| `running-dbt-commands` | Formatting and executing dbt CLI commands with correct flags, selectors, and environment handling |
-| `fetching-dbt-docs` | Retrieving dbt documentation pages from docs.getdbt.com in LLM-friendly format |
-| `creating-mermaid-dbt-dag` | Generating Mermaid flowchart diagrams of dbt model lineage and dependencies |
-| `onboard-new-source` | End-to-end source onboarding: profile → staging → marts → build → semantic view |
-| `troubleshooting-dbt-job-errors` | Diagnosing dbt Cloud/platform job failures via log analysis, Admin API, git history |
-| `project-quality-audit` | Full-project scan: missing PK tests, empty descriptions, `SELECT *` violations, semantic issues |
-| `dbt-one-stop-agent` | This agent — unified orchestrator for the entire lifecycle |
-
-### Semantic Layer & NL Querying (9 skills)
-
-| Skill | When to Use |
-|-------|-------------|
-| `building-dbt-semantic-layer` | Creating/modifying MetricFlow components: semantic models, metrics, dimensions, entities, measures |
-| `answering-natural-language-questions-with-dbt` | Translating business questions to SQL via Semantic Layer or ad-hoc queries |
-| `snowflake-semantic-view-creator` | Creating Snowflake-native Semantic Views via `dbt_semantic_view` package (DDL-like SQL) |
-| `semantic-view` | **Entry point** for ALL semantic view operations: create, debug, optimize, VQR suggestions |
-| `semantic-view-batch-sync` | Batch creating/updating semantic views for all uncovered marts |
-| `semantic-view-coverage-audit` | Auditing coverage: missing views, orphaned views, stale DDL, column drift |
-| `cortex-analyst-semantic-model` | Agentic YAML generation with synonyms, sample_values, verified_queries, custom_instructions |
-| `cortex-agent` | **Entry point** for ALL Cortex Agent operations: create, debug, evaluate, list, delete |
-| `dashboard` | Creating interactive DashboardSpec JSON dashboards with charts, tables, markdown widgets |
-
-### Data Quality & Governance (3 skills)
-
-| Skill | When to Use |
-|-------|-------------|
-| `data-quality` | Snowflake DMF monitoring, table comparison, quality scoring, SLA alerting, ad-hoc quality scans |
-| `data-governance` | Masking policies, row access policies, PII classification, governance/observability maturity |
-| `lineage` | Impact analysis, root cause debugging, column-level tracing, dependency analysis |
-
-### Snowflake Platform (14 skills)
-
-| Skill | When to Use |
-|-------|-------------|
-| `dynamic-tables` | Creating, optimizing, monitoring, troubleshooting Snowflake Dynamic Tables |
-| `iceberg` | Iceberg tables, catalog integrations (Glue/Unity/Polaris), external volumes, CLD, auto-refresh |
-| `snowflake-notebooks` | Creating/editing Workspace notebooks (.ipynb) with SQL cells and Snowpark |
-| `snowflake-postgres` | Snowflake Postgres instance management: create, suspend, resume, health checks, pg_lake |
-| `snowpark` | Deploying Snowpark Python: UDFs, UDAFs, UDTFs, stored procedures via `snow snowpark` CLI |
-| `snowpark-connect` | Migrating PySpark workloads to Snowpark Connect (SCOS) |
-| `cortex-ai-functions` | Routing to Cortex AI functions: AI_CLASSIFY, AI_EXTRACT, AI_SENTIMENT, AI_SUMMARIZE, AI_PARSE_DOCUMENT |
-| `integrations` | Managing Snowflake integrations: API, catalog, external access, notification, security, storage |
-| `openflow` | NiFi-based data integration: connector deployment, configuration, diagnostics |
-| `data-cleanrooms` | Data Clean Room workflows: collaborations, data offerings, audience overlap, activations |
-| `data-products` | Organizational listings for Snowflake Internal Marketplace cross-account sharing |
-| `declarative` | Declarative sharing with application packages (TYPE=DATA) for versioned cross-account data |
-| `machine-learning` | ML sub-skills: model training, registry, inference, feature store, distributed training, HPO |
-| `workload-performance-analysis` | SQL execution analysis: spilling, pruning, cache hits, clustering keys, SOS/QAS candidates |
-
-### Infrastructure & DevOps (7 skills)
-
-| Skill | When to Use |
-|-------|-------------|
-| `configuring-dbt-mcp-server` | MCP server config JSON, authentication setup, connectivity validation |
-| `deploy-to-spcs` | Deploying Docker containers to Snowpark Container Services (SPCS) |
-| `dbt-projects-on-snowflake` | dbt projects deployed AS Snowflake objects via `snow dbt` CLI (not normal dbt dev) |
-| `dcm` | Database Change Management: infrastructure-as-code for Snowflake objects |
-| `migrating-dbt-core-to-fusion` | Triaging dbt-core → Fusion migration errors (auto-fixable, guided, blocked) |
-| `migrating-dbt-project-across-platforms` | Cross-platform dbt migration (e.g., Snowflake ↔ Databricks) via Fusion |
-| `snowconvert-assessment` | SnowConvert assessment reports for workload migration (waves, ETL analysis) |
-
-### Visualization & Apps (2 skills)
-
-| Skill | When to Use |
-|-------|-------------|
-| `developing-with-streamlit` | Creating, editing, debugging, styling, and deploying Streamlit-in-Snowflake apps |
-| `build-react-app` | Building React/Next.js data apps connected to Snowflake |
-
-### Security & Cost (5 skills)
-
-| Skill | When to Use |
-|-------|-------------|
-| `cost-intelligence` | All Snowflake cost/billing: credits, warehouse costs, budgets, resource monitors, anomalies |
-| `network-security` | Network policies and rules: IP allowlists, hybrid policies, SaaS rules |
-| `key-and-secret-management` | Tri-Secret Secure (CMK/BYOK), key rotation, periodic data rekeying |
-| `trust-center` | Trust Center security findings: CIS benchmarks, scanners, remediation guidance |
-| `organization-management` | Org-level management: accounts, users, spending, security posture, ORGANIZATION_USAGE |
-
-### Meta / Tooling (2 skills)
-
-| Skill | When to Use |
-|-------|-------------|
-| `skill_development` | Creating, documenting, or auditing skills for Cortex Code |
-| `cortex-code-guide` | Cortex Code CLI reference: commands, shortcuts, sessions, MCP, agents |
+| Category | Count | Skills |
+|----------|-------|--------|
+| dbt Core Workflow | 12 | `using-dbt-for-analytics-engineering`, `adding-dbt-unit-test`, `running-dbt-commands`, `fetching-dbt-docs`, `creating-mermaid-dbt-dag`, `onboard-new-source`, `onboard-bronze-layer`, `onboard-silver-layer`, `onboard-gold-layer`, `troubleshooting-dbt-job-errors`, `project-quality-audit`, `dbt-one-stop-agent` |
+| Semantic Layer & NL Querying | 9 | `building-dbt-semantic-layer`, `answering-natural-language-questions-with-dbt`, `snowflake-semantic-view-creator`, `semantic-view`, `semantic-view-batch-sync`, `semantic-view-coverage-audit`, `cortex-analyst-semantic-model`, `cortex-agent`, `dashboard` |
+| Data Quality & Governance | 3 | `data-quality`, `data-governance`, `lineage` |
+| Snowflake Platform | 14 | `dynamic-tables`, `iceberg`, `snowflake-notebooks`, `snowflake-postgres`, `snowpark`, `snowpark-connect`, `cortex-ai-functions`, `integrations`, `openflow`, `data-cleanrooms`, `data-products`, `declarative`, `machine-learning`, `workload-performance-analysis` |
+| Infrastructure & DevOps | 7 | `configuring-dbt-mcp-server`, `deploy-to-spcs`, `dbt-projects-on-snowflake`, `dcm`, `migrating-dbt-core-to-fusion`, `migrating-dbt-project-across-platforms`, `snowconvert-assessment` |
+| Visualization & Apps | 2 | `developing-with-streamlit`, `build-react-app` |
+| Security & Cost | 5 | `cost-intelligence`, `network-security`, `key-and-secret-management`, `trust-center`, `organization-management` |
+| Meta / Tooling | 2 | `skill_development`, `cortex-code-guide` |
