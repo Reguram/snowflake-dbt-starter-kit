@@ -1,27 +1,31 @@
 ---
 name: dbt-one-stop-agent
 description: >
-  Unified, context-aware dbt agent combining ALL project capabilities: source discovery,
-  staging/intermediate/marts model generation, Cortex Analyst semantic model creation,
-  Snowflake Agent deployment, Snowflake Intelligence registration, code review,
-  data quality checks, medallion architecture advising, dbt CLI operations, and Streamlit app
-  scaffolding. Always reads existing project state before generating code — produces models that
-  fit the existing project rather than generic boilerplate.
+  Unified, context-aware dbt orchestrator that routes to 50 specialized skills across the entire
+  Snowflake + dbt lifecycle: source discovery, staging/intermediate/marts model generation,
+  Cortex Analyst semantic model creation, Snowflake Agent deployment, Snowflake Intelligence
+  registration, code review, data quality checks, medallion architecture advising, dbt CLI
+  operations, Streamlit app scaffolding, Dynamic Tables, Iceberg, Snowpark, ML, data governance,
+  cost analysis, security, and more.
+  Always reads existing project state before generating code — produces models that fit the
+  existing project rather than generic boilerplate. Delegates to specialized skills when deeper
+  expertise is needed.
   Use when: building any dbt model, discovering new data sources, creating semantic models,
   deploying agents, enabling Snowflake Intelligence, reviewing code, checking data quality,
-  or asking questions about the project.
+  or asking questions about the project — or ANY Snowflake platform task.
   Triggers: onboard, discover, build, generate, semantic model, cortex analyst, agent, intelligence,
   pipeline, end-to-end, rbac, cortex role, semantic views for domain.
 user-invocable: true
 metadata:
   author: snowflake-dbt-starter-kit
-  version: "4.0"
+  version: "5.0"
 ---
 
 # dbt One-Stop Agent
 
-> **Unified agent** that replaces separate scripts for source discovery, model generation,
-> semantic views, code review, and medallion advising. One tool for the entire dbt lifecycle.
+> **Unified orchestrator** that combines 50 specialized skills for the entire dbt + Snowflake
+> lifecycle. Handles tasks directly when it can, delegates to specialized skills when deeper
+> expertise is needed. One entry point for everything.
 
 ## What This Skill Does
 
@@ -41,9 +45,174 @@ metadata:
 | **Medallion Advising** | Suggests silver/gold models based on existing bronze data using Cortex LLM |
 | **dbt Operations** | Run, build, test, compile, seed via dbt CLI |
 | **Streamlit Apps** | Generate Streamlit-in-Snowflake dashboards from mart models |
+| **Skill Routing** | Delegates to 50 specialized skills when tasks require deeper Snowflake platform expertise |
+
+---
+
+## Skill Routing Table (50 Skills)
+
+> This agent acts as the **orchestrator**. For tasks it handles directly (model generation,
+> source discovery, semantic views, code review), it executes inline. For everything else,
+> it delegates to the appropriate specialized skill below.
+
+### Delegation Rules
+
+1. **Handle directly** — dbt model CRUD, source discovery, semantic views, code review, dbt CLI, end-to-end pipeline
+2. **Delegate immediately** — Snowflake platform tasks (Dynamic Tables, Iceberg, Snowpark, ML, etc.)
+3. **Delegate for depth** — When a task this agent handles needs deeper expertise (e.g., complex unit tests → `adding-dbt-unit-test`, advanced semantic view debugging → `semantic-view`)
+4. **Chain skills** — Multi-domain tasks may require reading multiple skills in sequence (e.g., onboard source → create semantic view → deploy agent → register with SI)
+
+### Category 1: dbt Core Workflow
+
+| Skill | Triggers | Delegation |
+|-------|----------|------------|
+| `using-dbt-for-analytics-engineering` | model, SQL, ref, source, transform, pipeline | **Handle directly** — this agent's core capability. Delegate for unfamiliar dbt features |
+| `adding-dbt-unit-test` | unit test, TDD, mock, test model logic | **Delegate** — specialized YAML format and mocking patterns |
+| `running-dbt-commands` | dbt build, dbt run, dbt test, dbt compile, dbt show | **Handle directly** via `run_dbt` tool. Delegate for complex selectors or unfamiliar flags |
+| `fetching-dbt-docs` | dbt docs, documentation, dbt features, dbt Cloud | **Delegate** — retrieves docs.getdbt.com pages in LLM-friendly format |
+| `creating-mermaid-dbt-dag` | DAG, lineage diagram, mermaid, visualize dependencies | **Delegate** — generates Mermaid flowcharts from manifest or code |
+| `onboard-new-source` | onboard, new source, discover, add source, build pipeline | **Handle directly** — core discovery workflow. Delegate for complex multi-source scenarios |
+| `troubleshooting-dbt-job-errors` | job failed, dbt Cloud error, intermittent failure, logs | **Delegate** — specialized in dbt Cloud log analysis and Admin API |
+| `project-quality-audit` | audit, quality check, validate, pre-deploy, missing tests | **Handle directly** via `review_sql` + `check_data_quality`. Delegate for full-project scan |
+
+### Category 2: Semantic Layer & NL Querying
+
+| Skill | Triggers | Delegation |
+|-------|----------|------------|
+| `building-dbt-semantic-layer` | semantic model, metric, MetricFlow, measure, dimension, `dbt sl` | **Delegate** — MetricFlow YAML is distinct from Snowflake Semantic Views |
+| `answering-natural-language-questions-with-dbt` | "What were total sales?", KPI, analytics question, NL query | **Delegate** — translates business questions to SQL via Semantic Layer |
+| `snowflake-semantic-view-creator` | semantic view, CREATE SEMANTIC VIEW, `dbt_semantic_view` package | **Handle directly** for creation. Delegate for advanced `dbt_semantic_view` package features |
+| `semantic-view` | create/debug/fix/optimize semantic view, VQR, verified queries | **Delegate** — entry point for ALL semantic view operations including debugging |
+| `semantic-view-batch-sync` | batch semantic views, sync, enable Cortex Analyst for all marts | **Handle directly** via `generate_domain_semantic_views`. Delegate for complex sync scenarios |
+| `semantic-view-coverage-audit` | audit semantic views, coverage, missing views, orphaned, drift | **Handle directly** — scans marts vs semantic views. Delegate for detailed gap analysis |
+| `cortex-analyst-semantic-model` | Cortex Analyst YAML, semantic model YAML, `CORTEX_ANALYST_MESSAGE` | **Handle directly** — core YAML generation workflow. Delegate for full spec reference |
+| `cortex-agent` | create agent, debug agent, list agents, Snowflake Intelligence, SI | **Handle directly** for creation/registration. Delegate for agent debugging/evaluation |
+| `dashboard` | dashboard, KPI report, executive summary, widgets, charts | **Delegate** — specialized DashboardSpec JSON format |
+
+### Category 3: Data Quality & Governance
+
+| Skill | Triggers | Delegation |
+|-------|----------|------------|
+| `data-quality` | data quality, DMF, quality score, schema health, SLA alerting | **Delegate** — Snowflake DMFs, table comparison, quality monitoring are beyond dbt tests |
+| `data-governance` | governance, masking, PII, GDPR, classify, grants, row access policy | **Delegate** — routes to 5 sub-skills (catalog, masking, classification, maturity, observability) |
+| `lineage` | what depends on, impact analysis, upstream, where does this come from | **Delegate** — Snowflake ACCOUNT_USAGE lineage, column-level tracing |
+
+### Category 4: Snowflake Platform
+
+| Skill | Triggers | Delegation |
+|-------|----------|------------|
+| `dynamic-tables` | dynamic table, DT, target lag, incremental refresh, UPSTREAM_FAILED | **Delegate** — specialized in DT creation, optimization, troubleshooting |
+| `iceberg` | iceberg, catalog integration, external volume, Glue, CLD, auto-refresh | **Delegate** — catalog integrations, external volumes, auto-refresh |
+| `snowflake-notebooks` | notebook, .ipynb, workspace notebook, SQL cell, Snowpark session | **Delegate** — creates/edits Snowflake Workspace notebooks |
+| `snowflake-postgres` | postgres, pg, create instance, health check, pg_lake, diagnostics | **Delegate** — Snowflake Postgres instance management |
+| `snowpark` | Snowpark, UDF, stored procedure, deploy Python, `snow snowpark` | **Delegate** — Python UDF/SP deployment via CLI |
+| `snowpark-connect` | snowpark connect, SCOS, PySpark migration, Spark Connect | **Delegate** — PySpark → Snowpark Connect migration |
+| `cortex-ai-functions` | classify, extract, sentiment, summarize, parse PDF, OCR, AI_COMPLETE | **Delegate** — routes to correct Cortex AI function |
+| `integrations` | integration, API integration, catalog integration, notification | **Delegate** — all Snowflake integration types |
+| `openflow` | Openflow, NiFi, data replication, connector deployment | **Delegate** — NiFi-based data integration |
+| `data-cleanrooms` | clean room, DCR, collaboration, audience overlap, activation | **Delegate** — Snowflake Data Clean Room workflows |
+| `data-products` | data product, internal marketplace, org listing, share across accounts | **Delegate** — organizational listings and Internal Marketplace |
+| `declarative` | declarative, share data, cross account, application package, TYPE=DATA | **Delegate** — declarative sharing with versioned app packages |
+| `machine-learning` | train model, ML, model registry, feature store, HPO, distributed | **Delegate** — routes to ML sub-skills (training, registry, inference, etc.) |
+| `workload-performance-analysis` | spilling, pruning, cache hit, clustering, slow query, SOS, QAS | **Delegate** — SQL execution analysis via ACCOUNT_USAGE |
+
+### Category 5: Infrastructure & DevOps
+
+| Skill | Triggers | Delegation |
+|-------|----------|------------|
+| `configuring-dbt-mcp-server` | MCP server, dbt MCP, configure MCP, Claude Desktop, Cursor | **Delegate** — MCP config JSON and connectivity validation |
+| `deploy-to-spcs` | SPCS, Docker, container, deploy to Snowflake, Snowpark Container | **Delegate** — containerized app deployment |
+| `dbt-projects-on-snowflake` | `snow dbt`, EXECUTE DBT PROJECT, deployed dbt project object | **Delegate** — dbt-as-Snowflake-object (NOT normal dbt dev) |
+| `dcm` | DCM, Database Change Management, `snow dcm`, manifest.yml, DEFINE | **Delegate** — infrastructure-as-code for Snowflake objects |
+| `migrating-dbt-core-to-fusion` | Fusion migration, migration errors, dbt Fusion, auto-fixable | **Delegate** — migration error triage |
+| `migrating-dbt-project-across-platforms` | migrate platform, Snowflake to Databricks, cross-platform dbt | **Delegate** — cross-platform SQL dialect differences |
+| `snowconvert-assessment` | SnowConvert, assessment, migration waves, SSIS, ETL analysis | **Delegate** — workload migration assessment |
+
+### Category 6: Visualization & Apps
+
+| Skill | Triggers | Delegation |
+|-------|----------|------------|
+| `developing-with-streamlit` | streamlit, st., app.py, beautify, CSS, theme, custom component | **Handle directly** for basic scaffolding via `generate_streamlit_app`. Delegate for styling, custom components, deployment |
+| `build-react-app` | React, Next.js, dashboard app, data app, analytics tool | **Delegate** — React/Next.js data apps with Snowflake |
+
+### Category 7: Security & Cost
+
+| Skill | Triggers | Delegation |
+|-------|----------|------------|
+| `cost-intelligence` | cost, credits, spending, budget, warehouse cost, top spenders | **Delegate** — all Snowflake cost/billing analysis |
+| `network-security` | network policy, network rule, IP allowlist, SaaS rules | **Delegate** — network policies and rules |
+| `key-and-secret-management` | TSS, CMK, BYOK, encryption key, key rotation, rekeying | **Delegate** — Tri-Secret Secure and key management |
+| `trust-center` | Trust Center, security findings, CIS benchmark, scanner | **Delegate** — security finding analysis and remediation |
+| `organization-management` | org, accounts, org users, org spending, globalorgadmin | **Delegate** — org-level management and ORGANIZATION_USAGE |
+
+### Category 8: Meta / Tooling
+
+| Skill | Triggers | Delegation |
+|-------|----------|------------|
+| `skill_development` | create skill, new skill, audit skill, capture session as skill | **Delegate** — skill authoring and review |
+| `cortex-code-guide` | cortex guide, cortex help, cortex commands, #table, sessions | **Delegate** — Cortex Code CLI reference |
+
+---
+
+### How Routing Works
+
+```
+User Request
+    │
+    ▼
+┌──────────────────────────────┐
+│  dbt One-Stop Agent (this)   │
+│  1. Parse intent              │
+│  2. Check skill routing table │
+│  3. Read project context      │
+└──────────┬───────────────────┘
+           │
+    ┌──────┴──────┐
+    │             │
+    ▼             ▼
+ HANDLE        DELEGATE
+ DIRECTLY      TO SKILL
+    │             │
+    │             ├── Read SKILL.md for the matched skill
+    │             ├── Follow its instructions
+    │             └── Return to one-stop agent for next step
+    │
+    ├── Source discovery
+    ├── Model generation (stg/int/fct/dim)
+    ├── Semantic view creation
+    ├── Cortex Analyst YAML generation
+    ├── Agent deployment + SI registration
+    ├── Code review (static analysis)
+    ├── dbt CLI commands
+    └── End-to-end pipeline orchestration
+```
+
+### Multi-Skill Chaining Examples
+
+| User Request | Skills Chained (in order) |
+|-------------|--------------------------|
+| "Onboard MY_DB.MY_SCHEMA and create an agent" | `onboard-new-source` → `snowflake-semantic-view-creator` → `cortex-agent` |
+| "Add unit tests for fct_orders" | `adding-dbt-unit-test` |
+| "What were total sales last quarter?" | `answering-natural-language-questions-with-dbt` |
+| "Audit the project before deployment" | `project-quality-audit` → `semantic-view-coverage-audit` |
+| "Create a Streamlit dashboard for sales data" | `developing-with-streamlit` (handle basic via `generate_streamlit_app`, delegate for styling) |
+| "Deploy fct_orders as a dynamic table" | `dynamic-tables` |
+| "Classify PII columns in my marts" | `data-governance` (→ sensitive-data-classification sub-skill) |
+| "Show me Snowflake costs by warehouse" | `cost-intelligence` |
+| "Train an ML model on my mart data" | `machine-learning` |
+| "Create an Iceberg table from my mart" | `iceberg` |
+| "Debug why my semantic view returns wrong SQL" | `semantic-view` |
+| "Migrate this project from Databricks to Snowflake" | `migrating-dbt-project-across-platforms` |
+| "Set up network policy for my Snowflake account" | `network-security` |
+| "Create a Data Clean Room collaboration" | `data-cleanrooms` |
+| "Visualize my dbt DAG as a Mermaid diagram" | `creating-mermaid-dbt-dag` |
+| "Share my mart data with another Snowflake account" | `declarative` or `data-products` |
+| "Create a DCM project for my database objects" | `dcm` |
+| "Analyze query performance for slow queries" | `workload-performance-analysis` |
 
 ## When to Invoke This Skill
 
+### Direct Handling (core dbt workflow)
 - User asks to build, generate, or scaffold any dbt model
 - User wants to discover or onboard a new data source
 - User asks about project state ("what sources do I have?")
@@ -53,11 +222,53 @@ metadata:
 - User asks for code review or data quality checks
 - User wants to run dbt commands
 - User asks about medallion architecture or layer design
-- User wants a Streamlit dashboard
+- User wants a Streamlit dashboard (basic scaffolding)
 - User wants to run the full end-to-end pipeline (discover → semantic → agent)
 - User asks about semantic views for all marts in a domain
 - User asks about RBAC, roles, or security for Cortex Copilot
 - User wants to create a domain-level Cortex Agent
+
+### Delegation (routes to specialized skills)
+- User asks about **unit tests** → delegate to `adding-dbt-unit-test`
+- User asks a **business question** about data → delegate to `answering-natural-language-questions-with-dbt`
+- User wants **MetricFlow semantic models** (not Snowflake Semantic Views) → delegate to `building-dbt-semantic-layer`
+- User wants to **debug a semantic view** → delegate to `semantic-view`
+- User wants a **Mermaid DAG diagram** → delegate to `creating-mermaid-dbt-dag`
+- User has a **dbt Cloud job failure** → delegate to `troubleshooting-dbt-job-errors`
+- User wants **dbt documentation lookup** → delegate to `fetching-dbt-docs`
+- User asks about **Dynamic Tables** → delegate to `dynamic-tables`
+- User asks about **Iceberg tables** → delegate to `iceberg`
+- User wants to **create/edit a Snowflake notebook** → delegate to `snowflake-notebooks`
+- User wants to **deploy Snowpark UDFs/SPs** → delegate to `snowpark`
+- User wants to **use Cortex AI functions** (classify, extract, sentiment) → delegate to `cortex-ai-functions`
+- User asks about **data governance, masking, PII** → delegate to `data-governance`
+- User asks about **data quality DMFs** (beyond dbt tests) → delegate to `data-quality`
+- User asks about **data lineage** → delegate to `lineage`
+- User asks about **Snowflake costs/credits** → delegate to `cost-intelligence`
+- User wants to **deploy to SPCS** → delegate to `deploy-to-spcs`
+- User wants a **React/Next.js data app** → delegate to `build-react-app`
+- User wants **advanced Streamlit** (styling, components, deployment) → delegate to `developing-with-streamlit`
+- User asks about **network policies** → delegate to `network-security`
+- User asks about **encryption/key management** → delegate to `key-and-secret-management`
+- User asks about **Trust Center security findings** → delegate to `trust-center`
+- User asks about **org management** → delegate to `organization-management`
+- User wants to **train ML models** → delegate to `machine-learning`
+- User asks about **Data Clean Rooms** → delegate to `data-cleanrooms`
+- User wants to **share data cross-account** → delegate to `declarative` or `data-products`
+- User asks about **MCP server configuration** → delegate to `configuring-dbt-mcp-server`
+- User wants **DCM infrastructure-as-code** → delegate to `dcm`
+- User asks about **dbt-as-Snowflake-object** (`snow dbt`) → delegate to `dbt-projects-on-snowflake`
+- User wants to **migrate to Fusion** → delegate to `migrating-dbt-core-to-fusion`
+- User wants to **migrate across platforms** → delegate to `migrating-dbt-project-across-platforms`
+- User asks about **SnowConvert assessment** → delegate to `snowconvert-assessment`
+- User asks about **query performance** (spilling, pruning) → delegate to `workload-performance-analysis`
+- User asks about **Openflow/NiFi** → delegate to `openflow`
+- User asks about **Snowflake Postgres** → delegate to `snowflake-postgres`
+- User asks about **Snowpark Connect/PySpark migration** → delegate to `snowpark-connect`
+- User wants to **create/audit a skill** → delegate to `skill_development`
+- User asks about **Cortex Code CLI** → delegate to `cortex-code-guide`
+- User wants an **interactive dashboard** (DashboardSpec) → delegate to `dashboard`
+- User wants **Snowflake integrations** (API, catalog, storage) → delegate to `integrations`
 
 ## Context-Awareness (CRITICAL)
 
@@ -883,10 +1094,98 @@ python scripts/end_to_end_pipeline.py --domain japan_ecomm_data --skip-discover 
 
 ---
 
-## Related Skills
+## Related Skills — Complete Reference (50 Skills)
 
-| Skill | Invoke with | When to use |
-|-------|------------|-------------|
-| `$onboard-new-source` | `$onboard-new-source` | Full pipeline: source → staging → marts → semantic model |
-| `$snowflake-semantic-view-creator` | `$snowflake-semantic-view-creator` | Detailed Snowflake Semantic View creation (dbt_semantic_view package) |
-| `$cortex-analyst-semantic-model` | `$cortex-analyst-semantic-model` | Standalone YAML generation for existing marts (full spec reference) |
+> **All skills live in `.snowflake/cortex/skills/<skill-name>/SKILL.md`.**
+> Read the SKILL.md file before delegating to ensure you follow its specific instructions.
+
+### dbt Core Workflow (9 skills)
+
+| Skill | When to Use |
+|-------|-------------|
+| `using-dbt-for-analytics-engineering` | Building/modifying dbt models, writing SQL with `ref()`/`source()`, creating tests, validating with `dbt show` |
+| `adding-dbt-unit-test` | Creating unit test YAML definitions with mocked inputs and expected outputs, TDD for dbt |
+| `running-dbt-commands` | Formatting and executing dbt CLI commands with correct flags, selectors, and environment handling |
+| `fetching-dbt-docs` | Retrieving dbt documentation pages from docs.getdbt.com in LLM-friendly format |
+| `creating-mermaid-dbt-dag` | Generating Mermaid flowchart diagrams of dbt model lineage and dependencies |
+| `onboard-new-source` | End-to-end source onboarding: profile → staging → marts → build → semantic view |
+| `troubleshooting-dbt-job-errors` | Diagnosing dbt Cloud/platform job failures via log analysis, Admin API, git history |
+| `project-quality-audit` | Full-project scan: missing PK tests, empty descriptions, `SELECT *` violations, semantic issues |
+| `dbt-one-stop-agent` | This agent — unified orchestrator for the entire lifecycle |
+
+### Semantic Layer & NL Querying (9 skills)
+
+| Skill | When to Use |
+|-------|-------------|
+| `building-dbt-semantic-layer` | Creating/modifying MetricFlow components: semantic models, metrics, dimensions, entities, measures |
+| `answering-natural-language-questions-with-dbt` | Translating business questions to SQL via Semantic Layer or ad-hoc queries |
+| `snowflake-semantic-view-creator` | Creating Snowflake-native Semantic Views via `dbt_semantic_view` package (DDL-like SQL) |
+| `semantic-view` | **Entry point** for ALL semantic view operations: create, debug, optimize, VQR suggestions |
+| `semantic-view-batch-sync` | Batch creating/updating semantic views for all uncovered marts |
+| `semantic-view-coverage-audit` | Auditing coverage: missing views, orphaned views, stale DDL, column drift |
+| `cortex-analyst-semantic-model` | Agentic YAML generation with synonyms, sample_values, verified_queries, custom_instructions |
+| `cortex-agent` | **Entry point** for ALL Cortex Agent operations: create, debug, evaluate, list, delete |
+| `dashboard` | Creating interactive DashboardSpec JSON dashboards with charts, tables, markdown widgets |
+
+### Data Quality & Governance (3 skills)
+
+| Skill | When to Use |
+|-------|-------------|
+| `data-quality` | Snowflake DMF monitoring, table comparison, quality scoring, SLA alerting, ad-hoc quality scans |
+| `data-governance` | Masking policies, row access policies, PII classification, governance/observability maturity |
+| `lineage` | Impact analysis, root cause debugging, column-level tracing, dependency analysis |
+
+### Snowflake Platform (14 skills)
+
+| Skill | When to Use |
+|-------|-------------|
+| `dynamic-tables` | Creating, optimizing, monitoring, troubleshooting Snowflake Dynamic Tables |
+| `iceberg` | Iceberg tables, catalog integrations (Glue/Unity/Polaris), external volumes, CLD, auto-refresh |
+| `snowflake-notebooks` | Creating/editing Workspace notebooks (.ipynb) with SQL cells and Snowpark |
+| `snowflake-postgres` | Snowflake Postgres instance management: create, suspend, resume, health checks, pg_lake |
+| `snowpark` | Deploying Snowpark Python: UDFs, UDAFs, UDTFs, stored procedures via `snow snowpark` CLI |
+| `snowpark-connect` | Migrating PySpark workloads to Snowpark Connect (SCOS) |
+| `cortex-ai-functions` | Routing to Cortex AI functions: AI_CLASSIFY, AI_EXTRACT, AI_SENTIMENT, AI_SUMMARIZE, AI_PARSE_DOCUMENT |
+| `integrations` | Managing Snowflake integrations: API, catalog, external access, notification, security, storage |
+| `openflow` | NiFi-based data integration: connector deployment, configuration, diagnostics |
+| `data-cleanrooms` | Data Clean Room workflows: collaborations, data offerings, audience overlap, activations |
+| `data-products` | Organizational listings for Snowflake Internal Marketplace cross-account sharing |
+| `declarative` | Declarative sharing with application packages (TYPE=DATA) for versioned cross-account data |
+| `machine-learning` | ML sub-skills: model training, registry, inference, feature store, distributed training, HPO |
+| `workload-performance-analysis` | SQL execution analysis: spilling, pruning, cache hits, clustering keys, SOS/QAS candidates |
+
+### Infrastructure & DevOps (7 skills)
+
+| Skill | When to Use |
+|-------|-------------|
+| `configuring-dbt-mcp-server` | MCP server config JSON, authentication setup, connectivity validation |
+| `deploy-to-spcs` | Deploying Docker containers to Snowpark Container Services (SPCS) |
+| `dbt-projects-on-snowflake` | dbt projects deployed AS Snowflake objects via `snow dbt` CLI (not normal dbt dev) |
+| `dcm` | Database Change Management: infrastructure-as-code for Snowflake objects |
+| `migrating-dbt-core-to-fusion` | Triaging dbt-core → Fusion migration errors (auto-fixable, guided, blocked) |
+| `migrating-dbt-project-across-platforms` | Cross-platform dbt migration (e.g., Snowflake ↔ Databricks) via Fusion |
+| `snowconvert-assessment` | SnowConvert assessment reports for workload migration (waves, ETL analysis) |
+
+### Visualization & Apps (2 skills)
+
+| Skill | When to Use |
+|-------|-------------|
+| `developing-with-streamlit` | Creating, editing, debugging, styling, and deploying Streamlit-in-Snowflake apps |
+| `build-react-app` | Building React/Next.js data apps connected to Snowflake |
+
+### Security & Cost (5 skills)
+
+| Skill | When to Use |
+|-------|-------------|
+| `cost-intelligence` | All Snowflake cost/billing: credits, warehouse costs, budgets, resource monitors, anomalies |
+| `network-security` | Network policies and rules: IP allowlists, hybrid policies, SaaS rules |
+| `key-and-secret-management` | Tri-Secret Secure (CMK/BYOK), key rotation, periodic data rekeying |
+| `trust-center` | Trust Center security findings: CIS benchmarks, scanners, remediation guidance |
+| `organization-management` | Org-level management: accounts, users, spending, security posture, ORGANIZATION_USAGE |
+
+### Meta / Tooling (2 skills)
+
+| Skill | When to Use |
+|-------|-------------|
+| `skill_development` | Creating, documenting, or auditing skills for Cortex Code |
+| `cortex-code-guide` | Cortex Code CLI reference: commands, shortcuts, sessions, MCP, agents |
