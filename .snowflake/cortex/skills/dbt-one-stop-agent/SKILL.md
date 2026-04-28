@@ -35,7 +35,7 @@ metadata:
 
 When delegating to another skill, you **MUST**:
 
-1. **Read the skill file first** — Call `read_file` on `.agents/skills/<skill-name>/SKILL.md` BEFORE generating any output for that task. Never guess what a skill does from the routing table alone.
+1. **Read the skill file first** — Call `read_file` on `.snowflake/cortex/skills/<skill-name>/SKILL.md` BEFORE generating any output for that task. Never guess what a skill does from the routing table alone.
 2. **Follow that skill's instructions completely** — The delegated skill is authoritative for its domain. Do not override or simplify its steps.
 3. **Return here only for chaining** — If the delegated skill completes and another skill is needed for the next step (e.g., after `onboard-bronze-layer`, chain to `onboard-gold-layer`), return to this routing table to identify the next skill.
 4. **Never skip delegation** — If the routing table says "Delegate", you MUST load the skill. Do not attempt to handle it inline using general knowledge.
@@ -44,7 +44,7 @@ When delegating to another skill, you **MUST**:
 ### Delegation command pattern
 ```
 → Matched skill: <skill-name>
-→ Action: read_file(".agents/skills/<skill-name>/SKILL.md")
+→ Action: read_file(".snowflake/cortex/skills/<skill-name>/SKILL.md")
 → Follow its instructions, then return here if chaining is needed
 ```
 
@@ -1002,7 +1002,7 @@ python scripts/end_to_end_pipeline.py --domain japan_ecomm_data --skip-discover 
 
 ## Related Skills — Quick Reference (53 Skills)
 
-> **All 53 skills live in `.agents/skills/<skill-name>/SKILL.md`.**
+> **All 53 skills live in `.snowflake/cortex/skills/<skill-name>/SKILL.md`.**
 > The full routing table with triggers and delegation rules is in the **Skill Routing Table** section above.
 > Always `read_file` the target SKILL.md before delegating — see **Delegation Protocol** at the top.
 
