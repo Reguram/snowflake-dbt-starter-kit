@@ -103,3 +103,64 @@ renamed as (
 )
 select * from renamed
 ```
+
+### Example Prompt → Output (Intermediate: code-to-label decoding)
+**Prompt**: "Add an intermediate model that decodes the `CONDITION` code into a readable label"
+
+**Output** (generic pattern — applies to any short-code → business-label translation):
+```sql
+-- models/intermediate/<source>/int_<source>__<table>_decoded.sql
+with source_data as (
+    select * from {{ ref('stg_<source>__<table>') }}
+),
+decoded as (
+    select
+        <pk_col>,
+        -- pass-through columns ...
+        case <code_column>
+            when '<code_1>' then '<label_1>'
+            when '<code_2>' then '<label_2>'
+            when '<code_3>' then '<label_3>'
+            else 'Unknown'   -- always include a default branch
+        end as <decoded_column>
+    from source_data
+)
+select * from decoded
+```
+
+**Concrete example** (retail item condition `A`/`B`/`C`/`D` → readable grade):
+```sql
+case condition
+    when 'A' then 'Excellent'
+    when 'B' then 'Good'
+    when 'C' then 'Fair'
+    when 'D' then 'Poor'
+    else 'Unknown'
+end as condition
+```
+
+**Common variants of the same pattern:**
+| Source codes | Decoded labels | Domain |
+|--------------|---------------|--------|
+| `'A'`, `'B'`, `'C'`, `'D'` | `'Excellent'`, `'Good'`, `'Fair'`, `'Poor'` | Item condition / grade |
+| `'P'`, `'S'`, `'D'`, `'C'` | `'Pending'`, `'Shipped'`, `'Delivered'`, `'Cancelled'` | Order status |
+| `1`, `2`, `3`, `4` | `'Critical'`, `'High'`, `'Medium'`, `'Low'` | Severity / priority |
+| `'G'`, `'S'`, `'B'` | `'Gold'`, `'Silver'`, `'Bronze'` | Customer tier |
+| `'Y'`, `'N'` | `true`, `false` | Boolean flags |
+
+**Always pair with this `schema.yml` test** so unexpected codes are caught:
+```yaml
+- name: <decoded_column>
+  description: "<col> decoded from source code (<code_1>/<code_2>/... → <label_1>/<label_2>/...)."
+  tests:
+    - not_null
+    - accepted_values:
+        values: ['<label_1>', '<label_2>', '<label_3>', 'Unknown']
+```
+
+**When to escalate to a seed file:** if the mapping has **more than ~10 codes**, replace the
+inline `CASE` with a `seeds/<name>_lookup.csv` joined via `{{ ref() }}` — easier to version,
+review, and document.
+
+> Full pattern reference: see `onboard-silver-layer/references/intermediate-patterns.md`
+> → "Code-to-label mapping (CASE expression)".

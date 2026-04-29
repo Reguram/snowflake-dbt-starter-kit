@@ -297,6 +297,7 @@ Total: 4 checks — 4 passed, 0 failed
 | **LATERAL FLATTEN** | VARIANT/ARRAY columns | `LATERAL FLATTEN(input => col)` |
 | **Window functions** | Running totals, rankings | `SUM() OVER (PARTITION BY ... ORDER BY ...)` |
 | **Business categorization** | Status mapping, bucketing | `CASE WHEN ... THEN ... END` |
+| **Code-to-label mapping** | Decode short codes (e.g. `'A'`→`'Excellent'`, `'P'`→`'Pending'`) | `CASE <col> WHEN '<code>' THEN '<label>' ... ELSE 'Unknown' END` + `accepted_values` test |
 | **Type enrichment** | Derived columns from raw | `DATEDIFF`, `SPLIT_PART`, conditional logic |
 
 ---

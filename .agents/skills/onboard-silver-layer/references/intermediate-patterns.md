@@ -108,6 +108,92 @@ flattened as (
 select * from flattened
 ```
 
+### Code-to-label mapping (CASE expression)
+
+Use when a source column contains short codes (single letters, numeric codes, status flags)
+that need to be translated to human-readable business labels. Common in retail, healthcare,
+finance, and e-commerce datasets where storage-efficient codes are decoded for analytics.
+
+**Generic template:**
+```sql
+with source_data as (
+    select * from {{ ref('stg_<SOURCE_NAME>__<table>') }}
+),
+
+decoded as (
+    select
+        <pk_col>,
+        -- ... other passthrough columns ...
+        case <code_column>
+            when '<code_1>' then '<label_1>'
+            when '<code_2>' then '<label_2>'
+            when '<code_3>' then '<label_3>'
+            else '<default_label>'   -- e.g. 'Unknown', 'Other', null
+        end as <decoded_column>
+    from source_data
+)
+
+select * from decoded
+```
+
+**Example variants:**
+
+| Domain | Source codes | Decoded labels |
+|--------|-------------|----------------|
+| Item condition (retail/e-commerce) | `'A'`, `'B'`, `'C'`, `'D'` | `'Excellent'`, `'Good'`, `'Fair'`, `'Poor'` |
+| Order status | `'P'`, `'S'`, `'D'`, `'C'` | `'Pending'`, `'Shipped'`, `'Delivered'`, `'Cancelled'` |
+| Severity / priority | `1`, `2`, `3`, `4` | `'Critical'`, `'High'`, `'Medium'`, `'Low'` |
+| Customer segment | `'G'`, `'S'`, `'B'` | `'Gold'`, `'Silver'`, `'Bronze'` |
+| Yes/No flags | `'Y'`, `'N'` | `true`, `false` (or `'Yes'`, `'No'`) |
+
+**Concrete example — retail item condition:**
+```sql
+with source_data as (
+    select * from {{ ref('stg_<SOURCE_NAME>__transactions') }}
+),
+
+decoded as (
+    select
+        listing_id,
+        sales_date,
+        item_name,
+        case condition
+            when 'A' then 'Excellent'
+            when 'B' then 'Good'
+            when 'C' then 'Fair'
+            when 'D' then 'Poor'
+            else 'Unknown'
+        end as condition,
+        cast(price as number(14,2)) as price
+    from source_data
+)
+
+select * from decoded
+```
+
+**Rules:**
+- Always include an `else` branch (typically `'Unknown'`, `'Other'`, or `null`) to handle
+  new/unexpected codes without dropping rows.
+- Keep the decoded column name the same as the source column when the meaning is unchanged
+  (just translated), or rename to `<column>_label` / `<column>_desc` if both raw and decoded
+  values must coexist.
+- Add an `accepted_values` test on the decoded column in `schema.yml` listing all possible
+  output labels (including the default).
+- For mappings with **>10 codes**, prefer a **seed file** (CSV) joined as a lookup instead of
+  a long CASE expression — easier to maintain and document.
+- Document the source-of-truth for the code definitions in the model description (e.g.,
+  vendor data dictionary link).
+
+**Recommended `schema.yml` test:**
+```yaml
+- name: condition
+  description: "Item condition decoded from source code (A/B/C/D → Excellent/Good/Fair/Poor)."
+  tests:
+    - not_null
+    - accepted_values:
+        values: ['Excellent', 'Good', 'Fair', 'Poor', 'Unknown']
+```
+
 ### Window functions
 ```sql
 with staged as (

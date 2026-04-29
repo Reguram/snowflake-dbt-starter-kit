@@ -1,4 +1,0 @@
-# This directory holds generated Cortex Analyst YAML semantic model files.
-# Generate with: python scripts/generate_cortex_analyst_model.py --model <mart_model>
-# Or let the AI agent create them using the cortex-analyst-semantic-model skill.
-# Upload to Snowflake: python scripts/upload_semantic_model_to_stage.py --all
