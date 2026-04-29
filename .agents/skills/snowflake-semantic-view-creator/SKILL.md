@@ -85,8 +85,10 @@ TABLES (
   t AS {{ ref('fct_<name>') }}
 )
 DIMENSIONS (
-  t.column1 AS column1 COMMENT = 'Description of dimension',
-  t.date_col AS date_col COMMENT = 'Date dimension'
+  t.column1 AS column1
+    COMMENT = 'Description of dimension',
+  t.date_col AS date_col
+    COMMENT = 'Date dimension'
 )
 METRICS (
   t.total_amount AS SUM(amount)
@@ -96,17 +98,28 @@ METRICS (
 )
 COMMENT = 'Description for Cortex Analyst'
 
-- AI_SQL_GENERATION $$
-- Instructions for Cortex Analyst text-to-SQL accuracy
-- Describe what questions this view answers and how to interpret metrics
-$$
+AI_SQL_GENERATION 'Custom instructions for Cortex Analyst text-to-SQL accuracy. Describe what questions this view answers and how to interpret metrics.'
 ```
 
 **Key rules:**
 - Use `TABLES()` with an alias and `{{ ref() }}` — the alias is used in DIMENSIONS/METRICS
-- Every dimension and metric MUST have a `COMMENT`
-- The `COMMENT = '...'` at the end is the view-level description
-- AI_SQL_GENERATION comments guide Cortex Analyst behavior (not parsed by dbt)
+- **DIMENSIONS** use `<alias>.<source_column> AS <dimension_name>` — physical column on the left, semantic name on the right
+- **METRICS** use `<alias>.<metric_name> AS <aggregation_expression>` — semantic name on the left, expression on the right (the aggregation references unqualified column names from the table)
+- Every dimension and metric MUST have a `COMMENT` (use `COMMENT = '...'`, equals sign required at object level)
+- The `COMMENT = '...'` after `METRICS()` is the view-level description
+- `AI_SQL_GENERATION` is a real Snowflake DDL clause that injects custom instructions into the semantic view for Cortex Analyst — it MUST be a **single-quoted string literal** (no `$$ ... $$` dollar-quoting, no leading dashes, no multi-line block syntax)
+- Escape any single quotes inside the `AI_SQL_GENERATION` string by doubling them (`''`)
+- Avoid em-dashes (`—`) and curly quotes inside `AI_SQL_GENERATION` — use plain ASCII to prevent encoding issues during SQL execution
+
+**Common syntax mistakes to avoid:**
+
+| ❌ Wrong | ✅ Correct |
+|---------|-----------|
+| `SUM(t.amount) AS total_amount` (in METRICS) | `t.total_amount AS SUM(amount)` |
+| `AI_SQL_GENERATION $$ ... $$` | `AI_SQL_GENERATION '...'` |
+| `- AI_SQL_GENERATION $$` (commented dashes) | `AI_SQL_GENERATION '...'` |
+| `t.col AS name COMMENT 'desc'` (no `=`) | `t.col AS name COMMENT = 'desc'` |
+| Using `"double quotes"` inside `AI_SQL_GENERATION '...'` | Single quotes only; escape with `''` |
 
 ### 4. Add Verified Queries (.yml)
 Create `models/semantic/sem_<name>/sem_<name>.yml`:
@@ -149,11 +162,11 @@ dbt build --select sem_<name>
 ### 6. Verify in Snowflake
 
 ```sql
--- Check the semantic view exists
-SHOW SEMANTIC VIEWS IN SCHEMA DBT_DEV.SEMANTIC;
+-- Check the semantic view exists (schema depends on dbt target — typically <target_db>.SEMANTIC)
+SHOW SEMANTIC VIEWS IN SCHEMA SEMANTIC;
 
 -- Read the full YAML (should include verified_queries block)
-SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('DBT_DEV.SEMANTIC.SEM_<NAME>');
+SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('<database>.SEMANTIC.SEM_<NAME>');
 
 -- Test with Cortex Analyst
 -- (via Snowsight or programmatically)
@@ -174,7 +187,7 @@ models/semantic/sem_<name>/
 - **Unambiguous metric names** — `total_revenue` not `revenue`, `avg_order_value` not `avg`
 - **One view per domain** — revenue analysis, customer analysis, supply chain analysis
 - **Test base model first** — ensure data quality before exposing via Semantic View
-- **AI_SQL_GENERATION comments** — add instructions for text-to-SQL accuracy after METRICS
+- **`AI_SQL_GENERATION '...'`** — single-quoted string literal placed after `COMMENT = '...'`; injects custom instructions for Cortex Analyst text-to-SQL accuracy. Use plain ASCII, escape `'` as `''`, no `$$` dollar-quoting.
 
 ## Project-Specific Paths
 - Semantic models: `models/semantic/<name>/sem_<name>.sql` (subfolder per view)
