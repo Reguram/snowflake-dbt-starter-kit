@@ -51,6 +51,15 @@ metadata:
 
 ---
 
+## Step 0 — Consult the BA change folder
+
+Before profiling, scan `specs/<SOURCE_NAME>/_changes/` for `.md`/`.txt`/`.xlsx`
+change documents from the Business Analyst. If any are present, delegate the
+entire pipeline to `$spec-driven-model-sync`, which uses the BA's plain-English
+(or Excel) document as the source of truth and only re-applies what changed.
+See [`specs/README.md`](../../../specs/README.md). Profiling-based fallback runs
+only when no BA change document is present.
+
 ## Required Inputs
 
 When the user invokes this skill, collect these parameters (ask if not provided):

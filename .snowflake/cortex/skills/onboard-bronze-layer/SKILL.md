@@ -21,6 +21,20 @@ metadata:
 > (or uses default scaffolding), and generates source-conformed staging models.
 > Bronze = 1:1 with raw data — rename columns, cast types, no business logic.
 
+## Step 0 — Consult the BA change folder
+
+Before profiling, look in `specs/<SOURCE_NAME>/_changes/` for a Business
+Analyst change document (`.md`, `.txt`, or `.xlsx`) that mentions the model
+you’re about to create or modify. If one exists, **delegate to
+`$spec-driven-model-sync`** — the BA document is the source of truth for
+column names, types, and tests. That skill is runtime-free: the agent
+parses and applies the edits using its own file tools (no Python, no
+shell), so it works inside Snowflake Cortex Code.
+
+If no change document exists, fall through to the standard
+profile-and-generate flow below. See [`specs/README.md`](../../../specs/README.md)
+for the BA document format.
+
 ## Required Inputs
 
 When the user invokes this skill, collect these parameters (ask if not provided):

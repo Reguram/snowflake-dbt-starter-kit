@@ -21,6 +21,13 @@ metadata:
 > with surrogate keys, clustering, aggregations, and comprehensive tests.
 > Gold = analytics-ready — aggregated, keyed, tested, documented.
 
+## Step 0 — Consult the BA change folder
+
+Look in `specs/<SOURCE_NAME>/_changes/` for a BA change document that mentions
+the mart you’re creating/modifying. If present, delegate to
+`$spec-driven-model-sync` and treat the BA document as the source of truth.
+See [`specs/README.md`](../../../specs/README.md).
+
 ## Prerequisites
 
 Before running this skill, ensure **at least the bronze layer** exists for the source:

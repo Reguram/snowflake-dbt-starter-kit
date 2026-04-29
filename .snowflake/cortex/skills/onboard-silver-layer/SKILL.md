@@ -21,6 +21,13 @@ metadata:
 > and deduplication between staging (bronze) and marts (gold).
 > Silver = business transformations — only created when justified.
 
+## Step 0 — Consult the BA change folder
+
+Look in `specs/<SOURCE_NAME>/_changes/` for a BA change document that mentions
+the intermediate model. If present, delegate to `$spec-driven-model-sync`.
+That skill is runtime-free and works inside Snowflake Cortex Code.
+See [`specs/README.md`](../../../specs/README.md).
+
 ## Prerequisites
 
 Before running this skill, ensure the **bronze layer exists** for the source:
