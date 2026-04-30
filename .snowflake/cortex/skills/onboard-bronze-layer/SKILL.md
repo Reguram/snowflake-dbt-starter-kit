@@ -1,18 +1,21 @@
 ---
 name: onboard-bronze-layer
 description: >
-  Bronze layer (staging) onboarding: profile a Snowflake source table, extract project patterns,
-  generate _sources.yml + staging SQL + schema.yml with tests. Works on existing projects
-  (infers patterns) and greenfield projects (uses default scaffolding). Portable across dbt
-  projects — no hardcoded paths or names.
+  Bronze layer (staging) onboarding: consume a Data-Analyst EDA report (or run a minimal
+  profile if missing), extract project patterns, generate _sources.yml + staging SQL +
+  schema.yml with tests. Works on existing projects (infers patterns) and greenfield
+  projects (uses default scaffolding). Portable across dbt projects — no hardcoded paths
+  or names.
+  NOTE: Deep profiling / EDA now lives in the `data-profiling-eda` skill. Invoke that
+  skill FIRST and pass the resulting report path here as `EDA_REPORT`.
   Use when: creating a staging model for a new source table, building the bronze layer,
-  generating _sources.yml, profiling a new Snowflake table.
-  Triggers: bronze, staging, new source, profile table, _sources.yml, stg_ model.
+  generating _sources.yml.
+  Triggers: bronze, staging, new source, _sources.yml, stg_ model.
 tools: ["bash", "edit", "mcp"]
 user-invocable: true
 metadata:
   author: snowflake-dbt-starter-kit
-  version: "1.0"
+  version: "2.0"
 ---
 
 # Onboard Bronze Layer (Staging)
@@ -45,6 +48,7 @@ When the user invokes this skill, collect these parameters (ask if not provided)
 | `SOURCE_SCHEMA` | `RAW_DATA` | Schema inside that database |
 | `SOURCE_TABLE` | `ORDERS` | Raw table name (UPPER_CASE in Snowflake) |
 | `SOURCE_NAME` | `my_source` | Short snake_case alias for folders and naming |
+| `EDA_REPORT` *(optional)* | `specs/my_source/_eda/orders__eda.md` | Path to an EDA report produced by the `data-profiling-eda` skill. Strongly recommended — when present, this skill skips re-profiling and uses the report's column profile, classifications, and PK recommendations. |
 
 Derived automatically:
 - Staging model: `stg_<SOURCE_NAME>__<SOURCE_TABLE_lower>`
@@ -187,42 +191,47 @@ Staging SQL:
 
 ---
 
-## Step 2 — Profile the Source Table
+## Step 2 — Acquire the EDA Profile
 
-Run these queries against `<SOURCE_DATABASE>.<SOURCE_SCHEMA>.<SOURCE_TABLE>`:
+Deep profiling has been moved to the dedicated **`data-profiling-eda`** skill. This
+skill consumes the report it produces.
 
-```sql
--- Column metadata
-DESCRIBE TABLE <SOURCE_DATABASE>.<SOURCE_SCHEMA>.<SOURCE_TABLE>;
+### 2.1 — If `EDA_REPORT` was provided
 
--- Row count
-SELECT COUNT(*) AS row_count FROM <SOURCE_DATABASE>.<SOURCE_SCHEMA>.<SOURCE_TABLE>;
+Read the file at `EDA_REPORT` and extract:
 
--- Sample data
-SELECT * FROM <SOURCE_DATABASE>.<SOURCE_SCHEMA>.<SOURCE_TABLE> LIMIT 10;
-```
+| From the report | Used for |
+|-----------------|----------|
+| Section 1 (Overview) — row count, table comment | `_sources.yml` table description |
+| Section 2 (Column Profile) — column / type / classification | Renaming + type-cast plan |
+| Section 3 (Primary Key Analysis) — PK candidate(s) | `unique` + `not_null` tests, surrogate-key decision |
+| Section 7 (Red Flags) — all-null / variant / future dates | Columns to exclude or special-case |
+| Section 9 (Bronze Recommendations) — explicit hand-off | Direct guidance for staging design |
 
-Then profile each column:
+Validate that the report's table identifier matches `<SOURCE_DATABASE>.<SOURCE_SCHEMA>.<SOURCE_TABLE>`.
+If it does not, stop and ask the user to confirm or regenerate the report.
 
-```sql
-SELECT
-    '<COL>' AS column_name,
-    COUNT(*) AS total_rows,
-    COUNT(DISTINCT "<COL>") AS distinct_count,
-    COUNT(*) - COUNT("<COL>") AS null_count,
-    ROUND(100.0 * (COUNT(*) - COUNT("<COL>")) / COUNT(*), 1) AS null_pct,
-    ROUND(100.0 * COUNT(DISTINCT "<COL>") / NULLIF(COUNT("<COL>"), 0), 1) AS uniqueness_pct
-FROM <SOURCE_DATABASE>.<SOURCE_SCHEMA>.<SOURCE_TABLE>;
-```
+### 2.2 — If `EDA_REPORT` was NOT provided
 
-Report a summary table:
+**Stop and delegate.** This skill does not perform profiling itself.
 
-| Column | Type | Nulls% | Distinct | Unique% | Classification |
-|--------|------|--------|----------|---------|----------------|
-| ... | ... | ... | ... | ... | PK / dimension / metric / date / exclude |
+1. Invoke `$data-profiling-eda` with the same `SOURCE_DATABASE` / `SOURCE_SCHEMA` /
+   `SOURCE_TABLE` / `SOURCE_NAME` inputs.
+2. Wait for that skill to produce
+   `specs/<SOURCE_NAME>/_eda/<source_table_lower>__eda.md`.
+3. Resume this skill with `EDA_REPORT` set to that path and re-enter Step 2.1.
 
-> See [references/column-classification.md](references/column-classification.md) for
-> classification rules.
+Do not run `DESCRIBE TABLE`, per-column profiling queries, classification logic, or
+PK detection inside this skill. All of that lives in `data-profiling-eda` and is
+consumed here only via the report file.
+
+### 2.3 — Report the column summary
+
+Using the report from Step 2.1, produce this short summary before generating files:
+
+| Column | Type | Nulls% | Unique% | Classification |
+|--------|------|--------|---------|----------------|
+| ... | ... | ... | ... | PK / dimension / metric / date / exclude |
 
 ---
 
@@ -404,9 +413,10 @@ Total: 6 checks — 5 passed, 1 auto-fixed, 0 failed
 
 | Action | Skill |
 |--------|-------|
+| Run table EDA / data-quality scan first | `$data-profiling-eda` |
 | Build silver (intermediate) layer | `$onboard-silver-layer` |
 | Build gold (marts) layer directly | `$onboard-gold-layer` |
-| Full pipeline (bronze → silver → gold) | `$onboard-new-source` |
+| Full pipeline (EDA → bronze → silver → gold) | `$onboard-new-source` |
 
 ---
 
@@ -415,8 +425,12 @@ Total: 6 checks — 5 passed, 1 auto-fixed, 0 failed
 ```
 $onboard-bronze-layer
 
-Database: AMAZON_AND_ECOMMERCE_WEBSITES_PRODUCT_VIEWS_AND_PURCHASES
-Schema: DATAFEEDS
-Table: PRODUCT_VIEWS_AND_PURCHASES
+Database:    AMAZON_AND_ECOMMERCE_WEBSITES_PRODUCT_VIEWS_AND_PURCHASES
+Schema:      DATAFEEDS
+Table:       PRODUCT_VIEWS_AND_PURCHASES
 Source name: datafeeds
+EDA report:  specs/datafeeds/_eda/product_views_and_purchases__eda.md
 ```
+
+If the EDA report does not yet exist, invoke `$data-profiling-eda` first — then
+re-run this skill with the resulting path.

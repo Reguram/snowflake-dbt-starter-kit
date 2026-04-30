@@ -18,10 +18,10 @@ metadata:
 
 # Onboard New Source — Full Medallion Pipeline (Orchestrator)
 
-> Thin orchestrator that chains three layer-specific skills to onboard a new Snowflake
-> source end-to-end: **Bronze** (staging) → **Silver** (intermediate, conditional) →
-> **Gold** (marts). Each layer skill handles its own pattern discovery, code generation,
-> testing, and validation.
+> Thin orchestrator that chains four skills to onboard a new Snowflake
+> source end-to-end: **EDA** (Data-Analyst profiling) → **Bronze** (staging) →
+> **Silver** (intermediate, conditional) → **Gold** (marts). Each layer skill
+> handles its own pattern discovery, code generation, testing, and validation.
 
 ## Architecture
 
@@ -31,19 +31,24 @@ metadata:
 │                    ORCHESTRATOR                      │
 │                                                      │
 │  1. Collect inputs                                   │
-│  2. Chain layer skills:                              │
-│     ┌──────────────────┐                             │
-│     │ onboard-bronze   │ ← Profile + staging + tests │
-│     └────────┬─────────┘                             │
+│  2. Chain skills:                                    │
+│     ┌──────────────────┐                              │
+│     │ data-profiling   │ ← EDA report (Markdown)        │
+│     │ -eda             │                              │
+│     └────────┬─────────┘                              │
 │              │                                       │
-│     ┌────────▼─────────┐                             │
-│     │ onboard-silver   │ ← Conditional: joins,       │
-│     │ (if justified)   │   dedup, flatten, business  │
-│     └────────┬─────────┘                             │
+│     ┌────────▼─────────┐                              │
+│     │ onboard-bronze   │ ← Consumes EDA → staging+tests │
+│     └────────┬─────────┘                              │
 │              │                                       │
-│     ┌────────▼─────────┐                             │
-│     │ onboard-gold     │ ← Facts, dims, schema.yml   │
-│     └──────────────────┘                             │
+│     ┌────────▼─────────┐                              │
+│     │ onboard-silver   │ ← Conditional: joins,         │
+│     │ (if justified)   │   dedup, flatten, business    │
+│     └────────┬─────────┘                              │
+│              │                                       │
+│     ┌────────▼─────────┐                              │
+│     │ onboard-gold     │ ← Facts, dims, schema.yml     │
+│     └──────────────────┘                              │
 │                                                      │
 │  3. Final validation (full pipeline build)           │
 └──────────────────────────────────────────────────────┘
@@ -74,9 +79,33 @@ When the user invokes this skill, collect these parameters (ask if not provided)
 
 ---
 
-## Step 1 — Bronze Layer (MANDATORY)
+## Step 1 — Data Profiling & EDA (MANDATORY)
 
-Invoke the bronze layer skill to profile the source and generate staging models:
+Before any model generation, run the Data-Analyst profiling skill to produce a
+Markdown EDA report.
+
+**Delegate to:** `$data-profiling-eda`
+
+**Pass these inputs:**
+- `SOURCE_DATABASE` → as provided
+- `SOURCE_SCHEMA` → as provided
+- `SOURCE_TABLE` → as provided
+- `SOURCE_NAME` → as provided
+
+**Expected output:**
+- `specs/<SOURCE_NAME>/_eda/<source_table_lower>__eda.md` — the EDA report
+- Executive summary returned in the response
+
+Capture the report path — it becomes the `EDA_REPORT` input for the bronze skill.
+
+**Do not proceed to Step 2 until the EDA report has been written and the executive
+summary surfaces no blocking issues** (empty table, fundamental access errors, etc.).
+
+---
+
+## Step 2 — Bronze Layer (MANDATORY)
+
+Invoke the bronze layer skill, passing the EDA report path so it can skip re-profiling:
 
 **Delegate to:** `$onboard-bronze-layer`
 
@@ -85,6 +114,7 @@ Invoke the bronze layer skill to profile the source and generate staging models:
 - `SOURCE_SCHEMA` → as provided
 - `SOURCE_TABLE` → as provided
 - `SOURCE_NAME` → as provided
+- `EDA_REPORT` → path from Step 1
 
 **Expected outputs from bronze skill:**
 - `models/staging/<SOURCE_NAME>/_sources.yml` — source definition
@@ -93,11 +123,11 @@ Invoke the bronze layer skill to profile the source and generate staging models:
 - Bronze validation report (all checks passed)
 - `dbt build` passed for the staging model
 
-**Do not proceed to Step 2 until bronze is complete and all tests pass.**
+**Do not proceed to Step 3 until bronze is complete and all tests pass.**
 
 ---
 
-## Step 2 — Silver Layer (CONDITIONAL)
+## Step 3 — Silver Layer (CONDITIONAL)
 
 After bronze completes, evaluate whether a silver (intermediate) layer is needed.
 
@@ -126,7 +156,7 @@ and you should skip directly to Step 3 (gold).
 
 ---
 
-## Step 3 — Gold Layer (MANDATORY)
+## Step 4 — Gold Layer (MANDATORY)
 
 After bronze (and optionally silver) complete, generate the mart models.
 
@@ -146,7 +176,7 @@ After bronze (and optionally silver) complete, generate the mart models.
 
 ---
 
-## Step 4 — Final Pipeline Validation
+## Step 5 — Final Pipeline Validation
 
 After all layers are complete, run a full pipeline build from source:
 
@@ -168,11 +198,13 @@ Alias: <SOURCE_NAME>
 ### Layers Created
 | Layer | Model(s) | Status |
 |-------|----------|--------|
+| EDA report | specs/<SOURCE_NAME>/_eda/<table>__eda.md | ✅ GENERATED |
 | Bronze (staging) | stg_<SOURCE_NAME>__<table> | ✅ PASS |
 | Silver (intermediate) | int_<SOURCE_NAME>__<desc> | ✅ PASS / ⏭️ SKIPPED |
 | Gold (marts) | fct_<entity>, dim_<entity> | ✅ PASS |
 
 ### Files Created
+- specs/<SOURCE_NAME>/_eda/<source_table_lower>__eda.md
 - models/staging/<SOURCE_NAME>/_sources.yml
 - models/staging/<SOURCE_NAME>/stg_<SOURCE_NAME>__<table>.sql
 - models/staging/<SOURCE_NAME>/schema.yml

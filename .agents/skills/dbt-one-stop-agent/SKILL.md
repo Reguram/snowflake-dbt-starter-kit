@@ -69,9 +69,10 @@ Skill path resolution: `.snowflake/cortex/skills/<skill>/SKILL.md` → fallback 
 
 | Intent / Trigger | Required Chain (in order) |
 |---|---|
-| Onboard a new source end-to-end (discover + stage + marts + semantic + agent) | `onboard-new-source` → `snowflake-semantic-view-creator` → `cortex-agent` |
+| Onboard a new source end-to-end (discover + EDA + stage + marts + semantic + agent) | `onboard-new-source` → `snowflake-semantic-view-creator` → `cortex-agent` |
+| Profile / EDA a single Snowflake table (no model generation) | `data-profiling-eda` |
 | Discover/profile a Snowflake DB or schema | `onboard-new-source` |
-| Build only a staging / bronze model for a single table | `onboard-bronze-layer` |
+| Build only a staging / bronze model for a single table | `data-profiling-eda` → `onboard-bronze-layer` |
 | Build only an intermediate / silver model (joins, dedup, business logic) | `onboard-silver-layer` |
 | Build only a fact/dimension/mart (gold) model | `onboard-gold-layer` |
 | Build any dbt model (general "create/modify a model" request, no layer specified) | `using-dbt-for-analytics-engineering` |
@@ -197,6 +198,7 @@ User Request
 | User Request | Skills Chained (in order) |
 |-------------|--------------------------|
 | "Onboard MY_DB.MY_SCHEMA and create an agent" | `onboard-new-source` → `snowflake-semantic-view-creator` → `cortex-agent` |
+| "Profile this Snowflake table / run EDA on ORDERS" | `data-profiling-eda` |
 | "Create semantic views for all marts in japan_ecomm_data and an agent" | `semantic-view-batch-sync` → `cortex-agent` |
 | "Add unit tests for fct_orders" | `adding-dbt-unit-test` |
 | "What were total sales last quarter?" | `answering-natural-language-questions-with-dbt` |
@@ -206,7 +208,7 @@ User Request
 | "Classify PII columns in my marts" | `data-governance` |
 | "Show me Snowflake costs by warehouse" | `cost-intelligence` |
 | "Train an ML model on my mart data" | `machine-learning` |
-| "Create a staging model for this table" | `onboard-bronze-layer` |
+| "Create a staging model for this table" | `data-profiling-eda` → `onboard-bronze-layer` |
 | "Build an intermediate model joining orders and customers" | `onboard-silver-layer` |
 | "Create a fact table for sales" | `onboard-gold-layer` |
 | "Create an Iceberg table from my mart" | `iceberg` |
@@ -240,7 +242,7 @@ overlapping skills.
 
 | Category | Count | Skills |
 |----------|-------|--------|
-| dbt Core Workflow | 11 | `using-dbt-for-analytics-engineering`, `adding-dbt-unit-test`, `running-dbt-commands`, `fetching-dbt-docs`, `creating-mermaid-dbt-dag`, `onboard-new-source`, `onboard-bronze-layer`, `onboard-silver-layer`, `onboard-gold-layer`, `troubleshooting-dbt-job-errors`, `project-quality-audit` |
+| dbt Core Workflow | 12 | `using-dbt-for-analytics-engineering`, `adding-dbt-unit-test`, `running-dbt-commands`, `fetching-dbt-docs`, `creating-mermaid-dbt-dag`, `data-profiling-eda`, `onboard-new-source`, `onboard-bronze-layer`, `onboard-silver-layer`, `onboard-gold-layer`, `troubleshooting-dbt-job-errors`, `project-quality-audit` |
 | Semantic Layer & NL Querying | 9 | `building-dbt-semantic-layer`, `answering-natural-language-questions-with-dbt`, `snowflake-semantic-view-creator`, `semantic-view`, `semantic-view-batch-sync`, `semantic-view-coverage-audit`, `cortex-analyst-semantic-model`, `cortex-agent`, `dashboard` |
 | Data Quality & Governance | 3 | `data-quality`, `data-governance`, `lineage` |
 | Snowflake Platform | 14 | `dynamic-tables`, `iceberg`, `snowflake-notebooks`, `snowflake-postgres`, `snowpark`, `snowpark-connect`, `cortex-ai-functions`, `integrations`, `openflow`, `data-cleanrooms`, `data-products`, `declarative`, `machine-learning`, `workload-performance-analysis` |
@@ -249,4 +251,4 @@ overlapping skills.
 | Security & Cost | 5 | `cost-intelligence`, `network-security`, `key-and-secret-management`, `trust-center`, `organization-management` |
 | Meta / Tooling | 2 | `skill_development`, `cortex-code-guide` |
 
-**Total: 53 specialist skills routed by this orchestrator** (this skill is not counted, since it never routes to itself).
+**Total: 54 specialist skills routed by this orchestrator** (this skill is not counted, since it never routes to itself).
