@@ -1,0 +1,73 @@
+spec_version: 2
+source_name: japan_ecomm_data
+model_name: fct_sales
+locked_at: "2026-04-30T00:00:00Z"
+change_doc: specs/japan_ecomm_data/_changes/2026-04-29-runtime-free-test.md
+directives_applied:
+  - action: rename
+    old_name: average_price
+    new_name: avg_unit_price
+    status: applied
+    source_line: "In `fct_sales`, rename `average_price` to `avg_unit_price`."
+  - action: redescribe
+    name: sales_date
+    new_description: "Date the sale occurred (UTC)."
+    status: applied
+    source_line: "Change description of `fct_sales.sales_date` to \"Date the sale occurred (UTC).\""
+  - action: add_test
+    name: sales_key
+    test: unique
+    status: skipped
+    reason: "unique test already present on sales_key in schema.yml"
+    source_line: "Add test unique to `fct_sales.sales_key`."
+attributes:
+  - id: attr_sales_key
+    name: sales_key
+    type: string
+    role: primary_key
+    description: Surrogate primary key — hash of sales_date, maker, and item_category.
+    tests:
+      - unique
+      - not_null
+  - id: attr_sales_date
+    name: sales_date
+    type: date
+    role: timestamp
+    description: Date the sale occurred (UTC).
+    tests:
+      - not_null
+  - id: attr_maker
+    name: maker
+    type: string
+    role: dimension
+    description: The manufacturer or brand of the item sold.
+    tests:
+      - not_null
+  - id: attr_item_category
+    name: item_category
+    type: string
+    role: dimension
+    description: Derived product category (Smartphone or Other).
+    tests:
+      - not_null
+      - accepted_values:
+          values: ['Smartphone', 'Other']
+  - id: attr_total_sales
+    name: total_sales
+    type: number
+    role: metric
+    description: Sum of item prices for this grouping.
+    tests:
+      - not_null
+  - id: attr_avg_unit_price
+    name: avg_unit_price
+    type: number
+    role: metric
+    description: Average item price for this grouping.
+    tests: []
+  - id: attr_transaction_count
+    name: transaction_count
+    type: integer
+    role: metric
+    description: Number of individual transactions in this grouping.
+    tests: []

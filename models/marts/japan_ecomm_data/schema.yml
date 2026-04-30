@@ -21,7 +21,7 @@ models:
         - unique
         - not_null
     - name: sales_date
-      description: The date of the sale.
+      description: Date the sale occurred (UTC).
       tests:
         - not_null
     - name: maker
@@ -38,7 +38,7 @@ models:
       description: Sum of item prices for this grouping.
       tests:
         - not_null
-    - name: average_price
+    - name: avg_unit_price
       description: Average item price for this grouping.
     - name: transaction_count
       description: Number of individual transactions in this grouping.

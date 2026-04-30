@@ -23,7 +23,7 @@ aggregated_data as (
         maker,
         item_category,
         sum(price)   as total_sales,
-        avg(price)   as average_price,
+        avg(price)   as avg_unit_price,
         count(*)     as transaction_count
     from source_data
     group by sales_date, maker, item_category
@@ -38,7 +38,7 @@ final as (
         maker,
         item_category,
         total_sales,
-        average_price,
+        avg_unit_price,
         transaction_count
     from aggregated_data
 
