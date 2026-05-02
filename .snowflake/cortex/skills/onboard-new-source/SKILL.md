@@ -2,7 +2,7 @@
 name: onboard-new-source
 description: >
   End-to-end onboarding of a new Snowflake source into any dbt project. Orchestrates the full
-  medallion pipeline by chaining bronze → silver (conditional) → gold layer skills.
+  medallion pipeline by chaining bronze → silver (always delegated) → gold layer skills.
   Collects source inputs, delegates to specialized layer skills, and runs final validation.
   Works on existing projects (infers patterns) and greenfield projects (uses default scaffolding).
   Portable across dbt projects — no hardcoded paths or names.
@@ -20,7 +20,7 @@ metadata:
 
 > Thin orchestrator that chains four skills to onboard a new Snowflake
 > source end-to-end: **EDA** (Data-Analyst profiling) → **Bronze** (staging) →
-> **Silver** (intermediate, conditional) → **Gold** (marts). Each layer skill
+> **Silver** (intermediate, always delegated to `$onboard-silver-layer`) → **Gold** (marts). Each layer skill
 > handles its own pattern discovery, code generation, testing, and validation.
 
 ## Architecture
@@ -42,8 +42,9 @@ metadata:
 │     └────────┬─────────┘                              │
 │              │                                       │
 │     ┌────────▼─────────┐                              │
-│     │ onboard-silver   │ ← Conditional: joins,         │
-│     │ (if justified)   │   dedup, flatten, business    │
+│     │ onboard-silver   │ ← Always delegated; emits   │
+│     │ (if justified)   │   join/union/cleansing/     │
+│     │                  │   type-cast/dedup/flatten   │
 │     └────────┬─────────┘                              │
 │              │                                       │
 │     ┌────────▼─────────┐                              │
@@ -127,30 +128,49 @@ Invoke the bronze layer skill, passing the EDA report path so it can skip re-pro
 
 ---
 
-## Step 3 — Silver Layer (CONDITIONAL)
+## Step 3 — Silver Layer (MANDATORY DELEGATION)
 
-After bronze completes, evaluate whether a silver (intermediate) layer is needed.
+After bronze completes, **always delegate to** `$onboard-silver-layer`. This step is
+not optional from this orchestrator's perspective — the decision of whether to
+emit a silver model belongs to the silver skill itself (its Step 1 justification
+check), not to this skill.
 
 **Delegate to:** `$onboard-silver-layer`
 
-The silver skill will self-evaluate justification. It creates an intermediate model
-ONLY when at least one of these conditions is true:
+**Pass these inputs:**
+- `SOURCE_NAME` — as provided.
+- `UPSTREAM_MODELS` — every staging model produced in Step 2 that could feed the
+  same logical entity (do not pre-filter).
+- `EDA_REPORTS` — auto-discover from `specs/<SOURCE_NAME>/_eda/*.md`.
+- `COMBINE_MODE` — `join` if multiple tables share keys, `union` if multiple tables
+  share grain (regions / time partitions), `none` if single upstream.
+- `JOIN_SPEC` / `UNION_SPEC` — derived from the EDA `Tables` section + bronze keys.
+- `TRANSFORMATION_RULES` — any cleansing / type-conversion rules surfaced by EDA
+  red flags (high-null whitespace columns, sentinel `'N/A'`, dates-as-VARCHAR, etc.).
+
+The silver skill creates an intermediate model when at least one is true:
 
 | Condition | Example |
 |-----------|---------|
-| Multi-table join needed | Orders + Customers tables |
-| Window functions needed | Running totals, rankings |
-| LATERAL FLATTEN needed | VARIANT/ARRAY columns |
-| Deduplication needed | Source has duplicate rows |
-| Business rules needed | CASE expressions, categorization |
+| Multi-table **join** | Orders + Customers tables |
+| Multi-table **union** | Region- or time-partitioned feeds |
+| **Cleansing** rules | `trim`, `null_if`, `coalesce`, sentinel handling |
+| **Type conversion** beyond bronze | `try_to_number`, `try_to_date`, boolean coding, VARIANT typed extraction |
+| Window functions | Running totals, rankings |
+| LATERAL FLATTEN | VARIANT/ARRAY columns |
+| Deduplication | Source has duplicate rows |
+| Business rules | CASE expressions, categorization, code-to-label mapping |
 | Heavy type enrichment | Multiple derived columns |
 
-**If the silver skill determines no intermediate model is justified**, it will say so
-and you should skip directly to Step 3 (gold).
+**If the silver skill emits its standard "no intermediate model justified" message**
+(single upstream with no transformation), record that decision and proceed to
+Step 4 with the staging model as the upstream for gold. **Do not skip the
+delegation — the silver skill must be invoked so its EDA-driven analysis runs.**
 
 **Expected outputs from silver skill (if created):**
 - `models/intermediate/<SOURCE_NAME>/int_<SOURCE_NAME>__<description>.sql`
 - `models/intermediate/<SOURCE_NAME>/schema.yml`
+- EDA-resolution log + transformation-rule plan
 - Silver validation report
 - `dbt build` passed
 
@@ -158,13 +178,14 @@ and you should skip directly to Step 3 (gold).
 
 ## Step 4 — Gold Layer (MANDATORY)
 
-After bronze (and optionally silver) complete, generate the mart models.
+After bronze and the silver delegation in Step 3 complete, generate the mart models.
 
 **Delegate to:** `$onboard-gold-layer`
 
 **Pass these inputs:**
 - `SOURCE_NAME` → as provided
-- `UPSTREAM_MODEL` → the staging model name (or intermediate model if silver was created)
+- `UPSTREAM_MODEL` → the intermediate model from Step 3 if silver emitted one,
+  otherwise the staging model from Step 2
 - `ENTITY` → derived from the table name or ask the user
 
 **Expected outputs from gold skill:**

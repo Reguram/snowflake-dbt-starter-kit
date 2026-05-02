@@ -194,6 +194,142 @@ select * from decoded
         values: ['Excellent', 'Good', 'Fair', 'Poor', 'Unknown']
 ```
 
+### Multi-source union (combine same-grain feeds)
+
+Use when stacking multiple staging models that share the same grain — e.g. region-
+partitioned tables (`orders_na`, `orders_eu`), monthly snapshots, or feeds from
+multiple source systems. Each branch is aligned to a common schema in its own CTE
+**before** the `UNION ALL`. A `source_system` discriminator column is added so the
+origin of each row is recoverable downstream.
+
+```sql
+with na_raw as (
+    select * from {{ ref('stg_<SOURCE_NAME>__orders_na') }}
+),
+
+eu_raw as (
+    select * from {{ ref('stg_<SOURCE_NAME>__orders_eu') }}
+),
+
+na_aligned as (
+    select
+        order_id::varchar             as order_id,
+        customer_id::varchar          as customer_id,
+        amount::number(18,4)          as amount,
+        order_date::timestamp_ntz     as order_event_at,
+        cast(null as varchar)         as eu_vat_id,   -- column missing in NA
+        'na'                          as source_system
+    from na_raw
+),
+
+eu_aligned as (
+    select
+        order_id::varchar             as order_id,
+        customer_id::varchar          as customer_id,
+        amount::number(18,4)          as amount,
+        order_event_ts::timestamp_ntz as order_event_at,
+        eu_vat_id::varchar            as eu_vat_id,
+        'eu'                          as source_system
+    from eu_raw
+)
+
+select * from na_aligned
+union all
+select * from eu_aligned
+```
+
+**Rules:**
+- Use `union all` by default — it preserves row counts and is far cheaper than `union`
+  (which sorts + dedupes the entire result).
+- Only use `union` (without `all`) when the user explicitly asks to deduplicate identical
+  rows that may legitimately appear in multiple branches.
+- Every branch must `select` the **same column names, in the same order, with the same
+  types**. Snowflake will raise a `Numeric value '...' is not recognized` or implicit-
+  conversion error otherwise.
+- Use `cast(null as <type>) as <col>` for columns that exist in only some branches.
+- Add a `source_system` (or similarly-named) discriminator column per branch.
+- Build the cross-branch type-alignment matrix from each input's EDA report
+  (see Step 2.5.2 of the skill). Cast on the side(s) that don't already match the
+  chosen common target type.
+
+### Cleansing pipeline (TRIM / NULL-IF / COALESCE)
+
+Use when a source has dirty string values, sentinel placeholders (`'N/A'`, `'NULL'`,
+empty strings) or whitespace that needs normalising before downstream joins.
+
+```sql
+with raw as (
+    select * from {{ ref('stg_<SOURCE_NAME>__<table>') }}
+),
+
+cleansed as (
+    select
+        <pk_col>,
+        trim(email)                                       as email,
+        upper(trim(country_code))                         as country_code,
+        nullif(trim(status), '')                          as status,
+        nullif(trim(status), 'N/A')                       as status_v2,
+        coalesce(nullif(trim(segment), ''), 'unknown')    as segment
+    from raw
+)
+
+select * from cleansed
+```
+
+**Rules:**
+- Apply cleansing **before** joins so join keys are already normalised.
+- Combine `trim` + `nullif` on the same column when the source mixes whitespace +
+  sentinels.
+- Use `coalesce(nullif(trim(...), ''), '<default>')` to emit a known fallback rather
+  than `NULL`.
+- Promote EDA red flags (high-null columns with whitespace, suspected sentinel values)
+  into automatic cleansing rules — surface them to the user before generating SQL.
+
+### EDA-driven type conversion
+
+Use when the EDA report shows a column is stored in the wrong type (e.g. amount as
+`VARCHAR`, dates as `VARCHAR(10)`, booleans as `'Y'/'N'`) and the bronze skill kept
+the raw type because the cast was unsafe at staging time.
+
+```sql
+with raw as (
+    select * from {{ ref('stg_<SOURCE_NAME>__<table>') }}
+),
+
+typed as (
+    select
+        <pk_col>,
+        try_to_number(amount_str, 14, 2)         as amount,
+        try_to_date(order_date_str, 'YYYY-MM-DD') as order_date,
+        try_to_timestamp(event_ts_str)           as event_at,
+        case upper(trim(active_flag))
+            when 'Y'    then true
+            when 'TRUE' then true
+            when '1'    then true
+            when 'N'    then false
+            when 'FALSE' then false
+            when '0'    then false
+        end                                       as is_active,
+        f.value:"id"::number                      as nested_id,
+        f.value:"label"::varchar                  as nested_label
+    from raw,
+    lateral flatten(input => raw.payload_variant) as f
+)
+
+select * from typed
+```
+
+**Rules:**
+- Always prefer `TRY_TO_*` over `TO_*` so a single bad row does not fail the whole load.
+- Never cast a column that the EDA already shows in the correct type — that's wasted
+  compute and obscures lineage.
+- For boolean codings, build the `case` from the actual distinct values in the EDA
+  distribution section (don't assume `'Y'/'N'`).
+- For `VARIANT` flattening, do it in the same `typed` CTE only when the flatten produces
+  scalar columns; otherwise keep a separate `flattened` CTE.
+- Keep all type-cast logic in **one** `typed` CTE — never sprinkle casts across CTEs,
+  it makes the type contract hard to read.
+
 ### Window functions
 ```sql
 with staged as (

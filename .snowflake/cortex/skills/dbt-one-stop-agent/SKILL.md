@@ -69,12 +69,15 @@ Skill path resolution: `.snowflake/cortex/skills/<skill>/SKILL.md` → fallback 
 
 | Intent / Trigger | Required Chain (in order) |
 |---|---|
-| Onboard a new source end-to-end (discover + EDA + stage + marts + semantic + agent) | `onboard-new-source` → `snowflake-semantic-view-creator` → `cortex-agent` |
+| Onboard a new source end-to-end (discover + EDA + stage + **silver** + marts + semantic + agent) | `onboard-new-source` → `data-profiling-eda` → `onboard-bronze-layer` → `onboard-silver-layer` → `onboard-gold-layer` → `snowflake-semantic-view-creator` → `cortex-agent` |
 | Profile / EDA a single Snowflake table (no model generation) | `data-profiling-eda` |
 | Discover/profile a Snowflake DB or schema | `onboard-new-source` |
 | Build only a staging / bronze model for a single table | `data-profiling-eda` → `onboard-bronze-layer` |
-| Build only an intermediate / silver model (joins, dedup, business logic) | `onboard-silver-layer` |
-| Build only a fact/dimension/mart (gold) model | `onboard-gold-layer` |
+| Build only an intermediate / silver model (joins, unions, dedup, cleansing, business logic) | `onboard-silver-layer` |
+| Build a dbt model from **multiple source tables** (`join` or `union`) | `onboard-silver-layer` |
+| Apply transformation / cleansing / type-conversion rules across staging models | `onboard-silver-layer` |
+| Build only a fact/dimension/mart (gold) model on top of staging or silver | `onboard-gold-layer` |
+| Build a fact/mart that requires upstream joins, unions, or cleansing | `onboard-silver-layer` → `onboard-gold-layer` |
 | Build any dbt model (general "create/modify a model" request, no layer specified) | `using-dbt-for-analytics-engineering` |
 | Add unit tests / TDD for a model | `adding-dbt-unit-test` |
 | Run `dbt build / run / test / compile / show / seed / snapshot / deps` | `running-dbt-commands` |
@@ -82,6 +85,29 @@ Skill path resolution: `.snowflake/cortex/skills/<skill>/SKILL.md` → fallback 
 | Render dbt DAG / lineage as Mermaid | `creating-mermaid-dbt-dag` |
 | Diagnose a dbt Cloud / dbt platform job failure | `troubleshooting-dbt-job-errors` |
 | Audit project quality (missing tests, descriptions, SELECT *, semantic coverage) | `project-quality-audit` → `semantic-view-coverage-audit` |
+
+#### Silver-layer routing rule (MANDATORY)
+
+When any of the following signals are present in a request, the chain **must**
+include `onboard-silver-layer` — it is never optional:
+
+- More than one upstream source / staging table is referenced.
+- Words: `join`, `joined`, `combine`, `merge`, `union`, `stack`, `consolidate`, `unify`, `enrich`, `dedup`, `deduplicate`, `flatten`, `lateral flatten`.
+- Any cleansing or transformation rule (`trim`, `null_if`, `coalesce`, `case when`, code-to-label mapping, business categorisation).
+- Any type-conversion request (`try_to_number`, `try_to_date`, `try_to_timestamp`, boolean coding, VARIANT typed extraction).
+- `data-profiling-eda` produced red flags that imply cleansing (high nulls, sentinels, future dates, negative amounts on amount columns, all-null columns).
+
+In these cases:
+
+1. Insert `onboard-silver-layer` between bronze and gold in the chain.
+2. Pass forward `EDA_REPORTS` (auto-discovered from `specs/<SOURCE_NAME>/_eda/`),
+   `COMBINE_MODE` (`join` / `union` / `none`), `JOIN_SPEC` or `UNION_SPEC`, and
+   `TRANSFORMATION_RULES` to the silver skill.
+3. Let the silver skill perform its own Step 1 justification check; if the silver
+   skill itself decides no intermediate model is needed (single-source passthrough
+   with no transformation), it will emit the standard skip message and the chain
+   continues straight to gold. The orchestrator must NOT skip the delegation — the
+   decision belongs to the silver skill, not to this orchestrator.
 
 ### Category 2 — Semantic Layer & NL Querying
 
@@ -197,7 +223,7 @@ User Request
 
 | User Request | Skills Chained (in order) |
 |-------------|--------------------------|
-| "Onboard MY_DB.MY_SCHEMA and create an agent" | `onboard-new-source` → `snowflake-semantic-view-creator` → `cortex-agent` |
+| "Onboard MY_DB.MY_SCHEMA and create an agent" | `onboard-new-source` → `data-profiling-eda` → `onboard-bronze-layer` → `onboard-silver-layer` → `onboard-gold-layer` → `snowflake-semantic-view-creator` → `cortex-agent` |
 | "Profile this Snowflake table / run EDA on ORDERS" | `data-profiling-eda` |
 | "Create semantic views for all marts in japan_ecomm_data and an agent" | `semantic-view-batch-sync` → `cortex-agent` |
 | "Add unit tests for fct_orders" | `adding-dbt-unit-test` |
@@ -210,7 +236,10 @@ User Request
 | "Train an ML model on my mart data" | `machine-learning` |
 | "Create a staging model for this table" | `data-profiling-eda` → `onboard-bronze-layer` |
 | "Build an intermediate model joining orders and customers" | `onboard-silver-layer` |
+| "Build a model that unions monthly orders feeds with cleansing" | `onboard-silver-layer` |
+| "Combine these two source tables and apply trim + null_if" | `onboard-silver-layer` |
 | "Create a fact table for sales" | `onboard-gold-layer` |
+| "Build a fact_orders that joins orders + customers + products" | `onboard-silver-layer` → `onboard-gold-layer` |
 | "Create an Iceberg table from my mart" | `iceberg` |
 | "Debug why my semantic view returns wrong SQL" | `semantic-view` |
 | "Migrate this project from Databricks to Snowflake" | `migrating-dbt-project-across-platforms` |
