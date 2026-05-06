@@ -10,7 +10,7 @@
       "type": "streamableHttp",
       "url": "https://OVKHTQZ-ZGB06898.snowflakecomputing.com/api/v2/databases/DBT_DEV/schemas/MCP_TOOLS/mcp-servers/DBT_AGENT_MCP",
       "headers": {
-        "Authorization": "Bearer eyJraWQiOiIxODA3NzA4MDc4MTciLCJhbGciOiJFUzI1NiJ9.eyJwIjoiNzA2MTM1ODEyOjcwNjEzNTk0MCIsImlzcyI6IlNGOjEwNDkiLCJleHAiOjE4MDgzNzM4ODl9.AfArw36h7YTqkzAa0Aa8gSjWvH3Wbv2yjU-dNPXq6e3rY74Uw7C7o9yJF3thvzE4Zvq0pdaDt1CnipXvWewrpw",
+        "Authorization": "Bearer REDACTED_TOKEN",
         "X-Snowflake-Role": "DBT_ROLE"
       }
     },

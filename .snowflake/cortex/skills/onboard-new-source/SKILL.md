@@ -119,9 +119,10 @@ Invoke the bronze layer skill, passing the EDA report path so it can skip re-pro
 
 **Expected outputs from bronze skill:**
 - `models/staging/<SOURCE_NAME>/_sources.yml` — source definition
-- `models/staging/<SOURCE_NAME>/stg_<SOURCE_NAME>__<table>.sql` — staging model
+- `models/staging/<SOURCE_NAME>/stg_<SOURCE_NAME>__<table>.sql` — staging model (generated FROM the `.md` spec)
+- `models/staging/<SOURCE_NAME>/stg_<SOURCE_NAME>__<table>.md` — **transformation spec** (source of truth for column-level transforms; only columns that need a transform are listed; excluded columns are called out; everything else is moved as-is)
 - `models/staging/<SOURCE_NAME>/schema.yml` — tests and descriptions
-- Bronze validation report (all checks passed)
+- Bronze validation report (all checks passed, including SQL ↔ `.md` consistency)
 - `dbt build` passed for the staging model
 
 **Do not proceed to Step 3 until bronze is complete and all tests pass.**

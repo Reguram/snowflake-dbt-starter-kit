@@ -25,16 +25,47 @@ Before creating or modifying ANY model:
 ## Instructions
 
 ### Staging Model Generation
-1. Identify the source name and table name
-2. Generate `stg_<source>__<table>.sql` with:
-   - CTE `source` selecting from `{{ source(...) }}`
-   - CTE `renamed` mapping all columns to snake_case
-   - Final `select * from renamed`
-3. Add schema.yml entry with:
-   - Description
-   - Primary key with `unique` + `not_null` tests
-   - Foreign keys with `relationships` tests
-   - Categorical columns with `accepted_values`
+
+Every staging model is authored as a **trio** of sibling files under
+`models/staging/<source>/`:
+
+- `stg_<source>__<table>.sql` — generated SQL (1:1 transform of the source)
+- `stg_<source>__<table>.yml` *(or merged into a directory `schema.yml`)* — schema/tests/docs
+- `stg_<source>__<table>.md` — **transformation spec, source of truth for column-level transforms**
+
+**The `.md` spec drives the `.sql`.** Authoring rules:
+
+1. List **only columns that need a transformation** in the *Transformations*
+   table; each row carries the SQL expression to apply (e.g. `TRY_TO_DATE`,
+   `TRIM`, variant flatten, surrogate key).
+2. **Any column not mentioned is moved as-is** — emitted as
+   `"SOURCE_COL" as source_col` with no logic.
+3. **Excluded columns are called out explicitly** under *Excluded columns*.
+4. No business logic in the `.md` — bronze is 1:1; joins / aggregates /
+   `ref()` belong in intermediate or marts.
+
+See [.agents/skills/onboard-bronze-layer/references/transformations-md-template.md](../../.agents/skills/onboard-bronze-layer/references/transformations-md-template.md)
+for the canonical template, and `$onboard-bronze-layer` for the full flow.
+
+Workflow:
+
+1. Identify the source name and table name.
+2. Author or scaffold `stg_<source>__<table>.md` from the EDA profile —
+   pre-fill safe casts, list red-flagged columns under *Excluded columns*,
+   leave everything else implicitly as-is.
+3. Generate `stg_<source>__<table>.sql` mechanically from the `.md` plan:
+   - CTE `source` selecting from `{{ source(...) }}`.
+   - CTE `staged` containing one line per kept column, sourced from the
+     plan (transformed expression, or `"SRC" as snake`).
+   - Final `select * from staged`.
+4. Add the `schema.yml` entry — column set must match the SQL output:
+   - Description.
+   - Primary key with `unique` + `not_null` tests.
+   - Foreign keys with `relationships` tests.
+   - Categorical columns with `accepted_values`.
+5. **Validate consistency**: every Transformations row produced an output
+   column; every Excluded column is absent from SQL and YAML; every other
+   source column appears renamed-only.
 
 ### Intermediate Model Generation
 1. Name as `int_<description>.sql`

@@ -324,6 +324,28 @@ final state.
 change document is present and addresses the model being created/modified,
 they delegate here. Otherwise they fall back to profiling-based generation.
 
+### Bronze layer — special interaction with `<stg_model>.md`
+
+For staging (bronze) models the column-level transformation source of truth
+is the sibling `models/staging/<SOURCE_NAME>/stg_<SOURCE_NAME>__<table>.md`
+file (see `onboard-bronze-layer`). When a BA change document targets a
+staging model:
+
+1. Apply the directive to the staging `<stg_model>.md` *Transformations* /
+   *Excluded columns* sections **before** editing the SQL.
+   - `rename` → update the `Output column` cell.
+   - `retype` → update the `Type` cell and the SQL expression.
+   - `drop` → move the row from *Transformations* (or remove the as-is
+     entry) and add a bullet under *Excluded columns*.
+   - `add` (with a literal/derived expression) → append a row to
+     *Transformations*.
+   - `redescribe` → goes only to `schema.yml`, not the `.md`.
+2. Then regenerate / patch the `.sql` so it matches the updated `.md`.
+3. Then update `schema.yml` and the spec/lockfile as usual.
+
+This keeps the `.md` plan and the SQL in lockstep even when changes arrive
+via the BA pipeline.
+
 ## Future extensions
 
 - **LLM parse upgrade** — replace the regex pattern table with a single

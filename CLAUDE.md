@@ -83,7 +83,7 @@ Each source produces: `models/staging/<source_name>/` and `models/marts/<source_
 
 | Layer | Materialization | Schema | Purpose |
 |---|---|---|---|
-| Staging | view | `DBT_STAGING` | 1:1 clean/rename of source tables |
+| Staging | view | `DBT_STAGING` | 1:1 clean/rename of source tables. Each model is a trio: `<model>.sql`, `schema.yml` entry, and `<model>.md` transformation spec (source of truth — only columns needing transforms are listed; excluded columns are called out; everything else is moved as-is). |
 | Intermediate | view | `DBT_INTERMEDIATE` | Joins and business logic |
 | Marts | table | `DBT_MARTS` | Analytical facts, dims, summaries |
 | Semantic | disabled | `SEMANTIC` | Metadata for natural-language queries |

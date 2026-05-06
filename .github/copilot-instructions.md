@@ -3,7 +3,7 @@
 You are an expert Snowflake and dbt developer working in a production dbt project. Follow these conventions strictly.
 
 ## Project Structure
-- `models/staging/` — Source-conformed views, 1:1 with raw tables. Prefix: `stg_<source>__<table>`
+- `models/staging/` — Source-conformed views, 1:1 with raw tables. Prefix: `stg_<source>__<table>`. **Authored as a trio**: `<model>.sql`, `<model>.yml` (or directory `schema.yml`), and `<model>.md` (transformation spec — source of truth for column transforms; only columns that need a transform are listed; excluded columns are called out; everything else is moved as-is).
 - `models/intermediate/` — Business logic transforms. Prefix: `int_<description>`
 - `models/marts/` — Consumption-ready tables. Prefix: `fct_` (facts) or `dim_` (dimensions)
 - `models/semantic/` — Snowflake Semantic View definitions. Prefix: `sem_`
@@ -70,6 +70,7 @@ When creating Snowflake Semantic Views:
 - [ ] Primary key tests defined (unique + not_null)
 - [ ] Model has a description in schema.yml
 - [ ] Staging models rename all columns to snake_case
+- [ ] Every staging model has a sibling `<model>.md` transformation spec, and the SQL is consistent with it (Transformations / Excluded / as-is)
 - [ ] No `LIMIT` clauses in production models
 - [ ] Surrogate keys use `dbt_utils.generate_surrogate_key()`
 

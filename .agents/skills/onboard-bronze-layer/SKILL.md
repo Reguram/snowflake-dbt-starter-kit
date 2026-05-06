@@ -2,10 +2,11 @@
 name: onboard-bronze-layer
 description: >
   Bronze layer (staging) onboarding: consume a Data-Analyst EDA report (or run a minimal
-  profile if missing), extract project patterns, generate _sources.yml + staging SQL +
-  schema.yml with tests. Works on existing projects (infers patterns) and greenfield
-  projects (uses default scaffolding). Portable across dbt projects — no hardcoded paths
-  or names.
+  profile if missing), extract project patterns, author/read a per-model transformation
+  spec `<stg_model>.md`, then generate _sources.yml + staging SQL + schema.yml with
+  tests — driven by the `.md` spec. Works on existing projects (infers patterns) and
+  greenfield projects (uses default scaffolding). Portable across dbt projects — no
+  hardcoded paths or names.
   NOTE: Deep profiling / EDA now lives in the `data-profiling-eda` skill. Invoke that
   skill FIRST and pass the resulting report path here as `EDA_REPORT`.
   Use when: creating a staging model for a new source table, building the bronze layer,
@@ -235,9 +236,69 @@ Using the report from Step 2.1, produce this short summary before generating fil
 
 ---
 
+## Step 2.5 — Author or read the transformation spec `<stg_model>.md` (MANDATORY)
+
+Every staging model is authored as a **trio**: `.sql`, `.yml`, and `.md`. The `.md`
+file is the **source of truth for column transformations** — the SQL is generated
+from it. See [references/transformations-md-template.md](references/transformations-md-template.md)
+for the canonical format.
+
+### Authoring rules (team standard)
+
+1. **Only columns that need a transformation are listed** in the *Transformations*
+   table — each row carries the SQL expression to apply.
+2. **Any column not mentioned is moved as-is** — emitted as a plain snake_case
+   rename (`"SOURCE_COL" as source_col`) with no logic.
+3. **Excluded columns are called out explicitly** under *Excluded columns*.
+4. The spec is bronze-scoped — only 1:1 transforms (rename, safe-cast, trim,
+   variant flatten, surrogate key). No joins, aggregates, or business logic.
+
+### 2.5.1 — If `<stg_model>.md` already exists
+
+Read it. Parse the *Transformations* table and the *Excluded columns* list.
+Validate that:
+- Every `Source column` exists in the EDA column profile (else stop and report).
+- No `Output column` collides with another row.
+- No row contains forbidden constructs (`join`, `group by`, `union`, `from {{ ref(`).
+
+Use the spec verbatim to drive Step 3. Do not infer additional transforms.
+
+### 2.5.2 — If `<stg_model>.md` does NOT exist — scaffold it
+
+Generate the file using the EDA column profile and these defaults:
+
+| EDA classification / red flag        | Pre-filled action          | Section          |
+|--------------------------------------|----------------------------|------------------|
+| `date` (text type)                   | `TRY_TO_DATE("COL")`       | Transformations  |
+| `metric` (numeric stored as text)    | `TRY_TO_NUMBER("COL")`     | Transformations  |
+| `dimension` text with whitespace     | `TRIM("COL")`              | Transformations  |
+| `VARIANT` field referenced in EDA    | `"COL":path::type`         | Transformations  |
+| Multi-column natural PK              | `dbt_utils.generate_surrogate_key([...])` as `row_key` | Transformations |
+| Red flag: all-null / replication metadata / future dates flagged for removal | listed | Excluded columns |
+| Everything else                      | snake_case rename           | As-is columns    |
+
+Write the scaffolded `.md` to `models/staging/<SOURCE_NAME>/stg_<SOURCE_NAME>__<table_lower>.md`,
+present the diff to the user, and **proceed** with the scaffolded spec (do not
+block waiting for user edits — the user can iterate and re-run later).
+
+### 2.5.3 — Echo the resolved column plan
+
+```
+## Bronze Transformation Plan — stg_<source>__<table>
+
+Transformed (N): order_date (TRY_TO_DATE), quantity (TRY_TO_NUMBER), ...
+Excluded   (M): _fivetran_deleted, internal_hash
+As-is      (K): country_region, province_state, ...
+```
+
+This plan is the contract between Step 2.5 and Step 3.
+
+---
+
 ## Step 3 — Generate Bronze Layer Files
 
-Create three files under `models/staging/<SOURCE_NAME>/`:
+Create four artifacts under `models/staging/<SOURCE_NAME>/` — the `.md` from
+Step 2.5 plus three generated files driven by it:
 
 ### File 1: `_sources.yml`
 
@@ -262,9 +323,17 @@ sources:
           # Non-PK columns: name + description only (match inferred pattern)
 ```
 
-### File 2: `stg_<SOURCE_NAME>__<table_lower>.sql`
+### File 2: `stg_<SOURCE_NAME>__<table_lower>.sql` — generated FROM the `.md` spec
 
-Generate using the pattern from Step 1.4 (inferred or default):
+Do not author this file by hand. Generate it deterministically from the
+transformation plan resolved in Step 2.5:
+
+- For each row in *Transformations* → emit `<sql_expression> as <output_column>`.
+- For each column in *Excluded columns* → omit it entirely.
+- For every other source column → emit `"<SOURCE_COL>" as <snake_col>`.
+- Preserve source-column ordering except where surrogate keys are added.
+
+Using the pattern from Step 1.4 (inferred or default):
 
 ```sql
 with source as (
@@ -273,9 +342,10 @@ with source as (
 
 staged as (
     select
-        -- Rename EVERY column from source casing to snake_case
-        -- Cast types if needed: TRY_TO_DATE for dates, TRY_TO_NUMBER for numbers
-        -- Do NOT add business logic — bronze is 1:1 with source
+        -- Lines below are emitted from <stg_model>.md:
+        --   • Transformations  → <expression> as <output>
+        --   • Excluded columns → omitted
+        --   • Anything else    → "SOURCE_COL" as snake_col
     from source
 )
 
@@ -283,15 +353,17 @@ select * from staged
 ```
 
 **Rules:**
-- List ALL columns explicitly in the transform CTE — no `SELECT *`
-- Rename columns to snake_case (or match the project's convention)
-- Use safe type casts (`TRY_TO_*` on Snowflake)
-- If no single natural PK, create a surrogate: `{{ dbt_utils.generate_surrogate_key(['col1', 'col2']) }} as row_key`
-- Match CTE names, keyword case, indentation from the pattern registry
+- List ALL kept columns explicitly in the transform CTE — no `SELECT *`.
+- Every emitted line must trace back to a row in the `.md` plan.
+- Use safe type casts (`TRY_TO_*` on Snowflake).
+- Surrogate keys come from the `.md` plan, never invented in SQL.
+- Match CTE names, keyword case, indentation from the pattern registry.
 
 ### File 3: `schema.yml`
 
-Generate using the pattern from Step 1.5 (inferred or default):
+Generate using the pattern from Step 1.5 (inferred or default). The column
+list must match the SQL output exactly — which is itself a mechanical
+derivation from `<stg_model>.md`:
 
 ```yaml
 version: 2
@@ -300,10 +372,17 @@ models:
   - name: stg_<SOURCE_NAME>__<table_lower>
     description: "Staged <SOURCE_TABLE> from <SOURCE_NAME> — renamed columns, 1:1 with source"
     columns:
-      # Every column from the SQL output
+      # Every column from the SQL output (= every kept column from the .md plan)
       # PK: unique + not_null tests
       # Non-PK: name + description (match inferred test pattern)
 ```
+
+### File 4: `stg_<SOURCE_NAME>__<table_lower>.md` — the transformation spec
+
+This is the artifact authored or scaffolded in Step 2.5. It must remain in
+the directory alongside the SQL and YAML and is the only place where
+per-column transformations are documented. See
+[references/transformations-md-template.md](references/transformations-md-template.md).
 
 ---
 
@@ -331,10 +410,11 @@ Validate every generated file against the patterns from Step 1.
 | Check | Rule | Fix |
 |-------|------|-----|
 | Directory exists | `models/staging/<SOURCE_NAME>/` | Create it |
-| Files present | `_sources.yml`, `stg_*.sql`, `schema.yml` | Create missing |
-| File naming | `stg_<SOURCE_NAME>__<table_lower>.sql` (double underscore) | Rename |
-| No orphan SQL | Every `.sql` has a `schema.yml` entry | Add entry |
+| Files present | `_sources.yml`, `stg_*.sql`, `schema.yml`, **`stg_*.md` transformation spec** | Create missing |
+| File naming | `stg_<SOURCE_NAME>__<table_lower>.{sql,md}` (double underscore) | Rename |
+| No orphan SQL | Every `.sql` has a `schema.yml` entry **and a sibling `.md` spec** | Add entry / scaffold spec |
 | No orphan YAML | Every `schema.yml` entry has a `.sql` file | Remove entry |
+| No orphan `.md` | Every `stg_*.md` has a sibling `.sql` | Generate SQL or remove spec |
 
 ### 5.2 — `_sources.yml` validation
 
@@ -371,6 +451,8 @@ Compare against Step 1.4 pattern registry:
 |-------|------|
 | `_sources.yml` columns match staging SQL columns | Same columns, casing transformed per pattern |
 | Staging SQL columns match `schema.yml` columns | 1:1 match |
+| **Staging SQL columns match the `.md` plan** | Every Transformations row produced an output column; every Excluded column is absent; every other source column is emitted as-is |
+| **`.md` spec contains no business logic** | No `join`, `group by`, `union`, `from {{ ref(`, or aggregate functions in any expression |
 | Model name in `schema.yml` matches filename | `stg_<source>__<table>` |
 | No duplicate model names | Across all schema.yml files in the project |
 
@@ -404,6 +486,8 @@ Total: 6 checks — 5 passed, 1 auto-fixed, 0 failed
 - [ ] No business logic in staging — 1:1 with source
 - [ ] Every column listed in `schema.yml`
 - [ ] PK column(s) have tests matching project pattern
+- [ ] `stg_*.md` transformation spec exists alongside `.sql` and `schema.yml`
+- [ ] SQL is mechanically derivable from the `.md` plan (Transformations / Excluded / as-is)
 - [ ] `dbt build` passed with 0 test failures
 - [ ] Validation report shows 0 failures
 

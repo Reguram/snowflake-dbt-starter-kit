@@ -101,5 +101,51 @@ GRANT ROLE DBT_ROLE TO USER REGURAM;
 -- GRANT READ ON STAGE DBT_DEV.SEMANTIC.CORTEX_ANALYST_MODELS TO ROLE DBT_ROLE;
 -- GRANT USAGE ON SNOWFLAKE INTELLIGENCE SNOWFLAKE_INTELLIGENCE_OBJECT_DEFAULT TO ROLE DBT_ROLE;
 
+-- =============================================================================
+-- Admin User — srikanth (ACCOUNTADMIN equivalent)
+-- Run as ACCOUNTADMIN in Snowsight.
+-- ACCOUNTADMIN is the highest-privilege system role in Snowflake.
+-- Only grant it to users who genuinely need full account administration.
+-- =============================================================================
+
+USE ROLE ACCOUNTADMIN;
+
+-- Create the user with a temporary password that must be changed on first login
+CREATE USER IF NOT EXISTS srikanth
+    DISPLAY_NAME    = 'srikanth'
+    LOGIN_NAME      = 'srikanth'
+    MUST_CHANGE_PASSWORD = TRUE
+    -- Replace the placeholder below with the real temporary password before running.
+    -- Password rules: ≥8 chars, 1 upper, 1 lower, 1 digit, 1 special character.
+    PASSWORD        = '<REPLACE_WITH_TEMP_PASSWORD>'
+    COMMENT         = 'Admin user — granted ACCOUNTADMIN';
+
+-- Grant the ACCOUNTADMIN system role
+GRANT ROLE ACCOUNTADMIN TO USER srikanth;
+
+-- Also grant the project roles so the user can operate the dbt project
+GRANT ROLE DBT_ROLE TO USER srikanth;
+GRANT ROLE CORTEX_ANALYST_ROLE TO USER srikanth;
+
+-- Set sensible defaults
+ALTER USER srikanth SET
+    DEFAULT_ROLE      = 'ACCOUNTADMIN'
+    DEFAULT_WAREHOUSE = 'DBT_AGENT_WH';
+
 -- Verify
+SELECT
+    NAME,
+    LOGIN_NAME,
+    DISPLAY_NAME,
+    DEFAULT_ROLE,
+    DEFAULT_WAREHOUSE,
+    MUST_CHANGE_PASSWORD,
+    HAS_PASSWORD,
+    DISABLED
+FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
+WHERE LOGIN_NAME = 'SRIKANTH';
+
+-- =============================================================================
+-- Verify
+-- =============================================================================
 SELECT 'Setup complete!' AS status;
