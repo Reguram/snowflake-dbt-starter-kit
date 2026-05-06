@@ -10,7 +10,7 @@
       "type": "streamableHttp",
       "url": "https://OVKHTQZ-ZGB06898.snowflakecomputing.com/api/v2/databases/DBT_DEV/schemas/MCP_TOOLS/mcp-servers/DBT_AGENT_MCP",
       "headers": {
-        "Authorization": "Bearer REDACTED_TOKEN",
+        "Authorization": "Bearer ${SNOWFLAKE_MCP_TOKEN}",
         "X-Snowflake-Role": "DBT_ROLE"
       }
     },
