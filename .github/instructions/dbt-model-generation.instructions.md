@@ -36,8 +36,12 @@ Every staging model is authored as a **trio** of sibling files under
 **The `.md` spec drives the `.sql`.** Authoring rules:
 
 1. List **only columns that need a transformation** in the *Transformations*
-   table; each row carries the SQL expression to apply (e.g. `TRY_TO_DATE`,
-   `TRIM`, variant flatten, surrogate key).
+   table. Each row carries an *Output column*, *Type*, *Source column(s)*,
+   and a **natural-language description** of the transform
+   (e.g. *"safely cast to a date"*, *"trim whitespace"*,
+   *"total sales divided by total volume"*). The agent translates the
+   description into a Snowflake SQL expression and records it in the
+   *Resolved SQL* column of the spec.
 2. **Any column not mentioned is moved as-is** — emitted as
    `"SOURCE_COL" as source_col` with no logic.
 3. **Excluded columns are called out explicitly** under *Excluded columns*.
@@ -51,12 +55,16 @@ Workflow:
 
 1. Identify the source name and table name.
 2. Author or scaffold `stg_<source>__<table>.md` from the EDA profile —
-   pre-fill safe casts, list red-flagged columns under *Excluded columns*,
-   leave everything else implicitly as-is.
+   pre-fill safe casts as natural-language descriptions
+   (e.g. *"safely cast to a date"*), list red-flagged columns under
+   *Excluded columns*, leave everything else implicitly as-is.
 3. Generate `stg_<source>__<table>.sql` mechanically from the `.md` plan:
+   - For each *Transformations* row, resolve the natural-language
+     *Description* into a Snowflake SQL expression and write it back into
+     the *Resolved SQL* column of the spec.
    - CTE `source` selecting from `{{ source(...) }}`.
    - CTE `staged` containing one line per kept column, sourced from the
-     plan (transformed expression, or `"SRC" as snake`).
+     plan (resolved expression, or `"SRC" as snake`).
    - Final `select * from staged`.
 4. Add the `schema.yml` entry — column set must match the SQL output:
    - Description.

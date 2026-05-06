@@ -245,53 +245,79 @@ for the canonical format.
 
 ### Authoring rules (team standard)
 
-1. **Only columns that need a transformation are listed** in the *Transformations*
-   table — each row carries the SQL expression to apply.
-2. **Any column not mentioned is moved as-is** — emitted as a plain snake_case
+1. **Transformations are described in plain English**, not SQL. Each row in
+   the *Transformations* table carries an *Output column*, *Type*,
+   *Source column(s)*, and a natural-language *Description* of what the
+   column should be — e.g. *"total sales divided by total volume"*,
+   *"safely cast to date"*, *"trim whitespace"*. The agent translates the
+   description into a Snowflake SQL expression and records it in the
+   *Resolved SQL* column of the spec.
+2. **Only columns that need a transformation are listed** in that table —
+   plain renames do not belong there.
+3. **Any column not mentioned is moved as-is** — emitted as a plain snake_case
    rename (`"SOURCE_COL" as source_col`) with no logic.
-3. **Excluded columns are called out explicitly** under *Excluded columns*.
-4. The spec is bronze-scoped — only 1:1 transforms (rename, safe-cast, trim,
-   variant flatten, surrogate key). No joins, aggregates, or business logic.
+4. **Excluded columns are called out explicitly** under *Excluded columns*.
+5. The spec is bronze-scoped — only 1:1 transforms (rename, safe-cast, trim,
+   variant flatten, simple per-row arithmetic, surrogate key). No joins,
+   aggregates, window functions, or business logic.
 
 ### 2.5.1 — If `<stg_model>.md` already exists
 
 Read it. Parse the *Transformations* table and the *Excluded columns* list.
-Validate that:
-- Every `Source column` exists in the EDA column profile (else stop and report).
-- No `Output column` collides with another row.
-- No row contains forbidden constructs (`join`, `group by`, `union`, `from {{ ref(`).
+For each transformation row:
+- Validate that every name in *Source column(s)* exists in the EDA column
+  profile (else stop and report).
+- Validate that no `Output column` collides with another row.
+- Resolve the *Description* into a Snowflake SQL expression using the
+  natural-language vocabulary in
+  [references/transformations-md-template.md](references/transformations-md-template.md).
+  For phrasings the vocabulary does not cover, propose an expression and
+  ask the user to confirm before generating SQL.
+- Write the resolved expression into the *Resolved SQL* column of the spec
+  so the file stays self-documenting. If a row already had a *Resolved SQL*
+  value and it disagrees with the *Description*, prefer the *Description*
+  and surface the diff.
+- Reject any row whose resolved expression contains forbidden constructs
+  (`join`, `group by`, `union`, `from {{ ref(`, window functions).
 
-Use the spec verbatim to drive Step 3. Do not infer additional transforms.
+Use the resolved spec to drive Step 3. Do not infer additional transforms.
 
 ### 2.5.2 — If `<stg_model>.md` does NOT exist — scaffold it
 
-Generate the file using the EDA column profile and these defaults:
+Generate the file using the EDA column profile and these defaults. The
+scaffold is written in **natural language** — the *Resolved SQL* column is
+left blank and is populated on the first generation pass.
 
-| EDA classification / red flag        | Pre-filled action          | Section          |
-|--------------------------------------|----------------------------|------------------|
-| `date` (text type)                   | `TRY_TO_DATE("COL")`       | Transformations  |
-| `metric` (numeric stored as text)    | `TRY_TO_NUMBER("COL")`     | Transformations  |
-| `dimension` text with whitespace     | `TRIM("COL")`              | Transformations  |
-| `VARIANT` field referenced in EDA    | `"COL":path::type`         | Transformations  |
-| Multi-column natural PK              | `dbt_utils.generate_surrogate_key([...])` as `row_key` | Transformations |
+| EDA classification / red flag        | Pre-filled *Description*                  | Section          |
+|--------------------------------------|--------------------------------------------|------------------|
+| `date` (text type)                   | *"safely cast to a date"*                 | Transformations  |
+| `metric` (numeric stored as text)    | *"safely cast to a number"*               | Transformations  |
+| `dimension` text with whitespace     | *"trim whitespace"*                       | Transformations  |
+| `VARIANT` field referenced in EDA    | *"extract field `<path>` as `<type>`"*    | Transformations  |
+| Multi-column natural PK              | *"surrogate key from A, B, C"* (output `row_key`) | Transformations |
 | Red flag: all-null / replication metadata / future dates flagged for removal | listed | Excluded columns |
-| Everything else                      | snake_case rename           | As-is columns    |
+| Everything else                      | (no row — moved as-is)                    | As-is columns    |
 
 Write the scaffolded `.md` to `models/staging/<SOURCE_NAME>/stg_<SOURCE_NAME>__<table_lower>.md`,
-present the diff to the user, and **proceed** with the scaffolded spec (do not
-block waiting for user edits — the user can iterate and re-run later).
+present the diff to the user, and **proceed** with the scaffolded spec (do
+not block waiting for user edits — the user can iterate and re-run later).
 
 ### 2.5.3 — Echo the resolved column plan
 
 ```
 ## Bronze Transformation Plan — stg_<source>__<table>
 
-Transformed (N): order_date (TRY_TO_DATE), quantity (TRY_TO_NUMBER), ...
+Transformed (N):
+  - order_date     ← "safely cast to a date"            ⇒ TRY_TO_DATE("ORDER_DATE")
+  - quantity       ← "safely cast to a number"          ⇒ TRY_TO_NUMBER("QUANTITY")
+  - avg_unit_price ← "total sale divided by total volume" ⇒ div0null("TOTAL_SALE","TOTAL_VOLUME")
 Excluded   (M): _fivetran_deleted, internal_hash
 As-is      (K): country_region, province_state, ...
 ```
 
-This plan is the contract between Step 2.5 and Step 3.
+This plan is the contract between Step 2.5 and Step 3. The arrow notation
+(`description ⇒ resolved SQL`) makes the NL → SQL translation explicit so the
+user can challenge it before any SQL is written.
 
 ---
 

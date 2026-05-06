@@ -41,6 +41,16 @@ It tells you:
 - Which columns are **excluded** (listed separately)
 - Which columns are passed through **as-is** (everything else)
 
+**You author transforms in plain English**, not SQL. For each transformed
+column, write the *Output column*, *Type*, *Source column(s)*, and a
+*Description* such as *"safely cast to a date"*, *"trim whitespace"*, or
+*"total sales divided by total volume"*. The agent translates the
+description into a Snowflake SQL expression when it generates the `.sql`
+and writes the resolved expression back into the *Resolved SQL* column of
+the spec for traceability. See
+[.agents/skills/onboard-bronze-layer/references/transformations-md-template.md](.agents/skills/onboard-bronze-layer/references/transformations-md-template.md)
+for the full vocabulary the agent understands.
+
 **Example:** [stg_covid19_data__apple_mobility.md](models/staging/covid19_data/stg_covid19_data__apple_mobility.md) shows all columns pass through as-is with a simple lowercase rename.
 
 ### The SQL pattern (always the same structure)
